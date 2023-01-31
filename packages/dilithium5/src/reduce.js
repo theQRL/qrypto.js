@@ -8,7 +8,7 @@ export function montgomeryReduce(a) {
 
 export function reduce32(a) {
     let t = (a + (1 << 22)) >> 23;
-    t = a -  (t * Q);
+    t = a -  (t * Q)
     return t;
 }
 
