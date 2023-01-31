@@ -1,12 +1,14 @@
 import { D, GAMMA2, Q } from './const.js';
 
-export function power2round(a0, i, a) {
+export function power2round(a0p, i, a) {
+  const a0 = a0p;
   const a1 = (a + (1 << (D - 1)) - 1) >> D;
   a0[i] = a - (a1 << D);
   return a1;
 }
 
-export function decompose(a0, i, a) {
+export function decompose(a0p, i, a) {
+  const a0 = a0p;
   let a1 = (a + 127) >> 7;
   a1 = (a1 * 1025 + (1 << 21)) >> 22;
   a1 &= 15;

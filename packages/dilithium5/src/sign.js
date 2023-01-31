@@ -52,6 +52,7 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
   if (sk.length !== CryptoSecretKeyBytes) {
     throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
   }
+  // eslint-disable-next-line no-unused-vars
   const mat = new Array(K).fill().map((_) => new PolyVecL());
   const s1 = new PolyVecL();
   const s2 = new PolyVecK();
@@ -60,9 +61,6 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
 
   // Get randomness for rho, rhoPrime and key
   const seed = passedSeed || new Uint8Array(randomBytes(SeedBytes));
-  //   if (seed === undefined) {
-  //     seed = new Uint8Array(randomBytes(SeedBytes))
-  //   }
 
   const state = createHash('shake256', { outputLength: 2 * SeedBytes + CRHBytes });
   state.update(seed);
@@ -113,6 +111,7 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
   const key = new Uint8Array(SeedBytes);
   let rhoPrime = new Uint8Array(CRHBytes);
   let nonce = 0;
+  let state = null;
   const mat = Array(K)
     .fill()
     // eslint-disable-next-line no-unused-vars
@@ -129,14 +128,14 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
 
   unpackSk(rho, tr, key, t0, s1, s2, sk);
 
-  const state = createHash('shake256', { outputLength: CRHBytes });
+  state = createHash('shake256', { outputLength: CRHBytes });
   state.update(tr);
   state.update(m);
   const mu = new Uint8Array(state.digest());
 
   if (randomizedSigning) rhoPrime = new Uint8Array(randomBytes(CRHBytes));
   else {
-    const state = createHash('shake256', { outputLength: CRHBytes });
+    state = createHash('shake256', { outputLength: CRHBytes });
     state.update(key);
     state.update(mu);
     rhoPrime.set(state.digest());
@@ -162,7 +161,7 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
     polyVecKDecompose(w1, w0, w1);
     polyVecKPackW1(sig, w1);
 
-    const state = createHash('shake256', { outputLength: SeedBytes });
+    state = createHash('shake256', { outputLength: SeedBytes });
     state.update(mu);
     state.update(sig.slice(0, K * PolyW1PackedBytes));
     sig.set(state.digest());
