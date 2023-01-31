@@ -1,10 +1,13 @@
 {
   "name": "root",
   "private": true,
+  "scripts": {
+    "test": "FORCE_COLOR=1 turbo test"
+  },
   "workspaces": [
     "packages/*"
   ],
   "devDependencies": {
-    "lerna": "^6.4.1"
+    "turbo": "^1.7.0"
   }
 }

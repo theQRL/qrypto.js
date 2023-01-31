@@ -1,0 +1,22 @@
+{
+  "root": true,
+  "plugins": ["prettier"],
+  "extends": ["airbnb-base", "plugin:import/warnings", "prettier"],
+  "env": {
+    "browser": true,
+    "node": true,
+    "mocha": true
+  },
+  "rules": {
+    "prettier/prettier": "error",
+    "import/extensions": ["error", "ignorePackages"],
+    // "object-curly-spacing": "off",
+    // "require-atomic-updates": "off",
+    // "comma-dangle": "off",
+    // "no-shadow": "off",
+    "no-bitwise": "off",
+    "no-plusplus": "off"
+    // "no-extra-semi": "error"
+  }
+}
+

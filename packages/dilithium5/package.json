@@ -27,16 +27,22 @@
     "url": "git+https://github.com/theQRL/qrypto.js.git"
   },
   "scripts": {
-    "test": "../../node_modules/mocha/bin/mocha.js"
+    "test": "../../node_modules/mocha/bin/mocha.js",
+    "lint-check": "eslint 'src/**/*.js' 'test/**/*.js'",
+    "lint": "eslint --fix 'src/**/*.js' 'test/**/*.js'"
   },
   "bugs": {
     "url": "https://github.com/theQRL/qrypto.js/issues"
   },
-  "dependencies": {
-  },
   "devDependencies": {
     "chai": "^4.3.7",
+    "eslint": "^8.33.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^8.6.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-prettier": "^4.2.1",
     "mocha": "^10.2.0",
-    "nyc": "^15.1.0"
+    "nyc": "^15.1.0",
+    "prettier": "^2.8.3"
   }
 }
