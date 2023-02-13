@@ -46,11 +46,19 @@ import { Poly, polyChallenge, polyNTT } from './poly.js';
 import { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } from './packing.js';
 
 export function cryptoSignKeypair(passedSeed, pk, sk) {
-  if (pk.length !== CryptoPublicKeyBytes) {
-    throw new Error(`invalid pk length ${pk.length} | Expected length ${CryptoPublicKeyBytes}`);
-  }
-  if (sk.length !== CryptoSecretKeyBytes) {
-    throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
+  try {
+    if (pk.length !== CryptoPublicKeyBytes) {
+      throw new Error(`invalid pk length ${pk.length} | Expected length ${CryptoPublicKeyBytes}`);
+    }
+    if (sk.length !== CryptoSecretKeyBytes) {
+      throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
+    }
+  } catch (e) {
+    if (e instanceof TypeError) {
+      throw new Error(`pk/sk cannot be null`);
+    } else {
+      throw new Error(`${e.message}`);
+    }
   }
   // eslint-disable-next-line no-unused-vars
   const mat = new Array(K).fill().map((_) => new PolyVecL());

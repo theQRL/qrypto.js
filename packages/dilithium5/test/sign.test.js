@@ -52,3 +52,36 @@ describe('cryptoSignVerify', () => {
     expect(cryptoSignVerify(sig, msg, pk)).to.equal(true);
   });
 });
+
+describe('signingErrors', () => {
+  it('should throw an error if the pk or sk is null', () => {
+    const pkBad = null;
+    const skBad = null;
+    const pk = new Uint8Array(CryptoPublicKeyBytes);
+    const sk = new Uint8Array(CryptoSecretKeyBytes);
+    expect(() => {
+      cryptoSignKeypair(Buffer.from(HASHEDSEED, 'hex'), pkBad, sk);
+    }).to.throw('pk/sk cannot be null');
+    expect(() => {
+      cryptoSignKeypair(Buffer.from(HASHEDSEED, 'hex'), pk, skBad);
+    }).to.throw('pk/sk cannot be null');
+    expect(() => {
+      cryptoSignKeypair(Buffer.from(HASHEDSEED, 'hex'), pkBad, skBad);
+    }).to.throw('pk/sk cannot be null');
+  });
+  it('should throw an error if the pk or sk had an invalid length', () => {
+    const pkBad = new Uint8Array(12);
+    const skBad = new Uint8Array(12);
+    const pk = new Uint8Array(CryptoPublicKeyBytes);
+    const sk = new Uint8Array(CryptoSecretKeyBytes);
+    expect(() => {
+      cryptoSignKeypair(Buffer.from(HASHEDSEED, 'hex'), pkBad, sk);
+    }).to.throw('invalid pk length 12');
+    expect(() => {
+      cryptoSignKeypair(Buffer.from(HASHEDSEED, 'hex'), pk, skBad);
+    }).to.throw('invalid sk length 12');
+    expect(() => {
+      cryptoSignKeypair(Buffer.from(HASHEDSEED, 'hex'), pkBad, skBad);
+    }).to.throw('invalid pk length 12');
+  });
+});
