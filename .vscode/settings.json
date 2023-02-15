@@ -4,6 +4,7 @@
     "coeffs",
     "dilithium",
     "ETAN",
-    "Keccak"
+    "Keccak",
+    "unforgeability"
   ]
 }

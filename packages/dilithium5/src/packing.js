@@ -20,7 +20,8 @@ import {
   polyZUnpack,
 } from './poly.js';
 
-export function packPk(pk, rho, t1) {
+export function packPk(pkp, rho, t1) {
+  const pk = pkp;
   for (let i = 0; i < SeedBytes; ++i) {
     pk[i] = rho[i];
   }
@@ -29,7 +30,8 @@ export function packPk(pk, rho, t1) {
   }
 }
 
-export function unpackPk(rho, t1, pk) {
+export function unpackPk(rhop, t1, pk) {
+  const rho = rhop;
   for (let i = 0; i < SeedBytes; ++i) {
     rho[i] = pk[i];
   }
@@ -39,8 +41,9 @@ export function unpackPk(rho, t1, pk) {
   }
 }
 
-export function packSk(sk, rho, tr, key, t0, s1, s2) {
+export function packSk(skp, rho, tr, key, t0, s1, s2) {
   let skOffset = 0;
+  const sk = skp;
   for (let i = 0; i < SeedBytes; ++i) {
     sk[i] = rho[i];
   }
@@ -71,8 +74,11 @@ export function packSk(sk, rho, tr, key, t0, s1, s2) {
   }
 }
 
-export function unpackSk(rho, tr, key, t0, s1, s2, sk) {
+export function unpackSk(rhoP, trP, keyP, t0, s1, s2, sk) {
   let skOffset = 0;
+  const rho = rhoP;
+  const tr = trP;
+  const key = keyP;
   for (let i = 0; i < SeedBytes; ++i) {
     rho[i] = sk[skOffset + i];
   }
@@ -103,9 +109,9 @@ export function unpackSk(rho, tr, key, t0, s1, s2, sk) {
   }
 }
 
-export function packSig(sig, c, z, h) {
+export function packSig(sigP, c, z, h) {
   let sigOffset = 0;
-
+  const sig = sigP;
   for (let i = 0; i < SeedBytes; ++i) {
     sig[i] = c[i];
   }
@@ -132,9 +138,10 @@ export function packSig(sig, c, z, h) {
   }
 }
 
-export function unpackSig(c, z, h, sig) {
+export function unpackSig(cP, z, hP, sig) {
   let sigOffset = 0;
-
+  const c = cP;
+  const h = hP;
   for (let i = 0; i < SeedBytes; ++i) {
     c[i] = sig[i];
   }
