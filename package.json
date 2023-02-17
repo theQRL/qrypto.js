@@ -2,7 +2,8 @@
   "name": "root",
   "private": true,
   "scripts": {
-    "test": "FORCE_COLOR=1 turbo test"
+    "test": "FORCE_COLOR=1 turbo test",
+    "report-coverage": "turbo report-coverage"
   },
   "workspaces": [
     "packages/*"

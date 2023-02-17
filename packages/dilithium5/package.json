@@ -30,7 +30,7 @@
     "test": "../../node_modules/mocha/bin/mocha.js",
     "lint-check": "eslint 'src/**/*.js' 'test/**/*.js'",
     "lint": "eslint --fix 'src/**/*.js' 'test/**/*.js'",
-    "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov --disable=gcov"
+    "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov"
   },
   "bugs": {
     "url": "https://github.com/theQRL/qrypto.js/issues"
