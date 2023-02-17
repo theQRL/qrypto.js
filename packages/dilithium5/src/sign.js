@@ -109,7 +109,7 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
   return seed;
 }
 
-function cryptoSignSignature(sig, m, sk, randomizedSigning) {
+export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
   if (sk.length !== CryptoSecretKeyBytes) {
     throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
   }

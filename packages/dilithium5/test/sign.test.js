@@ -1,6 +1,6 @@
 import { expect } from 'chai';
-import { CryptoPublicKeyBytes, CryptoSecretKeyBytes } from '../src/const.js';
-import { cryptoSign, cryptoSignKeypair, cryptoSignOpen, cryptoSignVerify } from '../src/sign.js';
+import { CryptoPublicKeyBytes, CryptoSecretKeyBytes, CryptoBytes } from '../src/const.js';
+import { cryptoSign, cryptoSignKeypair, cryptoSignOpen, cryptoSignVerify, cryptoSignSignature } from '../src/sign.js';
 
 const HASHEDSEED = '8078f74eb51029b5b96cfbe2bd0ab8433252bf4c6c8fbad92789add5e3cca216';
 const PK =
@@ -50,6 +50,18 @@ describe('cryptoSignVerify', () => {
     const pk = Buffer.from(PK, 'hex');
 
     expect(cryptoSignVerify(sig, msg, pk)).to.equal(true);
+  });
+});
+
+describe('cryptoSignSignature', () => {
+  it('should throw on invalid sk length', () => {
+    const sk = Buffer.from('00', 'hex');
+    const msg = Buffer.from(MESSAGE, 'hex');
+    const sig = Buffer.alloc(CryptoBytes);
+
+    expect(() => {
+      cryptoSignSignature(sig, msg, sk, false);
+    }).to.throw('invalid sk length');
   });
 });
 
