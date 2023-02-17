@@ -30,7 +30,7 @@
     "test": "../../node_modules/mocha/bin/mocha.js",
     "lint-check": "eslint 'src/**/*.js' 'test/**/*.js'",
     "lint": "eslint --fix 'src/**/*.js' 'test/**/*.js'",
-    "report-coverage": "mkdir -p ./.nyc_output && nyc report --reporter=text-lcov > coverage.lcov"
+    "report-coverage": "c8 --reporter=text-lcov npm run test > coverage.lcov"
   },
   "bugs": {
     "url": "https://github.com/theQRL/qrypto.js/issues"
@@ -45,7 +45,7 @@
     "eslint-plugin-prettier": "^4.2.1",
     "esm": "^3.2.25",
     "mocha": "^10.2.0",
-    "nyc": "^15.1.0",
+    "c8": "^7.13.0",
     "prettier": "^2.8.3"
   }
 }
