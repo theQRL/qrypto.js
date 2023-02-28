@@ -4,8 +4,8 @@
 
 ## Usage
 
-```
-const dilithium5 = require('@theqrl/dilithium5');
+``` js
+import { cryptoSign, cryptoSignKeypair, cryptoSignOpen, cryptoSignVerify, cryptoSignSignature } from '@theqrl/dilithium5';
 
 // TODO: DEMONSTRATE API
 ```
