@@ -1,6 +1,6 @@
 {
   "name": "@theqrl/dilithium5",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Dilithium-5 cryptography",
   "keywords": [
     "dilithium",
@@ -10,7 +10,7 @@
   "author": "QRL contributors <info@theqrl.org> (https://theqrl.org)",
   "homepage": "https://github.com/theQRL/qrypto.js#readme",
   "license": "MIT",
-  "main": "src/sign.js",
+  "main": "src/index.js",
   "type": "module",
   "directories": {
     "lib": "src",
