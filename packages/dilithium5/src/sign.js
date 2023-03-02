@@ -1,4 +1,6 @@
-import { createHash, randomBytes } from 'crypto';
+import { randomBytes } from 'crypto';
+import { SHAKE } from 'sha3'; // eslint-disable-line import/no-extraneous-dependencies
+
 import {
   PolyVecK,
   polyVecKAdd,
@@ -70,9 +72,10 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
   // Get randomness for rho, rhoPrime and key
   const seed = passedSeed || new Uint8Array(randomBytes(SeedBytes));
 
-  const state = createHash('shake256', { outputLength: 2 * SeedBytes + CRHBytes });
+  const state = new SHAKE(256);
+  let outputLength = 2 * SeedBytes + CRHBytes;
   state.update(seed);
-  const seedBuf = state.digest();
+  const seedBuf = state.digest({ buffer: Buffer.alloc(outputLength) });
   const rho = seedBuf.slice(0, SeedBytes);
   const rhoPrime = seedBuf.slice(SeedBytes, SeedBytes + CRHBytes);
   const key = seedBuf.slice(SeedBytes + CRHBytes);
@@ -101,8 +104,9 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
   packPk(pk, rho, t1);
 
   // Compute H(rho, t1) and write secret key
-  const hasher = createHash('shake256', { outputLength: SeedBytes });
-  hasher.update(pk);
+  const hasher = new SHAKE(256);
+  outputLength = SeedBytes;
+  hasher.update(Buffer.from(pk, 'hex'));
   const tr = new Uint8Array(hasher.digest());
   packSk(sk, rho, tr, key, t0, s1, s2);
 
@@ -136,17 +140,19 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
 
   unpackSk(rho, tr, key, t0, s1, s2, sk);
 
-  state = createHash('shake256', { outputLength: CRHBytes });
-  state.update(tr);
-  state.update(m);
-  const mu = new Uint8Array(state.digest());
+  state = new SHAKE(256);
+  let outputLength = CRHBytes;
+  state.update(Buffer.from(tr, 'hex'));
+  state.update(Buffer.from(m, 'hex'));
+  const mu = new Uint8Array(state.digest({ buffer: Buffer.alloc(outputLength) }));
 
   if (randomizedSigning) rhoPrime = new Uint8Array(randomBytes(CRHBytes));
   else {
-    state = createHash('shake256', { outputLength: CRHBytes });
-    state.update(key);
-    state.update(mu);
-    rhoPrime.set(state.digest());
+    state = new SHAKE(256);
+    outputLength = CRHBytes;
+    state.update(Buffer.from(key, 'hex'));
+    state.update(Buffer.from(mu, 'hex'));
+    rhoPrime.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
   }
 
   polyVecMatrixExpand(mat, rho);
@@ -169,10 +175,11 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
     polyVecKDecompose(w1, w0, w1);
     polyVecKPackW1(sig, w1);
 
-    state = createHash('shake256', { outputLength: SeedBytes });
-    state.update(mu);
-    state.update(sig.slice(0, K * PolyW1PackedBytes));
-    sig.set(state.digest());
+    state = new SHAKE(256);
+    outputLength = SeedBytes;
+    state.update(Buffer.from(mu, 'hex'));
+    state.update(Buffer.from(sig.slice(0, K * PolyW1PackedBytes)), 'hex');
+    sig.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
 
     polyChallenge(cp, sig);
     polyNTT(cp);
@@ -257,14 +264,16 @@ export function cryptoSignVerify(sig, m, pk) {
   }
 
   /* Compute CRH(H(rho, t1), msg) */
-  let state = createHash('shake256', { outputLength: SeedBytes });
+  let state = new SHAKE(256);
+  let outputLength = SeedBytes;
   state.update(pk.slice(0, CryptoPublicKeyBytes));
-  mu.set(state.digest());
+  mu.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
 
-  state = createHash('shake256', { outputLength: CRHBytes });
-  state.update(mu.slice(0, SeedBytes));
-  state.update(m);
-  mu.set(state.digest());
+  state = new SHAKE(256);
+  outputLength = CRHBytes;
+  state.update(Buffer.from(mu.slice(0, SeedBytes), 'hex'));
+  state.update(Buffer.from(m, 'hex'));
+  mu.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
 
   /* Matrix-vector multiplication; compute Az - c2^dt1 */
   polyChallenge(cp, c);
@@ -288,10 +297,11 @@ export function cryptoSignVerify(sig, m, pk) {
   polyVecKPackW1(buf, w1);
 
   /* Call random oracle and verify challenge */
-  state = createHash('shake256', { outputLength: SeedBytes });
-  state.update(mu);
-  state.update(buf);
-  c2.set(state.digest());
+  state = new SHAKE(256);
+  outputLength = SeedBytes;
+  state.update(Buffer.from(mu, 'hex'));
+  state.update(Buffer.from(buf, 'hex'));
+  c2.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
 
   for (i = 0; i < SeedBytes; ++i) if (c[i] !== c2[i]) return false;
   return true;
