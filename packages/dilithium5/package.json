@@ -1,6 +1,6 @@
 {
   "name": "@theqrl/dilithium5",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Dilithium-5 cryptography",
   "keywords": [
     "dilithium",
@@ -36,6 +36,7 @@
     "url": "https://github.com/theQRL/qrypto.js/issues"
   },
   "devDependencies": {
+    "c8": "^7.13.0",
     "chai": "^4.3.7",
     "codecov": "^3.8.3",
     "eslint": "^8.33.0",
@@ -45,7 +46,9 @@
     "eslint-plugin-prettier": "^4.2.1",
     "esm": "^3.2.25",
     "mocha": "^10.2.0",
-    "c8": "^7.13.0",
     "prettier": "^2.8.3"
+  },
+  "dependencies": {
+    "sha3": "^2.1.4"
   }
 }
