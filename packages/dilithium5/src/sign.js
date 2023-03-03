@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'randombytes'; // eslint-disable-line import/no-extraneous-dependencies
 import { SHAKE } from 'sha3'; // eslint-disable-line import/no-extraneous-dependencies
 
 import {

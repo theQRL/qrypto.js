@@ -1,6 +1,6 @@
 {
   "name": "@theqrl/dilithium5",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Dilithium-5 cryptography",
   "keywords": [
     "dilithium",
@@ -49,6 +49,7 @@
     "prettier": "^2.8.3"
   },
   "dependencies": {
+    "randombytes": "^2.1.0",
     "sha3": "^2.1.4"
   }
 }
