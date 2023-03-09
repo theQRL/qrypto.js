@@ -22,6 +22,16 @@ describe('cryptoSignKeypair', () => {
   });
 });
 
+describe('cryptoSignKeypair with null seed generates pk/sk', () => {
+  it('should generate the expected pk and sk', () => {
+    const pk = new Uint8Array(CryptoPublicKeyBytes);
+    const sk = new Uint8Array(CryptoSecretKeyBytes);
+    cryptoSignKeypair(null, pk, sk);
+    expect(pk.length).to.equal(CryptoPublicKeyBytes);
+    expect(sk.length).to.equal(CryptoSecretKeyBytes);
+  });
+});
+
 describe('cryptoSign', () => {
   it('should return the expected signature message', () => {
     const msg = Buffer.from(MESSAGE, 'hex');

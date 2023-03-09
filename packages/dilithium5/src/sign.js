@@ -47,7 +47,7 @@ import {
 import { Poly, polyChallenge, polyNTT } from './poly.js';
 import { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } from './packing.js';
 
-const { randomBytes } = pkg;
+const randomBytes = pkg;
 
 export function cryptoSignKeypair(passedSeed, pk, sk) {
   try {
@@ -72,7 +72,7 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
   const t0 = new PolyVecK();
 
   // Get randomness for rho, rhoPrime and key
-  const seed = passedSeed || new Uint8Array(randomBytes(SeedBytes));
+  const seed = passedSeed || randomBytes(SeedBytes);
 
   const state = new SHAKE(256);
   let outputLength = 2 * SeedBytes + CRHBytes;
