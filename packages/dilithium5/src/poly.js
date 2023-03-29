@@ -1,4 +1,4 @@
-import {
+const {
   D,
   ETA,
   GAMMA1,
@@ -12,21 +12,23 @@ import {
   Stream128BlockBytes,
   Stream256BlockBytes,
   TAU,
-} from './const.js';
-import {
+} = require('./const.js');
+
+const {
   KeccakState,
   shake128SqueezeBlocks,
   shake256Absorb,
   shake256Finalize,
   shake256Init,
   shake256SqueezeBlocks,
-} from './fips202.js';
-import { dilithiumShake128StreamInit, dilithiumShake256StreamInit } from './symmetric-shake.js';
-import { invNTTToMont, ntt } from './ntt.js';
-import { cAddQ, montgomeryReduce, reduce32 } from './reduce.js';
-import { decompose, makeHint, power2round, useHint } from './rounding.js';
+} = require('./fips202.js');
 
-export class Poly {
+const { dilithiumShake128StreamInit, dilithiumShake256StreamInit } = require('./symmetric-shake.js');
+const { invNTTToMont, ntt } = require('./ntt.js');
+const { cAddQ, montgomeryReduce, reduce32 } = require('./reduce.js');
+const { decompose, makeHint, power2round, useHint } = require('./rounding.js');
+
+class Poly {
   constructor() {
     this.coeffs = new Int32Array(N);
   }
@@ -38,55 +40,55 @@ export class Poly {
   }
 }
 
-export function polyReduce(aP) {
+function polyReduce(aP) {
   const a = aP;
   for (let i = 0; i < N; ++i) a.coeffs[i] = reduce32(a.coeffs[i]);
 }
 
-export function polyCAddQ(aP) {
+function polyCAddQ(aP) {
   const a = aP;
   for (let i = 0; i < N; ++i) a.coeffs[i] = cAddQ(a.coeffs[i]);
 }
 
-export function polyAdd(cP, a, b) {
+function polyAdd(cP, a, b) {
   const c = cP;
   for (let i = 0; i < N; ++i) c.coeffs[i] = a.coeffs[i] + b.coeffs[i];
 }
 
-export function polySub(cP, a, b) {
+function polySub(cP, a, b) {
   const c = cP;
   for (let i = 0; i < N; ++i) c.coeffs[i] = a.coeffs[i] - b.coeffs[i];
 }
 
-export function polyShiftL(aP) {
+function polyShiftL(aP) {
   const a = aP;
   for (let i = 0; i < N; ++i) a.coeffs[i] <<= D;
 }
 
-export function polyNTT(a) {
+function polyNTT(a) {
   ntt(a.coeffs);
 }
 
-export function polyInvNTTToMont(a) {
+function polyInvNTTToMont(a) {
   invNTTToMont(a.coeffs);
 }
 
-export function polyPointWiseMontgomery(cP, a, b) {
+function polyPointWiseMontgomery(cP, a, b) {
   const c = cP;
   for (let i = 0; i < N; ++i) c.coeffs[i] = Number(montgomeryReduce(BigInt(a.coeffs[i]) * BigInt(b.coeffs[i])));
 }
 
-export function polyPower2round(a1p, a0, a) {
+function polyPower2round(a1p, a0, a) {
   const a1 = a1p;
   for (let i = 0; i < N; ++i) a1.coeffs[i] = power2round(a0.coeffs, i, a.coeffs[i]);
 }
 
-export function polyDecompose(a1p, a0, a) {
+function polyDecompose(a1p, a0, a) {
   const a1 = a1p;
   for (let i = 0; i < N; ++i) a1.coeffs[i] = decompose(a0.coeffs, i, a.coeffs[i]);
 }
 
-export function polyMakeHint(hp, a0, a1) {
+function polyMakeHint(hp, a0, a1) {
   let s = 0;
   const h = hp;
   for (let i = 0; i < N; ++i) {
@@ -97,14 +99,14 @@ export function polyMakeHint(hp, a0, a1) {
   return s;
 }
 
-export function polyUseHint(bp, a, h) {
+function polyUseHint(bp, a, h) {
   const b = bp;
   for (let i = 0; i < N; ++i) {
     b.coeffs[i] = useHint(a.coeffs[i], h.coeffs[i]);
   }
 }
 
-export function polyChkNorm(a, b) {
+function polyChkNorm(a, b) {
   if (b > Math.floor((Q - 1) / 8)) {
     return 1;
   }
@@ -121,7 +123,7 @@ export function polyChkNorm(a, b) {
   return 0;
 }
 
-export function rejUniform(ap, aOffset, len, buf, bufLen) {
+function rejUniform(ap, aOffset, len, buf, bufLen) {
   let ctr = 0;
   let pos = 0;
   const a = ap;
@@ -139,7 +141,7 @@ export function rejUniform(ap, aOffset, len, buf, bufLen) {
   return ctr;
 }
 
-export function polyUniform(a, seed, nonce) {
+function polyUniform(a, seed, nonce) {
   let off = 0;
   let bufLen = PolyUniformNBlocks * Stream128BlockBytes;
   const buf = new Uint8Array(PolyUniformNBlocks * Stream128BlockBytes + 2);
@@ -160,7 +162,7 @@ export function polyUniform(a, seed, nonce) {
   }
 }
 
-export function rejEta(aP, aOffset, len, buf, bufLen) {
+function rejEta(aP, aOffset, len, buf, bufLen) {
   let ctr;
   let pos;
   let t0;
@@ -185,7 +187,7 @@ export function rejEta(aP, aOffset, len, buf, bufLen) {
   return ctr;
 }
 
-export function polyUniformEta(a, seed, nonce) {
+function polyUniformEta(a, seed, nonce) {
   let ctr;
   const bufLen = PolyUniformETANBlocks * Stream256BlockBytes;
   const buf = new Uint8Array(bufLen);
@@ -201,7 +203,7 @@ export function polyUniformEta(a, seed, nonce) {
   }
 }
 
-export function polyZUnpack(rP, a, aOffset) {
+function polyZUnpack(rP, a, aOffset) {
   const r = rP;
   for (let i = 0; i < N / 2; ++i) {
     r.coeffs[2 * i] = a[aOffset + 5 * i];
@@ -219,7 +221,7 @@ export function polyZUnpack(rP, a, aOffset) {
   }
 }
 
-export function polyUniformGamma1(a, seed, nonce) {
+function polyUniformGamma1(a, seed, nonce) {
   const buf = new Uint8Array(PolyUniformGamma1NBlocks * Stream256BlockBytes);
 
   const state = new KeccakState();
@@ -228,7 +230,7 @@ export function polyUniformGamma1(a, seed, nonce) {
   polyZUnpack(a, buf, 0);
 }
 
-export function polyChallenge(cP, seed) {
+function polyChallenge(cP, seed) {
   let b;
   let pos;
   const c = cP;
@@ -265,7 +267,7 @@ export function polyChallenge(cP, seed) {
   }
 }
 
-export function polyEtaPack(rP, rOffset, a) {
+function polyEtaPack(rP, rOffset, a) {
   const t = new Uint8Array(8);
   const r = rP;
   for (let i = 0; i < N / 8; ++i) {
@@ -284,7 +286,7 @@ export function polyEtaPack(rP, rOffset, a) {
   }
 }
 
-export function polyEtaUnpack(rP, a, aOffset) {
+function polyEtaUnpack(rP, a, aOffset) {
   const r = rP;
   for (let i = 0; i < N / 8; ++i) {
     r.coeffs[8 * i] = (a[aOffset + 3 * i] >> 0) & 7;
@@ -307,7 +309,7 @@ export function polyEtaUnpack(rP, a, aOffset) {
   }
 }
 
-export function polyT1Pack(rP, rOffset, a) {
+function polyT1Pack(rP, rOffset, a) {
   const r = rP;
   for (let i = 0; i < N / 4; ++i) {
     r[rOffset + 5 * i] = a.coeffs[4 * i] >> 0;
@@ -318,7 +320,7 @@ export function polyT1Pack(rP, rOffset, a) {
   }
 }
 
-export function polyT1Unpack(rP, a, aOffset) {
+function polyT1Unpack(rP, a, aOffset) {
   const r = rP;
   for (let i = 0; i < N / 4; ++i) {
     r.coeffs[4 * i] = ((a[aOffset + 5 * i] >> 0) | (a[aOffset + 5 * i + 1] << 8)) & 0x3ff;
@@ -328,7 +330,7 @@ export function polyT1Unpack(rP, a, aOffset) {
   }
 }
 
-export function polyT0Pack(rP, rOffset, a) {
+function polyT0Pack(rP, rOffset, a) {
   const t = new Uint32Array(8);
   const r = rP;
   for (let i = 0; i < N / 8; ++i) {
@@ -364,7 +366,7 @@ export function polyT0Pack(rP, rOffset, a) {
   }
 }
 
-export function polyT0Unpack(rP, a, aOffset) {
+function polyT0Unpack(rP, a, aOffset) {
   const r = rP;
   for (let i = 0; i < N / 8; ++i) {
     r.coeffs[8 * i] = a[aOffset + 13 * i];
@@ -414,7 +416,7 @@ export function polyT0Unpack(rP, a, aOffset) {
   }
 }
 
-export function polyZPack(rP, rOffset, a) {
+function polyZPack(rP, rOffset, a) {
   const t = new Uint32Array(4);
   const r = rP;
   for (let i = 0; i < N / 2; ++i) {
@@ -430,9 +432,41 @@ export function polyZPack(rP, rOffset, a) {
   }
 }
 
-export function polyW1Pack(rP, rOffset, a) {
+function polyW1Pack(rP, rOffset, a) {
   const r = rP;
   for (let i = 0; i < N / 2; ++i) {
     r[rOffset + i] = a.coeffs[2 * i] | (a.coeffs[2 * i + 1] << 4);
   }
 }
+
+module.exports = {
+  polyW1Pack,
+  polyZPack,
+  polyT0Unpack,
+  polyT0Pack,
+  polyT1Unpack,
+  polyT1Pack,
+  polyEtaPack,
+  polyEtaUnpack,
+  polyChallenge,
+  polyUniformGamma1,
+  polyZUnpack,
+  polyUniformEta,
+  rejEta,
+  polyUniform,
+  rejUniform,
+  polyChkNorm,
+  polyUseHint,
+  polyMakeHint,
+  polyDecompose,
+  polyPower2round,
+  polyPointWiseMontgomery,
+  polyInvNTTToMont,
+  polyNTT,
+  polyShiftL,
+  polyAdd,
+  polySub,
+  polyCAddQ,
+  polyReduce,
+  Poly,
+};

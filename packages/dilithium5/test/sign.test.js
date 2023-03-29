@@ -1,6 +1,12 @@
-import { expect } from 'chai';
-import { CryptoPublicKeyBytes, CryptoSecretKeyBytes, CryptoBytes } from '../src/const.js';
-import { cryptoSign, cryptoSignKeypair, cryptoSignOpen, cryptoSignVerify, cryptoSignSignature } from '../src/sign.js';
+const { expect } = require('chai');
+const { CryptoPublicKeyBytes, CryptoSecretKeyBytes, CryptoBytes } = require('../src/const.js');
+const {
+  cryptoSign,
+  cryptoSignKeypair,
+  cryptoSignOpen,
+  cryptoSignVerify,
+  cryptoSignSignature,
+} = require('../src/sign.js');
 
 const HASHEDSEED = '8078f74eb51029b5b96cfbe2bd0ab8433252bf4c6c8fbad92789add5e3cca216';
 const PK =

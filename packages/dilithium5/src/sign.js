@@ -1,7 +1,7 @@
-import pkg from 'randombytes'; // eslint-disable-line import/no-extraneous-dependencies
-import { SHAKE } from 'sha3'; // eslint-disable-line import/no-extraneous-dependencies
+const randomBytes = require('randombytes'); // eslint-disable-line import/no-extraneous-dependencies
+const { SHAKE } = require('sha3'); // eslint-disable-line import/no-extraneous-dependencies
 
-import {
+const {
   PolyVecK,
   polyVecKAdd,
   polyVecKCAddQ,
@@ -29,8 +29,8 @@ import {
   polyVecLUniformGamma1,
   polyVecMatrixExpand,
   polyVecMatrixPointWiseMontgomery,
-} from './polyvec.js';
-import {
+} = require('./polyvec.js');
+const {
   BETA,
   CRHBytes,
   CryptoBytes,
@@ -43,13 +43,11 @@ import {
   OMEGA,
   PolyW1PackedBytes,
   SeedBytes,
-} from './const.js';
-import { Poly, polyChallenge, polyNTT } from './poly.js';
-import { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } from './packing.js';
+} = require('./const.js');
+const { Poly, polyChallenge, polyNTT } = require('./poly.js');
+const { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } = require('./packing.js');
 
-const randomBytes = pkg;
-
-export function cryptoSignKeypair(passedSeed, pk, sk) {
+function cryptoSignKeypair(passedSeed, pk, sk) {
   try {
     if (pk.length !== CryptoPublicKeyBytes) {
       throw new Error(`invalid pk length ${pk.length} | Expected length ${CryptoPublicKeyBytes}`);
@@ -115,7 +113,7 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
   return seed;
 }
 
-export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
+function cryptoSignSignature(sig, m, sk, randomizedSigning) {
   if (sk.length !== CryptoSecretKeyBytes) {
     throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
   }
@@ -221,7 +219,7 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
   }
 }
 
-export function cryptoSign(msg, sk, randomizedSigning) {
+function cryptoSign(msg, sk, randomizedSigning) {
   const sm = new Uint8Array(CryptoBytes + msg.length);
   const mLen = msg.length;
   for (let i = 0; i < mLen; ++i) {
@@ -235,7 +233,7 @@ export function cryptoSign(msg, sk, randomizedSigning) {
   return sm;
 }
 
-export function cryptoSignVerify(sig, m, pk) {
+function cryptoSignVerify(sig, m, pk) {
   let i;
   const buf = new Uint8Array(K * PolyW1PackedBytes);
   const rho = new Uint8Array(SeedBytes);
@@ -309,7 +307,7 @@ export function cryptoSignVerify(sig, m, pk) {
   return true;
 }
 
-export function cryptoSignOpen(sm, pk) {
+function cryptoSignOpen(sm, pk) {
   if (sm.length < CryptoBytes) {
     return undefined;
   }
@@ -322,3 +320,11 @@ export function cryptoSignOpen(sm, pk) {
 
   return msg;
 }
+
+module.exports = {
+  cryptoSignKeypair,
+  cryptoSignSignature,
+  cryptoSign,
+  cryptoSignVerify,
+  cryptoSignOpen,
+};

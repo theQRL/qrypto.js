@@ -1,4 +1,4 @@
-import {
+const {
   K,
   L,
   N,
@@ -8,8 +8,8 @@ import {
   PolyT1PackedBytes,
   PolyZPackedBytes,
   SeedBytes,
-} from './const.js';
-import {
+} = require('./const.js');
+const {
   polyEtaPack,
   polyEtaUnpack,
   polyT0Pack,
@@ -18,9 +18,9 @@ import {
   polyT1Unpack,
   polyZPack,
   polyZUnpack,
-} from './poly.js';
+} = require('./poly.js');
 
-export function packPk(pkp, rho, t1) {
+function packPk(pkp, rho, t1) {
   const pk = pkp;
   for (let i = 0; i < SeedBytes; ++i) {
     pk[i] = rho[i];
@@ -30,7 +30,7 @@ export function packPk(pkp, rho, t1) {
   }
 }
 
-export function unpackPk(rhop, t1, pk) {
+function unpackPk(rhop, t1, pk) {
   const rho = rhop;
   for (let i = 0; i < SeedBytes; ++i) {
     rho[i] = pk[i];
@@ -41,7 +41,7 @@ export function unpackPk(rhop, t1, pk) {
   }
 }
 
-export function packSk(skp, rho, tr, key, t0, s1, s2) {
+function packSk(skp, rho, tr, key, t0, s1, s2) {
   let skOffset = 0;
   const sk = skp;
   for (let i = 0; i < SeedBytes; ++i) {
@@ -74,7 +74,7 @@ export function packSk(skp, rho, tr, key, t0, s1, s2) {
   }
 }
 
-export function unpackSk(rhoP, trP, keyP, t0, s1, s2, sk) {
+function unpackSk(rhoP, trP, keyP, t0, s1, s2, sk) {
   let skOffset = 0;
   const rho = rhoP;
   const tr = trP;
@@ -109,7 +109,7 @@ export function unpackSk(rhoP, trP, keyP, t0, s1, s2, sk) {
   }
 }
 
-export function packSig(sigP, c, z, h) {
+function packSig(sigP, c, z, h) {
   let sigOffset = 0;
   const sig = sigP;
   for (let i = 0; i < SeedBytes; ++i) {
@@ -138,7 +138,7 @@ export function packSig(sigP, c, z, h) {
   }
 }
 
-export function unpackSig(cP, z, hP, sig) {
+function unpackSig(cP, z, hP, sig) {
   let sigOffset = 0;
   const c = cP;
   const h = hP;
@@ -183,3 +183,12 @@ export function unpackSig(cP, z, hP, sig) {
 
   return 0;
 }
+
+module.exports = {
+  packPk,
+  unpackPk,
+  packSk,
+  unpackSk,
+  packSig,
+  unpackSig,
+};

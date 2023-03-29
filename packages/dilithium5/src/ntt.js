@@ -1,7 +1,7 @@
-import { N, zetas } from './const.js';
-import { montgomeryReduce } from './reduce.js';
+const { N, zetas } = require('./const.js');
+const { montgomeryReduce } = require('./reduce.js');
 
-export function ntt(a) {
+function ntt(a) {
   let k = 0;
   let j = 0;
 
@@ -17,7 +17,7 @@ export function ntt(a) {
   }
 }
 
-export function invNTTToMont(a) {
+function invNTTToMont(a) {
   const f = 41978n; // mont^2/256
   let j = 0;
   let k = 256;
@@ -38,3 +38,8 @@ export function invNTTToMont(a) {
     a[j] = Number(montgomeryReduce(BigInt.asIntN(64, f * BigInt(a[j]))));
   }
 }
+
+module.exports = {
+  ntt,
+  invNTTToMont,
+};
