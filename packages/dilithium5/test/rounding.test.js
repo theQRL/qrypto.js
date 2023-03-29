@@ -1,5 +1,5 @@
-import { expect } from 'chai';
-import { makeHint } from '../src/rounding.js';
+const { expect } = require('chai');
+const { makeHint } = require('../src/rounding.js');
 
 describe('rounding', () => {
   it('makeHint', () => {

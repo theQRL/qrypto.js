@@ -1,4 +1,4 @@
-import {
+const {
   Poly,
   polyAdd,
   polyCAddQ,
@@ -17,16 +17,16 @@ import {
   polyUniformGamma1,
   polyUseHint,
   polyW1Pack,
-} from './poly.js';
-import { CRHBytes, K, L, PolyW1PackedBytes, SeedBytes } from './const.js';
+} = require('./poly.js');
+const { CRHBytes, K, L, PolyW1PackedBytes, SeedBytes } = require('./const.js');
 
-export class PolyVecK {
+class PolyVecK {
   constructor() {
     this.vec = new Array(K).fill().map((_) => new Poly());
   }
 }
 
-export class PolyVecL {
+class PolyVecL {
   constructor() {
     this.vec = new Array(L).fill().map((_) => new Poly());
   }
@@ -38,7 +38,7 @@ export class PolyVecL {
   }
 }
 
-export function polyVecMatrixExpand(mat, rho) {
+function polyVecMatrixExpand(mat, rho) {
   if (rho.length !== SeedBytes) {
     throw new Error(`invalid rho length ${rho.length} | Expected length ${SeedBytes}`);
   }
@@ -49,13 +49,13 @@ export function polyVecMatrixExpand(mat, rho) {
   }
 }
 
-export function polyVecMatrixPointWiseMontgomery(t, mat, v) {
+function polyVecMatrixPointWiseMontgomery(t, mat, v) {
   for (let i = 0; i < K; ++i) {
     polyVecLPointWiseAccMontgomery(t.vec[i], mat[i], v);
   }
 }
 
-export function polyVecLUniformEta(v, seed, nonce) {
+function polyVecLUniformEta(v, seed, nonce) {
   if (seed.length !== CRHBytes) {
     throw new Error(`invalid seed length ${seed.length} | Expected length ${CRHBytes}`);
   }
@@ -64,7 +64,7 @@ export function polyVecLUniformEta(v, seed, nonce) {
   }
 }
 
-export function polyVecLUniformGamma1(v, seed, nonce) {
+function polyVecLUniformGamma1(v, seed, nonce) {
   if (seed.length !== CRHBytes) {
     throw new Error(`invalid seed length ${seed.length} | Expected length ${CRHBytes}`);
   }
@@ -73,31 +73,31 @@ export function polyVecLUniformGamma1(v, seed, nonce) {
   }
 }
 
-export function polyVecLReduce(v) {
+function polyVecLReduce(v) {
   for (let i = 0; i < L; i++) {
     polyReduce(v.vec[i]);
   }
 }
 
-export function polyVecLAdd(w, u, v) {
+function polyVecLAdd(w, u, v) {
   for (let i = 0; i < L; ++i) {
     polyAdd(w.vec[i], u.vec[i], v.vec[i]);
   }
 }
 
-export function polyVecLNTT(v) {
+function polyVecLNTT(v) {
   for (let i = 0; i < L; ++i) {
     polyNTT(v.vec[i]);
   }
 }
 
-export function polyVecLInvNTTToMont(v) {
+function polyVecLInvNTTToMont(v) {
   for (let i = 0; i < L; ++i) {
     polyInvNTTToMont(v.vec[i]);
   }
 }
 
-export function polyVecLPointWisePolyMontgomery(r, a, v) {
+function polyVecLPointWisePolyMontgomery(r, a, v) {
   for (let i = 0; i < L; ++i) {
     polyPointWiseMontgomery(r.vec[i], a, v.vec[i]);
   }
@@ -112,7 +112,7 @@ function polyVecLPointWiseAccMontgomery(w, u, v) {
   }
 }
 
-export function polyVecLChkNorm(v, bound) {
+function polyVecLChkNorm(v, bound) {
   for (let i = 0; i < L; i++) {
     if (polyChkNorm(v.vec[i], bound) !== 0) {
       return 1;
@@ -121,61 +121,61 @@ export function polyVecLChkNorm(v, bound) {
   return 0;
 }
 
-export function polyVecKUniformEta(v, seed, nonce) {
+function polyVecKUniformEta(v, seed, nonce) {
   for (let i = 0; i < K; ++i) {
     polyUniformEta(v.vec[i], seed, nonce++);
   }
 }
 
-export function polyVecKReduce(v) {
+function polyVecKReduce(v) {
   for (let i = 0; i < K; ++i) {
     polyReduce(v.vec[i]);
   }
 }
 
-export function polyVecKCAddQ(v) {
+function polyVecKCAddQ(v) {
   for (let i = 0; i < K; ++i) {
     polyCAddQ(v.vec[i]);
   }
 }
 
-export function polyVecKAdd(w, u, v) {
+function polyVecKAdd(w, u, v) {
   for (let i = 0; i < K; ++i) {
     polyAdd(w.vec[i], u.vec[i], v.vec[i]);
   }
 }
 
-export function polyVecKSub(w, u, v) {
+function polyVecKSub(w, u, v) {
   for (let i = 0; i < K; ++i) {
     polySub(w.vec[i], u.vec[i], v.vec[i]);
   }
 }
 
-export function polyVecKShiftL(v) {
+function polyVecKShiftL(v) {
   for (let i = 0; i < K; ++i) {
     polyShiftL(v.vec[i]);
   }
 }
 
-export function polyVecKNTT(v) {
+function polyVecKNTT(v) {
   for (let i = 0; i < K; i++) {
     polyNTT(v.vec[i]);
   }
 }
 
-export function polyVecKInvNTTToMont(v) {
+function polyVecKInvNTTToMont(v) {
   for (let i = 0; i < K; i++) {
     polyInvNTTToMont(v.vec[i]);
   }
 }
 
-export function polyVecKPointWisePolyMontgomery(r, a, v) {
+function polyVecKPointWisePolyMontgomery(r, a, v) {
   for (let i = 0; i < K; i++) {
     polyPointWiseMontgomery(r.vec[i], a, v.vec[i]);
   }
 }
 
-export function polyVecKChkNorm(v, bound) {
+function polyVecKChkNorm(v, bound) {
   for (let i = 0; i < K; i++) {
     if (polyChkNorm(v.vec[i], bound) !== 0) {
       return 1;
@@ -184,19 +184,19 @@ export function polyVecKChkNorm(v, bound) {
   return 0;
 }
 
-export function polyVecKPower2round(v1, v0, v) {
+function polyVecKPower2round(v1, v0, v) {
   for (let i = 0; i < K; i++) {
     polyPower2round(v1.vec[i], v0.vec[i], v.vec[i]);
   }
 }
 
-export function polyVecKDecompose(v1, v0, v) {
+function polyVecKDecompose(v1, v0, v) {
   for (let i = 0; i < K; i++) {
     polyDecompose(v1.vec[i], v0.vec[i], v.vec[i]);
   }
 }
 
-export function polyVecKMakeHint(h, v0, v1) {
+function polyVecKMakeHint(h, v0, v1) {
   let s = 0;
   for (let i = 0; i < K; i++) {
     s += polyMakeHint(h.vec[i], v0.vec[i], v1.vec[i]);
@@ -204,14 +204,45 @@ export function polyVecKMakeHint(h, v0, v1) {
   return s;
 }
 
-export function polyVecKUseHint(w, u, h) {
+function polyVecKUseHint(w, u, h) {
   for (let i = 0; i < K; ++i) {
     polyUseHint(w.vec[i], u.vec[i], h.vec[i]);
   }
 }
 
-export function polyVecKPackW1(r, w1) {
+function polyVecKPackW1(r, w1) {
   for (let i = 0; i < K; ++i) {
     polyW1Pack(r, i * PolyW1PackedBytes, w1.vec[i]);
   }
 }
+
+module.exports = {
+  polyVecLUniformEta,
+  polyVecLUniformGamma1,
+  polyVecLReduce,
+  polyVecLAdd,
+  polyVecLNTT,
+  polyVecLInvNTTToMont,
+  polyVecLPointWisePolyMontgomery,
+  polyVecLPointWiseAccMontgomery,
+  polyVecLChkNorm,
+  polyVecKUniformEta,
+  polyVecKReduce,
+  polyVecKCAddQ,
+  polyVecKAdd,
+  polyVecKSub,
+  polyVecKShiftL,
+  polyVecKNTT,
+  polyVecKInvNTTToMont,
+  polyVecKPointWisePolyMontgomery,
+  polyVecKChkNorm,
+  polyVecKPower2round,
+  polyVecKDecompose,
+  polyVecKMakeHint,
+  polyVecKUseHint,
+  polyVecKPackW1,
+  polyVecMatrixPointWiseMontgomery,
+  PolyVecL,
+  PolyVecK,
+  polyVecMatrixExpand,
+};

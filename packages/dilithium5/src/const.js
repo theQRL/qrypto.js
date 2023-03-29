@@ -1,41 +1,40 @@
-export const Shake128Rate = 168;
-export const Shake256Rate = 136;
-export const Stream128BlockBytes = Shake128Rate;
-export const Stream256BlockBytes = Shake256Rate;
+const Shake128Rate = 168;
+const Shake256Rate = 136;
+const Stream128BlockBytes = Shake128Rate;
+const Stream256BlockBytes = Shake256Rate;
 
-export const SeedBytes = 32;
-export const CRHBytes = 64;
-export const N = 256;
-export const Q = 8380417;
-export const QInv = 58728449;
-export const D = 13;
+const SeedBytes = 32;
+const CRHBytes = 64;
+const N = 256;
+const Q = 8380417;
+const QInv = 58728449;
+const D = 13;
 
-export const K = 8;
-export const L = 7;
-export const ETA = 2;
-export const TAU = 60;
-export const BETA = 120;
-export const GAMMA1 = 1 << 19;
-export const GAMMA2 = Math.floor((Q - 1) / 32);
-export const OMEGA = 75;
+const K = 8;
+const L = 7;
+const ETA = 2;
+const TAU = 60;
+const BETA = 120;
+const GAMMA1 = 1 << 19;
+const GAMMA2 = Math.floor((Q - 1) / 32);
+const OMEGA = 75;
 
-export const PolyT1PackedBytes = 320;
-export const PolyT0PackedBytes = 416;
-export const PolyETAPackedBytes = 96;
-export const PolyZPackedBytes = 640;
-export const PolyVecHPackedBytes = OMEGA + K;
-export const PolyW1PackedBytes = 128;
+const PolyT1PackedBytes = 320;
+const PolyT0PackedBytes = 416;
+const PolyETAPackedBytes = 96;
+const PolyZPackedBytes = 640;
+const PolyVecHPackedBytes = OMEGA + K;
+const PolyW1PackedBytes = 128;
 
-export const CryptoPublicKeyBytes = SeedBytes + K * PolyT1PackedBytes;
-export const CryptoSecretKeyBytes =
-  3 * SeedBytes + L * PolyETAPackedBytes + K * PolyETAPackedBytes + K * PolyT0PackedBytes;
-export const CryptoBytes = SeedBytes + L * PolyZPackedBytes + PolyVecHPackedBytes;
+const CryptoPublicKeyBytes = SeedBytes + K * PolyT1PackedBytes;
+const CryptoSecretKeyBytes = 3 * SeedBytes + L * PolyETAPackedBytes + K * PolyETAPackedBytes + K * PolyT0PackedBytes;
+const CryptoBytes = SeedBytes + L * PolyZPackedBytes + PolyVecHPackedBytes;
 
-export const PolyUniformNBlocks = Math.floor((768 + Stream128BlockBytes - 1) / Stream128BlockBytes);
-export const PolyUniformETANBlocks = Math.floor((136 + Stream256BlockBytes - 1) / Stream256BlockBytes);
-export const PolyUniformGamma1NBlocks = Math.floor((PolyZPackedBytes + Stream256BlockBytes - 1) / Stream256BlockBytes);
+const PolyUniformNBlocks = Math.floor((768 + Stream128BlockBytes - 1) / Stream128BlockBytes);
+const PolyUniformETANBlocks = Math.floor((136 + Stream256BlockBytes - 1) / Stream256BlockBytes);
+const PolyUniformGamma1NBlocks = Math.floor((PolyZPackedBytes + Stream256BlockBytes - 1) / Stream256BlockBytes);
 
-export const zetas = [
+const zetas = [
   0, 25847, -2608894, -518909, 237124, -777960, -876248, 466468, 1826347, 2353451, -359251, -2091905, 3119733, -2884855,
   3111497, 2680103, 2725464, 1024112, -1079900, 3585928, -549488, -1119584, 2619752, -2108549, -2118186, -3859737,
   -1399561, -3277672, 1757237, -19422, 4010497, 280005, 2706023, 95776, 3077325, 3530437, -1661693, -3592148, -2537516,
@@ -58,3 +57,37 @@ export const zetas = [
   -3833893, -2939036, -2235985, -420899, -2286327, 183443, -976891, 1612842, -3545687, -554416, 3919660, -48306,
   -1362209, 3937738, 1400424, -846154, 1976782,
 ];
+
+module.exports = {
+  Shake128Rate,
+  Shake256Rate,
+  Stream128BlockBytes,
+  Stream256BlockBytes,
+  SeedBytes,
+  CRHBytes,
+  N,
+  Q,
+  QInv,
+  D,
+  K,
+  L,
+  ETA,
+  TAU,
+  BETA,
+  GAMMA1,
+  GAMMA2,
+  OMEGA,
+  PolyT1PackedBytes,
+  PolyT0PackedBytes,
+  PolyETAPackedBytes,
+  PolyZPackedBytes,
+  PolyVecHPackedBytes,
+  PolyW1PackedBytes,
+  CryptoPublicKeyBytes,
+  CryptoSecretKeyBytes,
+  CryptoBytes,
+  PolyUniformNBlocks,
+  PolyUniformETANBlocks,
+  PolyUniformGamma1NBlocks,
+  zetas,
+};

@@ -1,6 +1,6 @@
 {
   "name": "@theqrl/dilithium5",
-  "version": "0.0.6",
+  "version": "0.0.9",
   "description": "Dilithium-5 cryptography",
   "keywords": [
     "dilithium",
@@ -11,7 +11,6 @@
   "homepage": "https://github.com/theQRL/qrypto.js#readme",
   "license": "MIT",
   "main": "src/index.js",
-  "type": "module",
   "directories": {
     "lib": "src",
     "test": "test"
@@ -44,7 +43,6 @@
     "eslint-config-prettier": "^8.6.0",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-prettier": "^4.2.1",
-    "esm": "^3.2.25",
     "mocha": "^10.2.0",
     "prettier": "^2.8.3"
   },

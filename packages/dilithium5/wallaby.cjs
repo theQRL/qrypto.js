@@ -4,9 +4,6 @@ module.exports = function (wallaby) {
     env: {
       type: 'node',
       runner: 'node',
-      params: {
-        runner: `-r ${require.resolve('esm')}`,
-      }
     },
     files: ['src/**/*.js'],
     tests: ['test/**/*.js'],
