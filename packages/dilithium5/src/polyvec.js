@@ -22,13 +22,13 @@ const { CRHBytes, K, L, PolyW1PackedBytes, SeedBytes } = require('./const.js');
 
 class PolyVecK {
   constructor() {
-    this.vec = new Array(K).fill().map((_) => new Poly());
+    this.vec = new Array(K).fill().map(() => new Poly());
   }
 }
 
 class PolyVecL {
   constructor() {
-    this.vec = new Array(L).fill().map((_) => new Poly());
+    this.vec = new Array(L).fill().map(() => new Poly());
   }
 
   copy(polyVecL) {
@@ -51,11 +51,12 @@ function polyVecMatrixExpand(mat, rho) {
 
 function polyVecMatrixPointWiseMontgomery(t, mat, v) {
   for (let i = 0; i < K; ++i) {
-    polyVecLPointWiseAccMontgomery(t.vec[i], mat[i], v);
+    polyVecLPointWiseAccMontgomery(t.vec[i], mat[i], v); // eslint-disable-line no-use-before-define
   }
 }
 
-function polyVecLUniformEta(v, seed, nonce) {
+function polyVecLUniformEta(v, seed, nonceP) {
+  let nonce = nonceP;
   if (seed.length !== CRHBytes) {
     throw new Error(`invalid seed length ${seed.length} | Expected length ${CRHBytes}`);
   }
@@ -121,7 +122,8 @@ function polyVecLChkNorm(v, bound) {
   return 0;
 }
 
-function polyVecKUniformEta(v, seed, nonce) {
+function polyVecKUniformEta(v, seed, nonceP) {
+  let nonce = nonceP;
   for (let i = 0; i < K; ++i) {
     polyUniformEta(v.vec[i], seed, nonce++);
   }
