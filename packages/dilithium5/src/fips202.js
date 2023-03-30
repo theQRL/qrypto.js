@@ -48,12 +48,14 @@ function load64(x, xOffset) {
   return r;
 }
 
-function store64(x, xOffset, u) {
+function store64(xP, xOffset, u) {
+  const x = xP;
   for (let i = 0; i < 8; i++) x[xOffset + i] = Number((u >> BigInt(8 * i)) & 0xffn);
 }
 
-function KeccakF1600StatePermute(state) {
-  //copyFromState(A, state)
+function KeccakF1600StatePermute(stateP) {
+  const state = stateP;
+  // copyFromState(A, state)
   let Aba = state[0];
   let Abe = state[1];
   let Abi = state[2];
@@ -88,7 +90,7 @@ function KeccakF1600StatePermute(state) {
     let BCo = BigInt.asUintN(64, Abo ^ Ago ^ Ako ^ Amo ^ Aso);
     let BCu = BigInt.asUintN(64, Abu ^ Agu ^ Aku ^ Amu ^ Asu);
 
-    //thetaRhoPiChiIotaPrepareTheta(round, A, E)
+    // thetaRhoPiChiIotaPrepareTheta(round, A, E)
     let Da = BigInt.asUintN(64, BCu ^ ROL(BCe, 1n));
     let De = BigInt.asUintN(64, BCa ^ ROL(BCi, 1n));
     let Di = BigInt.asUintN(64, BCe ^ ROL(BCo, 1n));
@@ -183,7 +185,7 @@ function KeccakF1600StatePermute(state) {
     BCo = BigInt.asUintN(64, Ebo ^ Ego ^ Eko ^ Emo ^ Eso);
     BCu = BigInt.asUintN(64, Ebu ^ Egu ^ Eku ^ Emu ^ Esu);
 
-    //thetaRhoPiChiIotaPrepareTheta(round+1, E, A)
+    // thetaRhoPiChiIotaPrepareTheta(round+1, E, A)
     Da = BigInt.asUintN(64, BCu ^ ROL(BCe, 1n));
     De = BigInt.asUintN(64, BCa ^ ROL(BCi, 1n));
     Di = BigInt.asUintN(64, BCe ^ ROL(BCo, 1n));
@@ -299,11 +301,14 @@ function KeccakF1600StatePermute(state) {
   state[24] = Asu;
 }
 
-function keccakInit(s) {
+function keccakInit(sP) {
+  const s = sP;
   for (let i = 0; i < 25; i++) s[i] = 0n;
 }
 
-function keccakAbsorb(s, pos, r, input) {
+function keccakAbsorb(sP, posP, r, input) {
+  const s = sP;
+  let pos = posP;
   let inLen = input.length;
   let i;
   let inputOffset = 0;
@@ -328,12 +333,15 @@ function keccakAbsorb(s, pos, r, input) {
   return i;
 }
 
-function keccakFinalize(s, pos, r, p) {
+function keccakFinalize(sP, pos, r, p) {
+  const s = sP;
   s[Math.floor(pos / 8)] = BigInt.asUintN(64, s[Math.floor(pos / 8)] ^ (BigInt(p) << BigInt(8 * (pos % 8))));
   s[Math.floor(r / 8) - 1] = BigInt.asUintN(64, s[Math.floor(r / 8) - 1] ^ (1n << 63n));
 }
 
-function keccakSqueeze(out, s, pos, r) {
+function keccakSqueeze(outP, s, posP, r) {
+  let pos = posP;
+  const out = outP;
   let outLen = out.length;
   let outputOffset = 0;
   let i = 0;
@@ -351,7 +359,8 @@ function keccakSqueeze(out, s, pos, r) {
   return pos;
 }
 
-function keccakAbsorbOnce(s, r, input, p) {
+function keccakAbsorbOnce(sP, r, input, p) {
+  const s = sP;
   let inLen = input.length;
   let inputOffset = 0;
   let i;
@@ -375,7 +384,9 @@ function keccakAbsorbOnce(s, r, input, p) {
   s[Math.floor((r - 1) / 8)] = BigInt.asUintN(64, s[Math.floor((r - 1) / 8)] ^ (1n << 63n));
 }
 
-function keccakSqueezeBlocks(output, outputOffset, nBlocks, s, r) {
+function keccakSqueezeBlocks(output, outputOffsetP, nBlocksP, s, r) {
+  let nBlocks = nBlocksP;
+  let outputOffset = outputOffsetP;
   while (nBlocks) {
     KeccakF1600StatePermute(s);
     for (let i = 0; i < Math.floor(r / 8); i++) store64(output, outputOffset + 8 * i, s[i]);
@@ -384,25 +395,30 @@ function keccakSqueezeBlocks(output, outputOffset, nBlocks, s, r) {
   }
 }
 
-function shake128Init(state) {
+function shake128Init(stateP) {
+  const state = stateP;
   keccakInit(state.s);
   state.pos = 0;
 }
 
-function shake128Absorb(state, input) {
+function shake128Absorb(stateP, input) {
+  const state = stateP;
   state.pos = keccakAbsorb(state.s, state.pos, Shake128Rate, input);
 }
 
-function shake128Finalize(state) {
+function shake128Finalize(stateP) {
+  const state = stateP;
   keccakFinalize(state.s, state.pos, Shake128Rate, 0x1f);
   state.pos = Shake128Rate;
 }
 
-function shake128Squeeze(out, state) {
+function shake128Squeeze(out, stateP) {
+  const state = stateP;
   state.pos = keccakSqueeze(out, state.s, state.pos, Shake128Rate);
 }
 
-function shake128AbsorbOnce(state, input) {
+function shake128AbsorbOnce(stateP, input) {
+  const state = stateP;
   keccakAbsorbOnce(state.s, Shake128Rate, input, 0x1f);
   state.pos = Shake128Rate;
 }
@@ -411,16 +427,19 @@ function shake128SqueezeBlocks(out, outputOffset, nBlocks, state) {
   keccakSqueezeBlocks(out, outputOffset, nBlocks, state.s, Shake128Rate);
 }
 
-function shake256Init(state) {
+function shake256Init(stateP) {
+  const state = stateP;
   keccakInit(state.s);
   state.pos = 0;
 }
 
-function shake256Absorb(state, input) {
+function shake256Absorb(stateP, input) {
+  const state = stateP;
   state.pos = keccakAbsorb(state.s, state.pos, Shake256Rate, input);
 }
 
-function shake256Finalize(state) {
+function shake256Finalize(stateP) {
+  const state = stateP;
   keccakFinalize(state.s, state.pos, Shake256Rate, 0x1f);
   state.pos = Shake256Rate;
 }
