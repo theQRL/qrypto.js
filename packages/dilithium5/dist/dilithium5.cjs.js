@@ -1,6 +1,6 @@
 'use strict';
 
-var randomBytes = require('randombytes');
+var pkg = require('randombytes');
 var sha3 = require('sha3');
 
 const Shake128Rate = 168;
@@ -1404,6 +1404,8 @@ function unpackSig(cP, z, hP, sig) {
   return 0;
 }
 
+const randomBytes = pkg;
+
 function cryptoSignKeypair(passedSeed, pk, sk) {
   try {
     if (pk.length !== CryptoPublicKeyBytes) {
@@ -1678,6 +1680,10 @@ function cryptoSignOpen(sm, pk) {
   return msg;
 }
 
+Object.defineProperty(exports, "SHAKE", {
+  enumerable: true,
+  get: function () { return sha3.SHAKE; }
+});
 exports.BETA = BETA;
 exports.CRHBytes = CRHBytes;
 exports.CryptoBytes = CryptoBytes;
@@ -1811,3 +1817,9 @@ exports.unpackSig = unpackSig;
 exports.unpackSk = unpackSk;
 exports.useHint = useHint;
 exports.zetas = zetas;
+Object.keys(pkg).forEach(function (k) {
+  if (k !== 'default' && !Object.prototype.hasOwnProperty.call(exports, k)) Object.defineProperty(exports, k, {
+    enumerable: true,
+    get: function () { return pkg[k]; }
+  });
+});

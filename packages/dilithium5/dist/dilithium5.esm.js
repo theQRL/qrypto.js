@@ -1,5 +1,7 @@
-import randomBytes from 'randombytes';
+import pkg__default from 'randombytes';
+export * from 'randombytes';
 import { SHAKE } from 'sha3';
+export { SHAKE } from 'sha3';
 
 const Shake128Rate = 168;
 const Shake256Rate = 136;
@@ -1401,6 +1403,8 @@ function unpackSig(cP, z, hP, sig) {
 
   return 0;
 }
+
+const randomBytes = pkg__default;
 
 function cryptoSignKeypair(passedSeed, pk, sk) {
   try {

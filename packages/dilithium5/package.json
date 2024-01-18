@@ -35,7 +35,7 @@
   "bugs": {
     "url": "https://github.com/theQRL/qrypto.js/issues"
   },
-    "exports": {
+  "exports": {
     ".": {
       "import": "./dist/dilithium5.esm.js",
       "require": "./dist/dilithium5.cjs.js"

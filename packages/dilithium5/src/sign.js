@@ -1,4 +1,4 @@
-import randomBytes from 'randombytes'; // eslint-disable-line import/no-extraneous-dependencies
+import pkg from 'randombytes'; // eslint-disable-line import/no-extraneous-dependencies
 import { SHAKE } from 'sha3'; // eslint-disable-line import/no-extraneous-dependencies
 
 import {
@@ -46,6 +46,8 @@ import {
 } from './const.js';
 import { Poly, polyChallenge, polyNTT } from './poly.js';
 import { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } from './packing.js';
+
+const randomBytes = pkg;
 
 export function cryptoSignKeypair(passedSeed, pk, sk) {
   try {
