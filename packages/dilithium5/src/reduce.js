@@ -1,25 +1,19 @@
-const { Q, QInv } = require('./const.js');
+import { Q, QInv } from './const.js';
 
-function montgomeryReduce(a) {
+export function montgomeryReduce(a) {
   let t = BigInt.asIntN(32, BigInt.asIntN(64, BigInt.asIntN(32, a)) * BigInt(QInv));
   t = BigInt.asIntN(32, (a - t * BigInt(Q)) >> 32n);
   return t;
 }
 
-function reduce32(a) {
+export function reduce32(a) {
   let t = (a + (1 << 22)) >> 23;
   t = a - t * Q;
   return t;
 }
 
-function cAddQ(a) {
+export function cAddQ(a) {
   let ar = a;
   ar += (ar >> 31) & Q;
   return ar;
 }
-
-module.exports = {
-  montgomeryReduce,
-  reduce32,
-  cAddQ,
-};

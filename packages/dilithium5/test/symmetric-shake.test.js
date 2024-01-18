@@ -1,5 +1,5 @@
-const { expect } = require('chai');
-const { dilithiumShake128StreamInit, dilithiumShake256StreamInit } = require('../src/symmetric-shake.js');
+import { expect } from 'chai';
+import { dilithiumShake128StreamInit, dilithiumShake256StreamInit } from '../src/symmetric-shake.js';
 
 describe('symmetric-shake', () => {
   it('invalid key length in dilithiumShake128StreamInit throws', () => {

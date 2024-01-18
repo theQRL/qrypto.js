@@ -1,8 +1,8 @@
-const { Shake128Rate, Shake256Rate } = require('./const.js');
+import { Shake128Rate, Shake256Rate } from './const.js';
 
-const NRounds = 24;
+export const NRounds = 24;
 
-const KeccakFRoundConstants = BigUint64Array.from([
+export const KeccakFRoundConstants = BigUint64Array.from([
   0x0000000000000001n,
   0x0000000000008082n,
   0x800000000000808an,
@@ -29,18 +29,18 @@ const KeccakFRoundConstants = BigUint64Array.from([
   0x8000000080008008n,
 ]);
 
-class KeccakState {
+export class KeccakState {
   constructor() {
     this.s = new BigUint64Array(25);
     this.pos = 0;
   }
 }
 
-function ROL(a, offset) {
+export function ROL(a, offset) {
   return BigInt.asUintN(64, BigInt.asUintN(64, a << offset) ^ (a >> (64n - offset)));
 }
 
-function load64(x, xOffset) {
+export function load64(x, xOffset) {
   let r = BigInt(0);
 
   for (let i = 0; i < 8; i++) r = BigInt.asUintN(64, r | BigInt.asUintN(64, BigInt(x[xOffset + i]) << BigInt(8 * i)));
@@ -48,12 +48,12 @@ function load64(x, xOffset) {
   return r;
 }
 
-function store64(xP, xOffset, u) {
+export function store64(xP, xOffset, u) {
   const x = xP;
   for (let i = 0; i < 8; i++) x[xOffset + i] = Number((u >> BigInt(8 * i)) & 0xffn);
 }
 
-function KeccakF1600StatePermute(stateP) {
+export function KeccakF1600StatePermute(stateP) {
   const state = stateP;
   // copyFromState(A, state)
   let Aba = state[0];
@@ -301,12 +301,12 @@ function KeccakF1600StatePermute(stateP) {
   state[24] = Asu;
 }
 
-function keccakInit(sP) {
+export function keccakInit(sP) {
   const s = sP;
   for (let i = 0; i < 25; i++) s[i] = 0n;
 }
 
-function keccakAbsorb(sP, posP, r, input) {
+export function keccakAbsorb(sP, posP, r, input) {
   const s = sP;
   let pos = posP;
   let inLen = input.length;
@@ -333,13 +333,13 @@ function keccakAbsorb(sP, posP, r, input) {
   return i;
 }
 
-function keccakFinalize(sP, pos, r, p) {
+export function keccakFinalize(sP, pos, r, p) {
   const s = sP;
   s[Math.floor(pos / 8)] = BigInt.asUintN(64, s[Math.floor(pos / 8)] ^ (BigInt(p) << BigInt(8 * (pos % 8))));
   s[Math.floor(r / 8) - 1] = BigInt.asUintN(64, s[Math.floor(r / 8) - 1] ^ (1n << 63n));
 }
 
-function keccakSqueeze(outP, s, posP, r) {
+export function keccakSqueeze(outP, s, posP, r) {
   let pos = posP;
   const out = outP;
   let outLen = out.length;
@@ -359,7 +359,7 @@ function keccakSqueeze(outP, s, posP, r) {
   return pos;
 }
 
-function keccakAbsorbOnce(sP, r, input, p) {
+export function keccakAbsorbOnce(sP, r, input, p) {
   const s = sP;
   let inLen = input.length;
   let inputOffset = 0;
@@ -384,7 +384,7 @@ function keccakAbsorbOnce(sP, r, input, p) {
   s[Math.floor((r - 1) / 8)] = BigInt.asUintN(64, s[Math.floor((r - 1) / 8)] ^ (1n << 63n));
 }
 
-function keccakSqueezeBlocks(output, outputOffsetP, nBlocksP, s, r) {
+export function keccakSqueezeBlocks(output, outputOffsetP, nBlocksP, s, r) {
   let nBlocks = nBlocksP;
   let outputOffset = outputOffsetP;
   while (nBlocks) {
@@ -395,71 +395,55 @@ function keccakSqueezeBlocks(output, outputOffsetP, nBlocksP, s, r) {
   }
 }
 
-function shake128Init(stateP) {
+export function shake128Init(stateP) {
   const state = stateP;
   keccakInit(state.s);
   state.pos = 0;
 }
 
-function shake128Absorb(stateP, input) {
+export function shake128Absorb(stateP, input) {
   const state = stateP;
   state.pos = keccakAbsorb(state.s, state.pos, Shake128Rate, input);
 }
 
-function shake128Finalize(stateP) {
+export function shake128Finalize(stateP) {
   const state = stateP;
   keccakFinalize(state.s, state.pos, Shake128Rate, 0x1f);
   state.pos = Shake128Rate;
 }
 
-function shake128Squeeze(out, stateP) {
+export function shake128Squeeze(out, stateP) {
   const state = stateP;
   state.pos = keccakSqueeze(out, state.s, state.pos, Shake128Rate);
 }
 
-function shake128AbsorbOnce(stateP, input) {
+export function shake128AbsorbOnce(stateP, input) {
   const state = stateP;
   keccakAbsorbOnce(state.s, Shake128Rate, input, 0x1f);
   state.pos = Shake128Rate;
 }
 
-function shake128SqueezeBlocks(out, outputOffset, nBlocks, state) {
+export function shake128SqueezeBlocks(out, outputOffset, nBlocks, state) {
   keccakSqueezeBlocks(out, outputOffset, nBlocks, state.s, Shake128Rate);
 }
 
-function shake256Init(stateP) {
+export function shake256Init(stateP) {
   const state = stateP;
   keccakInit(state.s);
   state.pos = 0;
 }
 
-function shake256Absorb(stateP, input) {
+export function shake256Absorb(stateP, input) {
   const state = stateP;
   state.pos = keccakAbsorb(state.s, state.pos, Shake256Rate, input);
 }
 
-function shake256Finalize(stateP) {
+export function shake256Finalize(stateP) {
   const state = stateP;
   keccakFinalize(state.s, state.pos, Shake256Rate, 0x1f);
   state.pos = Shake256Rate;
 }
 
-function shake256SqueezeBlocks(out, outputOffset, nBlocks, state) {
+export function shake256SqueezeBlocks(out, outputOffset, nBlocks, state) {
   keccakSqueezeBlocks(out, outputOffset, nBlocks, state.s, Shake256Rate);
 }
-
-module.exports = {
-  KeccakState,
-  shake128Init,
-  shake128Absorb,
-  shake128Finalize,
-  shake128Squeeze,
-  shake128AbsorbOnce,
-  shake128SqueezeBlocks,
-  shake256Init,
-  shake256Absorb,
-  shake256Finalize,
-  shake256SqueezeBlocks,
-  NRounds,
-  KeccakFRoundConstants,
-};

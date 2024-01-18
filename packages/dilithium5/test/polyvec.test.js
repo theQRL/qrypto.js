@@ -1,5 +1,5 @@
-const { expect } = require('chai');
-const { polyVecLUniformEta, polyVecLUniformGamma1 } = require('../src/polyvec.js');
+import { expect } from 'chai';
+import { polyVecLUniformEta, polyVecLUniformGamma1 } from '../src/polyvec.js';
 
 describe('symmetric-shake', () => {
   it('invalid key length in polyVecLUniformEta throws', () => {

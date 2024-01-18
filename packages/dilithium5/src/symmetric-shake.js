@@ -1,14 +1,14 @@
-const {
+import {
   shake128Absorb,
   shake128Finalize,
   shake128Init,
   shake256Absorb,
   shake256Finalize,
   shake256Init,
-} = require('./fips202.js');
-const { CRHBytes, SeedBytes } = require('./const.js');
+} from './fips202.js';
+import { CRHBytes, SeedBytes } from './const.js';
 
-function dilithiumShake128StreamInit(state, seed, nonce) {
+export function dilithiumShake128StreamInit(state, seed, nonce) {
   if (seed.length !== SeedBytes) {
     throw new Error(`invalid seed length ${seed.length} | expected ${SeedBytes}`);
   }
@@ -22,7 +22,7 @@ function dilithiumShake128StreamInit(state, seed, nonce) {
   shake128Finalize(state);
 }
 
-function dilithiumShake256StreamInit(state, seed, nonce) {
+export function dilithiumShake256StreamInit(state, seed, nonce) {
   if (seed.length !== CRHBytes) {
     throw new Error(`invalid seed length ${seed.length} | expected ${CRHBytes}`);
   }
@@ -35,8 +35,3 @@ function dilithiumShake256StreamInit(state, seed, nonce) {
   shake256Absorb(state, t);
   shake256Finalize(state);
 }
-
-module.exports = {
-  dilithiumShake128StreamInit,
-  dilithiumShake256StreamInit,
-};

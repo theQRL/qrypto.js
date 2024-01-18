@@ -12,6 +12,7 @@
     "ecmaVersion": 2020,
     "sourceType": "module"
   },
+  "ignorePatterns": ["node_modules/", "dist/"],
   "rules": {
     "prettier/prettier": "error",
     "import/extensions": ["error", "ignorePackages"],

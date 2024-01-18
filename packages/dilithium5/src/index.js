@@ -1,13 +1,10 @@
-/* eslint-disable global-require */
-module.exports = {
-  ...require('./const.js'),
-  ...require('./poly.js'),
-  ...require('./polyvec.js'),
-  ...require('./packing.js'),
-  ...require('./reduce.js'),
-  ...require('./rounding.js'),
-  ...require('./symmetric-shake.js'),
-  ...require('./ntt.js'),
-  ...require('./fips202.js'),
-  ...require('./sign.js'),
-};
+export * from './const.js';
+export * from './poly.js';
+export * from './polyvec.js';
+export * from './packing.js';
+export * from './reduce.js';
+export * from './rounding.js';
+export * from './symmetric-shake.js';
+export * from './ntt.js';
+export * from './fips202.js';
+export * from './sign.js';
