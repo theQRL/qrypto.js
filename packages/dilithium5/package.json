@@ -1,6 +1,6 @@
 {
   "name": "@theqrl/dilithium5",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Dilithium-5 cryptography",
   "keywords": [
     "dilithium",
@@ -27,7 +27,7 @@
   },
   "scripts": {
     "test": "../../node_modules/mocha/bin/mocha.js",
-    "build": "rollup src/index.js --file ./dist/dilithium5.cjs.js --format cjs && rollup src/index.js --file ./dist/dilithium5.esm.js --format esm",
+    "build": "rollup src/index.js --file ./dist/cjs/dilithium5.js --format cjs && rollup src/index.js --file ./dist/mjs/dilithium5.js --format esm && ./fixup",
     "lint-check": "eslint 'src/**/*.js' 'test/**/*.js'",
     "lint": "eslint --fix 'src/**/*.js' 'test/**/*.js'",
     "report-coverage": "c8 --reporter=text-lcov npm run test > coverage.lcov"
@@ -37,8 +37,8 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/dilithium5.esm.js",
-      "require": "./dist/dilithium5.cjs.js"
+      "import": "./dist/mjs/dilithium5.js",
+      "require": "./dist/cjs/dilithium5.js"
     }
   },
   "type": "module",
