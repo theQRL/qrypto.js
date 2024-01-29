@@ -1,7 +1,7 @@
-const randomBytes = require('randombytes'); // eslint-disable-line import/no-extraneous-dependencies
-const { SHAKE } = require('sha3'); // eslint-disable-line import/no-extraneous-dependencies
+import pkg from 'randombytes'; // eslint-disable-line import/no-extraneous-dependencies
+import { SHAKE } from 'sha3'; // eslint-disable-line import/no-extraneous-dependencies
 
-const {
+import {
   PolyVecK,
   polyVecKAdd,
   polyVecKCAddQ,
@@ -29,8 +29,8 @@ const {
   polyVecLUniformGamma1,
   polyVecMatrixExpand,
   polyVecMatrixPointWiseMontgomery,
-} = require('./polyvec.js');
-const {
+} from './polyvec.js';
+import {
   BETA,
   CRHBytes,
   CryptoBytes,
@@ -43,11 +43,13 @@ const {
   OMEGA,
   PolyW1PackedBytes,
   SeedBytes,
-} = require('./const.js');
-const { Poly, polyChallenge, polyNTT } = require('./poly.js');
-const { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } = require('./packing.js');
+} from './const.js';
+import { Poly, polyChallenge, polyNTT } from './poly.js';
+import { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } from './packing.js';
 
-function cryptoSignKeypair(passedSeed, pk, sk) {
+const randomBytes = pkg;
+
+export function cryptoSignKeypair(passedSeed, pk, sk) {
   try {
     if (pk.length !== CryptoPublicKeyBytes) {
       throw new Error(`invalid pk length ${pk.length} | Expected length ${CryptoPublicKeyBytes}`);
@@ -113,7 +115,7 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
   return seed;
 }
 
-function cryptoSignSignature(sig, m, sk, randomizedSigning) {
+export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
   if (sk.length !== CryptoSecretKeyBytes) {
     throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
   }
@@ -190,7 +192,7 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
     polyVecLAdd(z, z, y);
     polyVecLReduce(z);
     if (polyVecLChkNorm(z, GAMMA1 - BETA) !== 0) {
-      continue;
+      continue; // eslint-disable-line no-continue
     }
 
     polyVecKPointWisePolyMontgomery(h, cp, s2);
@@ -198,20 +200,20 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
     polyVecKSub(w0, w0, h);
     polyVecKReduce(w0);
     if (polyVecKChkNorm(w0, GAMMA2 - BETA) !== 0) {
-      continue;
+      continue; // eslint-disable-line no-continue
     }
 
     polyVecKPointWisePolyMontgomery(h, cp, t0);
     polyVecKInvNTTToMont(h);
     polyVecKReduce(h);
     if (polyVecKChkNorm(h, GAMMA2) !== 0) {
-      continue;
+      continue; // eslint-disable-line no-continue
     }
 
     polyVecKAdd(w0, w0, h);
     const n = polyVecKMakeHint(h, w0, w1);
     if (n > OMEGA) {
-      continue;
+      continue; // eslint-disable-line no-continue
     }
 
     packSig(sig, sig, z, h);
@@ -219,7 +221,7 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
   }
 }
 
-function cryptoSign(msg, sk, randomizedSigning) {
+export function cryptoSign(msg, sk, randomizedSigning) {
   const sm = new Uint8Array(CryptoBytes + msg.length);
   const mLen = msg.length;
   for (let i = 0; i < mLen; ++i) {
@@ -233,7 +235,7 @@ function cryptoSign(msg, sk, randomizedSigning) {
   return sm;
 }
 
-function cryptoSignVerify(sig, m, pk) {
+export function cryptoSignVerify(sig, m, pk) {
   let i;
   const buf = new Uint8Array(K * PolyW1PackedBytes);
   const rho = new Uint8Array(SeedBytes);
@@ -307,7 +309,7 @@ function cryptoSignVerify(sig, m, pk) {
   return true;
 }
 
-function cryptoSignOpen(sm, pk) {
+export function cryptoSignOpen(sm, pk) {
   if (sm.length < CryptoBytes) {
     return undefined;
   }
@@ -320,11 +322,3 @@ function cryptoSignOpen(sm, pk) {
 
   return msg;
 }
-
-module.exports = {
-  cryptoSignKeypair,
-  cryptoSignSignature,
-  cryptoSign,
-  cryptoSignVerify,
-  cryptoSignOpen,
-};
