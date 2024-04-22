@@ -1,11 +1,11 @@
 # `@theqrl/xmss`
 
-> TODO: description
+> Package exposing the XMSS cryptography functions.
 
 ## Usage
 
 ``` js
 import { store64 } from '@theqrl/xmss';
 
-// TODO: DEMONSTRATE API
+store64();
 ```
