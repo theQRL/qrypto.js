@@ -28,22 +28,30 @@ const zetas = [
   -1362209, 3937738, 1400424, -846154, 1976782,
 ];
 
-function load64(x, xOffset) {
-  let r = BigInt(0);
+/**
+ * @param {String} hashFunction
+ * @param {Uint8Array} xmssParams
+ * @param {Uint8Array} pk
+ * @param {Uint8Array} sk
+ * @param {Uint8Array} bdsState
+ * @param {Uint8Array} seed
+ */
+function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, seed) {
+  if (xmssParams.h % 2 === 1) {
+    throw new Error('Not a valid h, only even numbers supported! Try again with an even number');
+  }
 
-  for (let i = 0; i < 8; i++) r = BigInt.asUintN(64, r | BigInt.asUintN(64, BigInt(x[xOffset + i]) << BigInt(8 * i)));
+  xmssParams.n;
 
-  return r;
-}
-
-function store64(xP, xOffset, u) {
-  const x = xP;
-  for (let i = 0; i < 8; i++) x[xOffset + i] = Number((u >> BigInt(8 * i)) & 0xffn);
+  sk[0] = 0;
+  sk[1] = 0;
+  sk[2] = 0;
+  sk[3] = 0;
+  // misc.SHAKE256(randombits, seed[:])
 }
 
 exports.Shake128Rate = Shake128Rate;
 exports.Shake256Rate = Shake256Rate;
 exports.Stream128BlockBytes = Stream128BlockBytes;
-exports.load64 = load64;
-exports.store64 = store64;
+exports.XMSSFastGenKeyPair = XMSSFastGenKeyPair;
 exports.zetas = zetas;

@@ -1,12 +1,23 @@
-export function load64(x, xOffset) {
-  let r = BigInt(0);
+/**
+ * @param {String} hashFunction
+ * @param {Uint8Array} xmssParams
+ * @param {Uint8Array} pk
+ * @param {Uint8Array} sk
+ * @param {Uint8Array} bdsState
+ * @param {Uint8Array} seed
+ */
+export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, seed) {
+  if (xmssParams.h % 2 === 1) {
+    throw new Error('Not a valid h, only even numbers supported! Try again with an even number');
+  }
 
-  for (let i = 0; i < 8; i++) r = BigInt.asUintN(64, r | BigInt.asUintN(64, BigInt(x[xOffset + i]) << BigInt(8 * i)));
+  const n = xmssParams.n;
 
-  return r;
-}
+  sk[0] = 0;
+  sk[1] = 0;
+  sk[2] = 0;
+  sk[3] = 0;
 
-export function store64(xP, xOffset, u) {
-  const x = xP;
-  for (let i = 0; i < 8; i++) x[xOffset + i] = Number((u >> BigInt(8 * i)) & 0xffn);
+  const randombits = new Uint8Array(3 * n);
+  // misc.SHAKE256(randombits, seed[:])
 }
