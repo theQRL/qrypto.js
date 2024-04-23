@@ -1,40 +1,12 @@
+/// <reference path="typedefs.js" />
 import { shake256 } from './helper';
 
 /**
- * @param {Uint32Array[number]} hashFunction
- * @param {{
- *   wotsParams: {
- *     len1: Uint32Array[number];
- *     len2: Uint32Array[number];
- *     len: Uint32Array[number];
- *     n: Uint32Array[number];
- *     w: Uint32Array[number];
- *     logW: Uint32Array[number];
- *     keySize: Uint32Array[number];
- *   };
- *   n: Uint32Array[number];
- *   h: Uint32Array[number];
- *   k: Uint32Array[number];
- * }} xmssParams
- *
+ * @param {HashFunction} hashFunction
+ * @param {XMSSParams} xmssParams
  * @param {Uint8Array} pk
  * @param {Uint8Array} sk
- * @param {{
- *   stack: Uint8Array;
- *   stackOffset: Uint32Array[number];
- *   stackLevels: Uint8Array;
- *   auth: Uint8Array;
- *   keep: Uint8Array;
- *   treeHash: {
- *     h: Uint32Array[number];
- *     nextIdx: Uint32Array[number];
- *     stackUsage: Uint32Array[number];
- *     completed: Uint8Array[number];
- *     node: Uint8Array;
- *   };
- *   retain: Uint8Array;
- *   nextLeaf: Uint32Array[number];
- * }} bdsState
+ * @param {BDSState} bdsState
  * @param {Uint8Array} seed
  */
 export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, seed) {
