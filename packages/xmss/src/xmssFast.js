@@ -1,4 +1,4 @@
-import { SHAKE256 } from './helper';
+import { shake256 } from './helper';
 
 /**
  * @param {Uint32Array[number]} hashFunction
@@ -54,7 +54,7 @@ export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, s
   let randombits = new Uint8Array(3 * n);
 
   //shake256(randombits, 3 * n, seed, 48);  // FIXME: seed size has been hardcoded to 48
-  randombits = SHAKE256(randombits, seed);
+  randombits = shake256(randombits, seed);
 
   const rnd = 96;
   const pks = new Uint32Array([32])[0];
