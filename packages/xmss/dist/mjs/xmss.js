@@ -84,4 +84,4 @@ function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, seed) {
   sk.set(pk.subarray(0, pks), 4 + 3 * n);
 }
 
-export { XMSSFastGenKeyPair, tempConstant };
+export { XMSSFastGenKeyPair, shake256, tempConstant };

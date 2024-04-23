@@ -87,4 +87,5 @@ function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, seed) {
 }
 
 exports.XMSSFastGenKeyPair = XMSSFastGenKeyPair;
+exports.shake256 = shake256;
 exports.tempConstant = tempConstant;
