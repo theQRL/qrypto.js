@@ -41,6 +41,9 @@
     }
   },
   "type": "module",
+  "peerDependencies": {
+    "js-sha3": "^0.9.3"
+  },
   "devDependencies": {
     "c8": "^9.1.0",
     "chai": "^5.0.0",
@@ -50,7 +53,6 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-prettier": "^5.1.3",
-    "js-sha3": "^0.9.3",
     "mocha": "^10.2.0",
     "prettier": "^3.2.4",
     "prettier-plugin-jsdoc": "^1.3.0",
