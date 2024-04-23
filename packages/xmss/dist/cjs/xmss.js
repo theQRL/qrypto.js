@@ -2,8 +2,6 @@
 
 var jsSha3CommonJsPackage = require('js-sha3');
 
-const tempConstant = 168;
-
 const { shake256: sha3Shake256 } = jsSha3CommonJsPackage;
 
 /**
@@ -88,4 +86,3 @@ function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, seed) {
 
 exports.XMSSFastGenKeyPair = XMSSFastGenKeyPair;
 exports.shake256 = shake256;
-exports.tempConstant = tempConstant;
