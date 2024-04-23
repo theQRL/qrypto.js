@@ -4,8 +4,8 @@
 
 ## Usage
 
-``` js
-import { store64 } from '@theqrl/xmss';
+```js
+import { shake256 } from '@theqrl/xmss';
 
-store64();
+const outUint8Array = shake256(outUint8Array, message);
 ```
