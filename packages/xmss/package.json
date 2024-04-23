@@ -29,7 +29,8 @@
     "build": "rollup src/index.js --file ./dist/cjs/xmss.js --format cjs && rollup src/index.js --file ./dist/mjs/xmss.js --format esm && ./fixup",
     "lint-check": "eslint 'src/**/*.js' 'test/**/*.js'",
     "lint": "eslint --fix 'src/**/*.js' 'test/**/*.js'",
-    "report-coverage": "c8 --reporter=text-lcov npm run test > coverage.lcov"
+    "report-coverage": "c8 --reporter=text-lcov npm run test > coverage.lcov",
+    "prepublish": "npm run build"
   },
   "bugs": {
     "url": "https://github.com/theQRL/qrypto.js/issues"
