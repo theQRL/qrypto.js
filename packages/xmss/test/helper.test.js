@@ -1,5 +1,6 @@
 import { expect } from 'chai';
-import { setChainAddr, setHashAddr, setKeyAndMask, shake256 } from '../src/helper.js';
+import { ENDIAN } from '../src/constants.js';
+import { addrToByte, getEndian, setChainAddr, setHashAddr, setKeyAndMask, shake256 } from '../src/helper.js';
 
 describe('shake256', () => {
   it('should return the SHAKE256 hash of type Uint8Array', () => {
@@ -74,5 +75,32 @@ describe('setKeyAndMask', () => {
     const expectedAddr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 17]);
 
     expect(newAddr).to.deep.equal(expectedAddr);
+  });
+});
+
+xdescribe('addrToByte', () => {
+  it('should add addr to bytes in case of little endian', () => {
+    const bytes = new Uint8Array(32);
+    const addr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 8]);
+    const addrBytes = addrToByte(bytes, addr);
+    const expectedUint8Array = new Uint8Array([
+      0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, 7, 0, 0, 0, 8,
+    ]);
+
+    expect(addrBytes).to.deep.equal(expectedUint8Array);
+
+    getEndianStub.restore();
+  });
+
+  it('should add addr to bytes in case of big endian', () => {
+    getEndian = stub().returns(ENDIAN.BIG);
+    const bytes = new Uint8Array(32);
+    const addr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 8]);
+    const addrBytes = addrToByte(bytes, addr);
+    const expectedUint8Array = new Uint8Array([
+      1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0,
+    ]);
+
+    expect(addrBytes).to.deep.equal(expectedUint8Array);
   });
 });
