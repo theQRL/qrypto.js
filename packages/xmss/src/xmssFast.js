@@ -1,5 +1,5 @@
 /// <reference path="typedefs.js" />
-import { shake256 } from './helper';
+import { addrToByte, setChainAddr, setHashAddr, setKeyAndMask, shake256 } from './helper';
 
 /**
  * @param {HashFunction} hashFunction
@@ -57,4 +57,24 @@ export function genLeafWOTS(hashFunction, leaf, skSeed, xmssParams, pubSeed, lTr
   // getSeed(hashFunction, seed, skSeed, xmssParams.n, otsAddr)
   // wOTSPKGen(hashFunction, pk, seed, xmssParams.wotsParams, pubSeed, otsAddr)
   // lTree(hashFunction, xmssParams.wotsParams, leaf, pk, pubSeed, lTreeAddr)
+}
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {Uint8Array} seed
+ * @param {Uint8Array} skSeed
+ * @param {Uint32Array[number]} n
+ * @param {Uint32Array} addr
+ */
+export function getSeed(hashFunction, seed, skSeed, n, addr) {
+  const chainAddr = setChainAddr(addr, 0);
+  const hashAddr = setHashAddr(chainAddr, 0);
+  const keyAndMaskAddr = setKeyAndMask(hashAddr, 0);
+
+  // // Generate pseudorandom value
+  const bytes = new Uint8Array(32);
+  const addrBytes = addrToByte(bytes, keyAndMaskAddr);
+  // prf(hashFunction, seed, bytes[:], skSeed, n)
+
+  return { addr: keyAndMaskAddr };
 }
