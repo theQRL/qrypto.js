@@ -11,3 +11,9 @@ describe('genLeafWOTS', () => {
     expect(out).to.be.an.instanceOf(Uint8Array);
   });
 });
+
+describe('getSeed', () => {
+  it('TODO', () => {
+    expect(out).to.be.an.instanceOf(Uint8Array);
+  });
+});
