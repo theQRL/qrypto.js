@@ -25,3 +25,13 @@ export function setChainAddr(addr, chain) {
   addr[5] = chain;
   return addr;
 }
+
+/**
+ * @param {Uint32Array} addr
+ * @param {Uint32Array[number]} hash
+ * @returns {Uint32Array}
+ */
+export function setHashAddr(addr, hash) {
+  addr[6] = hash;
+  return addr;
+}
