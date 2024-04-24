@@ -35,3 +35,13 @@ export function setHashAddr(addr, hash) {
   addr[6] = hash;
   return addr;
 }
+
+/**
+ * @param {Uint32Array} addr
+ * @param {Uint32Array[number]} keyAndMask
+ * @returns {Uint32Array}
+ */
+export function setKeyAndMask(addr, keyAndMask) {
+  addr[7] = keyAndMask;
+  return addr;
+}

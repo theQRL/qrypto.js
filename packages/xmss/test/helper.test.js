@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { setChainAddr, setHashAddr, shake256 } from '../src/helper.js';
+import { setChainAddr, setHashAddr, setKeyAndMask, shake256 } from '../src/helper.js';
 
 describe('shake256', () => {
   it('should return the SHAKE256 hash of type Uint8Array', () => {
@@ -61,6 +61,17 @@ describe('setHashAddr', () => {
     const hash = new Uint32Array([22])[0];
     const newAddr = setHashAddr(addr, hash);
     const expectedAddr = new Uint32Array([1, 2, 3, 4, 5, 6, 22, 8]);
+
+    expect(newAddr).to.deep.equal(expectedAddr);
+  });
+});
+
+describe('setKeyAndMask', () => {
+  it('should set the keyAndMask at index 7', () => {
+    const addr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 8]);
+    const keyAndMask = new Uint32Array([17])[0];
+    const newAddr = setKeyAndMask(addr, keyAndMask);
+    const expectedAddr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 17]);
 
     expect(newAddr).to.deep.equal(expectedAddr);
   });
