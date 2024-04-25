@@ -1,5 +1,5 @@
 /// <reference path="typedefs.js" />
-import { addrToByte, setChainAddr, setHashAddr, setKeyAndMask, shake256 } from './helper';
+import { addrToByte, setChainAddr, setHashAddr, setKeyAndMask, shake256 } from './helper.js';
 
 /**
  * @param {HashFunction} hashFunction
@@ -14,18 +14,18 @@ export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, s
     throw new Error('Not a valid h, only even numbers supported! Try again with an even number');
   }
 
-  const n = xmssParams.n;
+  const { n } = xmssParams;
 
   // Set idx = 0
-  sk[0] = 0;
-  sk[1] = 0;
-  sk[2] = 0;
-  sk[3] = 0;
+  sk.set([0], 0);
+  sk.set([0], 1);
+  sk.set([0], 2);
+  sk.set([0], 3);
 
   // Copy PUB_SEED to public key
   let randombits = new Uint8Array(3 * n);
 
-  //shake256(randombits, 3 * n, seed, 48);  // FIXME: seed size has been hardcoded to 48
+  // shake256(randombits, 3 * n, seed, 48);  // FIXME: seed size has been hardcoded to 48
   randombits = shake256(randombits, seed);
 
   const rnd = 96;

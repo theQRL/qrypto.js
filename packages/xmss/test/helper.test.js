@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import { describe, it } from 'mocha';
 import { ENDIAN } from '../src/constants.js';
 import { addrToByte, setChainAddr, setHashAddr, setKeyAndMask, shake256 } from '../src/helper.js';
 
