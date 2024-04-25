@@ -96,8 +96,8 @@ function toByteBigEndian(out, input, bytes) {
  * @param {Uint32Array} addr
  * @returns {Uint8Array}
  */
-export function addrToByte(out, addr) {
-  switch (getEndian()) {
+export function addrToByte(out, addr, getEndianFunc = getEndian) {
+  switch (getEndianFunc()) {
     case ENDIAN.LITTLE:
       let outLittleEndian = out;
       for (let i = 0; i < 8; i++) {
