@@ -78,7 +78,7 @@ describe('setKeyAndMask', () => {
   });
 });
 
-xdescribe('addrToByte', () => {
+describe('addrToByte', () => {
   it('should add addr to bytes in case of little endian', () => {
     const bytes = new Uint8Array(32);
     const addr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 8]);
@@ -88,12 +88,9 @@ xdescribe('addrToByte', () => {
     ]);
 
     expect(addrBytes).to.deep.equal(expectedUint8Array);
-
-    getEndianStub.restore();
   });
 
   it('should add addr to bytes in case of big endian', () => {
-    getEndian = stub().returns(ENDIAN.BIG);
     const bytes = new Uint8Array(32);
     const addr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 8]);
     const addrBytes = addrToByte(bytes, addr);
