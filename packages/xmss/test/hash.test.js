@@ -1,3 +1,5 @@
-xdescribe('coreHash', () => {
-  it('TODO', () => {});
+describe('hash', () => {
+  xdescribe('coreHash', () => {
+    it('TODO', () => {});
+  });
 });
