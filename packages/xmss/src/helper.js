@@ -1,7 +1,20 @@
 import jsSha3CommonJsPackage from 'js-sha3';
 import { ENDIAN } from './constants.js';
 
-const { shake256: sha3Shake256 } = jsSha3CommonJsPackage;
+const { shake256: sha3Shake256, shake128: sha3Shake128 } = jsSha3CommonJsPackage;
+
+/**
+ * @param {Uint8Array} out
+ * @param {Uint8Array} msg
+ * @returns {Uint8Array}
+ */
+export function shake128(out, msg) {
+  const hash = sha3Shake128(msg, 8 * out.length);
+  for (let i = 0; i < out.length; i += 1) {
+    out.set([parseInt(hash.substring(i * 2, i * 2 + 2), 16)], i);
+  }
+  return out;
+}
 
 /**
  * @param {Uint8Array} out

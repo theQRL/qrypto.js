@@ -1,9 +1,34 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
 import { ENDIAN } from '../src/constants.js';
-import { addrToByte, setChainAddr, setHashAddr, setKeyAndMask, shake256 } from '../src/helper.js';
+import { addrToByte, setChainAddr, setHashAddr, setKeyAndMask, shake128, shake256 } from '../src/helper.js';
 
 describe('helper', () => {
+  describe('shake128', () => {
+    it('should return the SHAKE128 hash of type Uint8Array', () => {
+      const message = new Uint8Array(48);
+      let out = new Uint8Array(18);
+      out = shake128(out, message);
+
+      expect(out).to.be.an.instanceOf(Uint8Array);
+    });
+
+    it('should return the SHAKE128 hashed Uint8Array with message[12] and out[15]', () => {
+      const message = new Uint8Array(12);
+      message[3] = 6;
+      message[9] = 8;
+      let out = new Uint8Array(15);
+      out[0] = 1;
+      out[7] = 2;
+      const expectedShake256Out = new Uint8Array([
+        114, 204, 87, 130, 216, 192, 144, 227, 210, 37, 113, 55, 15, 232, 92,
+      ]);
+      out = shake128(out, message);
+
+      expect(out).to.deep.equal(expectedShake256Out);
+    });
+  });
+
   describe('shake256', () => {
     it('should return the SHAKE256 hash of type Uint8Array', () => {
       const message = new Uint8Array(48);
