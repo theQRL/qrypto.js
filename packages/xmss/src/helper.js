@@ -47,7 +47,7 @@ export function setKeyAndMask(addr, keyAndMask) {
 }
 
 /** @returns Number */
-export function getEndian() {
+function getEndian() {
   const buffer = new ArrayBuffer(2);
   const uint16View = new Uint16Array(buffer);
   const uint8View = new Uint8Array(buffer);
@@ -67,7 +67,7 @@ export function getEndian() {
  * @param {Uint32Array[number]} bytes
  * @returns {Uint8Array}
  */
-function toByteLittleEndian(out, input, bytes) {
+export function toByteLittleEndian(out, input, bytes) {
   let inValue = input;
   for (let i = new Int32Array([bytes - 1])[0]; i >= 0; i--) {
     out.set([new Uint8Array([inValue & 0xff])[0]], i);
