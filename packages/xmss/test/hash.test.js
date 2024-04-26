@@ -5,7 +5,7 @@ import { coreHash, prf } from '../src/hash.js';
 
 describe('hash', () => {
   describe('coreHash', () => {
-    it('should generate output for the hashFunction SHA2_256', () => {
+    it('should generate coreHash output for the hashFunction SHA2_256', () => {
       const outValue = coreHash(
         HASH_FUNCTION.SHA2_256,
         new Uint8Array([4, 7, 8, 2, 6, 9, 2]),
@@ -21,7 +21,7 @@ describe('hash', () => {
       expect(outValue).to.deep.equal(expectedOutValue);
     });
 
-    it('should generate output for the hashFunction SHAKE_128', () => {
+    it('should generate coreHash output for the hashFunction SHAKE_128', () => {
       const outValue = coreHash(
         HASH_FUNCTION.SHAKE_128,
         new Uint8Array([1, 2, 3, 4, 5]),
@@ -37,7 +37,7 @@ describe('hash', () => {
       expect(outValue).to.deep.equal(expectedOutValue);
     });
 
-    it('should generate output for the hashFunction SHAKE_256', () => {
+    it('should generate coreHash output for the hashFunction SHAKE_256', () => {
       const outValue = coreHash(
         HASH_FUNCTION.SHAKE_256,
         new Uint8Array([8, 4, 9, 1, 0, 1, 0]),
@@ -55,7 +55,7 @@ describe('hash', () => {
   });
 
   describe('prf', () => {
-    it('should generate output for the hashFunction SHA2_256', () => {
+    it('should generate prf output for the hashFunction SHA2_256', () => {
       const outValue = prf(
         HASH_FUNCTION.SHA2_256,
         new Uint8Array([8, 4, 9, 1, 0, 1, 0]),
@@ -70,7 +70,7 @@ describe('hash', () => {
       expect(outValue).to.deep.equal(expectedOutValue);
     });
 
-    it('should generate output for the hashFunction SHAKE_128', () => {
+    it('should generate prf output for the hashFunction SHAKE_128', () => {
       const outValue = prf(
         HASH_FUNCTION.SHAKE_128,
         new Uint8Array([8, 4, 9, 1, 0, 1, 0]),
@@ -85,7 +85,7 @@ describe('hash', () => {
       expect(outValue).to.deep.equal(expectedOutValue);
     });
 
-    it('should generate output for the hashFunction SHAKE_256', () => {
+    it('should generate prf output for the hashFunction SHAKE_256', () => {
       const outValue = prf(
         HASH_FUNCTION.SHAKE_256,
         new Uint8Array([8, 4, 9, 1, 0, 1, 0]),
