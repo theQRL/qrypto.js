@@ -20,12 +20,40 @@ describe('helper', () => {
       let out = new Uint8Array(15);
       out[0] = 1;
       out[7] = 2;
-      const expectedShake256Out = new Uint8Array([
+      const expectedShake128Out = new Uint8Array([
         114, 204, 87, 130, 216, 192, 144, 227, 210, 37, 113, 55, 15, 232, 92,
       ]);
       out = shake128(out, message);
 
-      expect(out).to.deep.equal(expectedShake256Out);
+      expect(out).to.deep.equal(expectedShake128Out);
+    });
+
+    it('should return the SHAKE128 hashed Uint8Array with message[12] and out[6]', () => {
+      const message = new Uint8Array(12);
+      message[1] = 3;
+      message[11] = 9;
+      let out = new Uint8Array(6);
+      out[0] = 7;
+      out[3] = 12;
+      const expectedShake128Out = new Uint8Array([62, 198, 17, 144, 145, 4]);
+      out = shake128(out, message);
+
+      expect(out).to.deep.equal(expectedShake128Out);
+    });
+
+    it('should return the SHAKE128 hashed Uint8Array with message[30] and out[42]', () => {
+      const message = new Uint8Array(30);
+      message[13] = 17;
+      let out = new Uint8Array(42);
+      out[32] = 1;
+      out[11] = 6;
+      const expectedShake128Out = new Uint8Array([
+        53, 149, 85, 96, 84, 172, 177, 150, 215, 170, 163, 243, 108, 114, 210, 129, 126, 76, 178, 134, 1, 11, 80, 18,
+        17, 152, 118, 41, 67, 52, 132, 243, 224, 66, 152, 246, 206, 195, 167, 50, 120, 85,
+      ]);
+      out = shake128(out, message);
+
+      expect(out).to.deep.equal(expectedShake128Out);
     });
   });
 
