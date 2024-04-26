@@ -41,4 +41,14 @@ export function coreHash(hashFunction, out, typeValue, key, keyLen, input, inLen
   return outValue;
 }
 
-export const eslint = 4; // temp
+/**
+ * @param {HashFunction} hashFunction
+ * @param {Uint8Array} out
+ * @param {Uint8Array} input
+ * @param {Uint8Array} key
+ * @param {Uint32Array[number]} keyLen
+ * @returns {Uint8Array}
+ */
+export function prf(hashFunction, out, input, key, keyLen) {
+  return coreHash(hashFunction, out, 3, key, keyLen, input, 32, keyLen);
+}

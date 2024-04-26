@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
 import { HASH_FUNCTION } from '../src/constants.js';
-import { coreHash } from '../src/hash.js';
+import { coreHash, prf } from '../src/hash.js';
 
 describe('hash', () => {
   describe('coreHash', () => {
@@ -49,6 +49,53 @@ describe('hash', () => {
         1
       );
       const expectedOutValue = new Uint8Array([50, 69, 218, 59, 239, 102, 54]);
+
+      expect(outValue).to.deep.equal(expectedOutValue);
+    });
+  });
+
+  describe('prf', () => {
+    it('should generate output for the hashFunction SHA2_256', () => {
+      const outValue = prf(
+        HASH_FUNCTION.SHA2_256,
+        new Uint8Array([8, 4, 9, 1, 0, 1, 0]),
+        new Uint8Array([
+          2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 3, 4,
+        ]),
+        new Uint8Array([6, 3, 2]),
+        2
+      );
+      const expectedOutValue = new Uint8Array([69, 154, 42, 118, 65, 97, 150]);
+
+      expect(outValue).to.deep.equal(expectedOutValue);
+    });
+
+    it('should generate output for the hashFunction SHAKE_128', () => {
+      const outValue = prf(
+        HASH_FUNCTION.SHAKE_128,
+        new Uint8Array([8, 4, 9, 1, 0, 1, 0]),
+        new Uint8Array([
+          2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 3, 4,
+        ]),
+        new Uint8Array([6, 3, 2]),
+        2
+      );
+      const expectedOutValue = new Uint8Array([151, 162, 185, 97, 255, 51, 61]);
+
+      expect(outValue).to.deep.equal(expectedOutValue);
+    });
+
+    it('should generate output for the hashFunction SHAKE_256', () => {
+      const outValue = prf(
+        HASH_FUNCTION.SHAKE_256,
+        new Uint8Array([8, 4, 9, 1, 0, 1, 0]),
+        new Uint8Array([
+          2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 3, 4,
+        ]),
+        new Uint8Array([6, 3, 2]),
+        2
+      );
+      const expectedOutValue = new Uint8Array([229, 148, 107, 211, 209, 43, 245]);
 
       expect(outValue).to.deep.equal(expectedOutValue);
     });
