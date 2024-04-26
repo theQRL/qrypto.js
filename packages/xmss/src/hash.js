@@ -1,7 +1,7 @@
 /// <reference path="typedefs.js" />
 
 import { HASH_FUNCTION } from './constants.js';
-import { shake256, toByteLittleEndian } from './helper.js';
+import { sha256, shake128, shake256, toByteLittleEndian } from './helper.js';
 
 /**
  * @param {HashFunction} hashFunction
@@ -27,8 +27,10 @@ export function coreHash(hashFunction, out, typeValue, key, keyLen, input, inLen
 
   switch (hashFunction) {
     case HASH_FUNCTION.SHA2_256:
+      outValue = sha256(outValue, buf);
       break;
     case HASH_FUNCTION.SHAKE_128:
+      outValue = shake128(outValue, buf);
       break;
     case HASH_FUNCTION.SHAKE_256:
       outValue = shake256(outValue, buf);
