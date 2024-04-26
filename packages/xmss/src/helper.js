@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { sha256 as sha2Func256 } from '@noble/hashes/sha256';
 import jsSha3CommonJsPackage from 'js-sha3';
 import { ENDIAN } from './constants.js';
 
@@ -36,8 +36,7 @@ export function shake256(out, msg) {
  * @returns {Uint8Array}
  */
 export function sha256(out, msg) {
-  const hash = createHash('sha256').update(msg);
-  const hashOut = new Uint8Array(hash.digest());
+  const hashOut = sha2Func256(msg);
   for (let i = 0; i < out.length; i++) {
     out.set([hashOut[i]], i);
   }

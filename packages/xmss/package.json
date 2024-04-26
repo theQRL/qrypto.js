@@ -43,7 +43,8 @@
   },
   "type": "module",
   "peerDependencies": {
-    "js-sha3": "^0.9.3"
+    "js-sha3": "^0.9.3",
+    "@noble/hashes": "^1.4.0"
   },
   "devDependencies": {
     "c8": "^9.1.0",
