@@ -1,3 +1,5 @@
+import { describe, it } from 'mocha';
+
 describe('xmssFast', () => {
   xdescribe('XMSSFastGenKeyPair', () => {
     it('TODO', () => {});

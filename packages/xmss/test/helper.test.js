@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
 import { ENDIAN } from '../src/constants.js';
-import { addrToByte, setChainAddr, setHashAddr, setKeyAndMask, shake128, shake256 } from '../src/helper.js';
+import { addrToByte, setChainAddr, setHashAddr, setKeyAndMask, sha256, shake128, shake256 } from '../src/helper.js';
 
 describe('helper', () => {
   describe('shake128', () => {
@@ -99,6 +99,63 @@ describe('helper', () => {
       out = shake256(out, message);
 
       expect(out).to.deep.equal(expectedShake256Out);
+    });
+  });
+
+  describe('sha256', () => {
+    it('should return the SHA256 hash of type Uint8Array', () => {
+      const message = new Uint8Array(48);
+      let out = new Uint8Array(18);
+      out = sha256(out, message);
+
+      expect(out).to.be.an.instanceOf(Uint8Array);
+    });
+
+    it('should return the SHA256 hashed Uint8Array with message[23] and out[16]', () => {
+      const message = new Uint8Array(23);
+      message[13] = 17;
+      let out = new Uint8Array(16);
+      out[7] = 8;
+      out[11] = 6;
+      out = sha256(out, message);
+      const expectedSha256Out = new Uint8Array([
+        148, 78, 77, 24, 183, 173, 216, 129, 205, 169, 72, 25, 52, 232, 41, 62,
+      ]);
+
+      expect(out).to.deep.equal(expectedSha256Out);
+    });
+
+    it('should return the SHA256 hashed Uint8Array with message[30] and out[30]', () => {
+      const message = new Uint8Array(30);
+      message[1] = 8;
+      message[8] = 1;
+      let out = new Uint8Array(30);
+      out[29] = 32;
+      out[8] = 4;
+      out = sha256(out, message);
+      const expectedSha256Out = new Uint8Array([
+        89, 85, 100, 137, 196, 189, 197, 66, 195, 25, 235, 18, 54, 115, 73, 58, 190, 192, 212, 205, 37, 71, 108, 182,
+        76, 6, 209, 97, 164, 127,
+      ]);
+
+      expect(out).to.deep.equal(expectedSha256Out);
+    });
+
+    it('should return the SHA256 hashed Uint8Array with message[4] and out[18]', () => {
+      const message = new Uint8Array(4);
+      message[1] = 6;
+      message[2] = 4;
+      message[3] = 2;
+      let out = new Uint8Array(18);
+      out[16] = 3;
+      out[8] = 17;
+      out[4] = 13;
+      out = sha256(out, message);
+      const expectedSha256Out = new Uint8Array([
+        38, 238, 25, 172, 42, 38, 39, 85, 42, 218, 209, 83, 39, 254, 5, 44, 3, 96,
+      ]);
+
+      expect(out).to.deep.equal(expectedSha256Out);
     });
   });
 
