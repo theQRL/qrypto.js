@@ -74,10 +74,6 @@ export function prf(hashFunction, out, input, key, keyLen, outStartIndex = 0, ou
  * @param {Uint32Array[number]} n
  */
 export function hashH(hashFunction, out, input, pubSeed, addr, n) {
-  if (addr.length !== 8) {
-    throw new Error('Size of addr array is not 8');
-  }
-
   const buf = new Uint8Array(2 * n);
   const key = new Uint8Array(n);
   const bitMask = new Uint8Array(2 * n);

@@ -1,7 +1,17 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
 import { ENDIAN } from '../src/constants.js';
-import { addrToByte, setChainAddr, setHashAddr, setKeyAndMask, sha256, shake128, shake256 } from '../src/helper.js';
+import {
+  addrToByte,
+  setChainAddr,
+  setHashAddr,
+  setKeyAndMask,
+  setTreeHeight,
+  setTreeIndex,
+  sha256,
+  shake128,
+  shake256,
+} from '../src/helper.js';
 
 describe('helper', () => {
   describe('shake128', () => {
@@ -187,6 +197,28 @@ describe('helper', () => {
       const keyAndMask = new Uint32Array([17])[0];
       setKeyAndMask(addr, keyAndMask);
       const expectedAddr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 17]);
+
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+  });
+
+  describe('setTreeHeight', () => {
+    it('should set the keyAndMask at index 7', () => {
+      const addr = new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+      const treeHeight = new Uint32Array([20])[0];
+      setTreeHeight(addr, treeHeight);
+      const expectedAddr = new Uint32Array([0, 1, 2, 3, 4, 20, 6, 7, 8]);
+
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+  });
+
+  describe('setTreeIndex', () => {
+    it('should set the keyAndMask at index 7', () => {
+      const addr = new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+      const treeIndex = new Uint32Array([18])[0];
+      setTreeIndex(addr, treeIndex);
+      const expectedAddr = new Uint32Array([0, 1, 2, 3, 4, 5, 18, 7, 8]);
 
       expect(addr).to.deep.equal(expectedAddr);
     });

@@ -73,6 +73,22 @@ export function setKeyAndMask(addr, keyAndMask) {
   addr.set([keyAndMask], 7);
 }
 
+/**
+ * @param {Uint32Array} addr
+ * @param {Uint32Array[number]} treeHeight
+ */
+export function setTreeHeight(addr, treeHeight) {
+  addr.set([treeHeight], 5);
+}
+
+/**
+ * @param {Uint32Array} addr
+ * @param {Uint32Array[number]} treeIndex
+ */
+export function setTreeIndex(addr, treeIndex) {
+  addr.set([treeIndex], 6);
+}
+
 /** @returns Number */
 function getEndian() {
   const buffer = new ArrayBuffer(2);

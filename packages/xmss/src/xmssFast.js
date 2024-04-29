@@ -35,7 +35,6 @@ export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, s
   pk.set(sk.subarray(4 + 2 * n, 4 + 2 * n + pks), n);
 
   const addr = new Uint32Array(8);
-  // TODO:
   // treeHashSetup(hashFunction, pk, 0, bdsState, sk[4:4+n], xmssParams, sk[4+2*n:4+2*n+n], addr)
 
   sk.set(pk.subarray(0, pks), 4 + 3 * n);
