@@ -8,6 +8,7 @@ import {
   setKeyAndMask,
   setTreeHeight,
   setTreeIndex,
+  setType,
   sha256,
   shake128,
   shake256,
@@ -166,6 +167,26 @@ describe('helper', () => {
       ]);
 
       expect(out).to.deep.equal(expectedSha256Out);
+    });
+  });
+
+  describe('setType', () => {
+    it('should set the type from index 3 till 7, with typeValue 1', () => {
+      const addr = new Uint32Array([9, 9, 2, 3, 9, 1, 0, 5]);
+      const typeValue = new Uint32Array([1])[0];
+      setType(addr, typeValue);
+      const expectedAddr = new Uint32Array([9, 9, 2, 1, 0, 0, 0, 0]);
+
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+
+    it('should set the type from index 3 till 7, with typeValue 2', () => {
+      const addr = new Uint32Array([2, 3, 5, 7, 4, 9, 1, 0]);
+      const typeValue = new Uint32Array([2])[0];
+      setType(addr, typeValue);
+      const expectedAddr = new Uint32Array([2, 3, 5, 2, 0, 0, 0, 0]);
+
+      expect(addr).to.deep.equal(expectedAddr);
     });
   });
 

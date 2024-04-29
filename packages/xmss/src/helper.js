@@ -51,6 +51,17 @@ export function sha256(out, msg, outStartIndex = 0, outEndIndex = out.length) {
 
 /**
  * @param {Uint32Array} addr
+ * @param {Uint32Array[number]} typeValue
+ */
+export function setType(addr, typeValue) {
+  addr.set([typeValue], 3);
+  for (let i = 4; i < 8; i++) {
+    addr.set([0], i);
+  }
+}
+
+/**
+ * @param {Uint32Array} addr
  * @param {Uint32Array[number]} chain
  */
 export function setChainAddr(addr, chain) {
