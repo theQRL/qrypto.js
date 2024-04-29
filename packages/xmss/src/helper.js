@@ -7,12 +7,14 @@ const { shake256: sha3Shake256, shake128: sha3Shake128 } = jsSha3CommonJsPackage
 /**
  * @param {Uint8Array} out
  * @param {Uint8Array} msg
+ * @param {number} outStartIndex
+ * @param {number} outEndIndex
  * @returns {Uint8Array}
  */
-export function shake128(out, msg) {
+export function shake128(out, msg, outStartIndex = 0, outEndIndex = out.length) {
   const hash = sha3Shake128(msg, 8 * out.length);
-  for (let i = 0; i < out.length; i += 1) {
-    out.set([parseInt(hash.substring(i * 2, i * 2 + 2), 16)], i);
+  for (let o = outStartIndex, h = 0; o < outEndIndex; o++, h++) {
+    out.set([parseInt(hash.substring(h * 2, h * 2 + 2), 16)], o);
   }
   return out;
 }
@@ -20,12 +22,14 @@ export function shake128(out, msg) {
 /**
  * @param {Uint8Array} out
  * @param {Uint8Array} msg
+ * @param {number} outStartIndex
+ * @param {number} outEndIndex
  * @returns {Uint8Array}
  */
-export function shake256(out, msg) {
+export function shake256(out, msg, outStartIndex = 0, outEndIndex = out.length) {
   const hash = sha3Shake256(msg, 8 * out.length);
-  for (let i = 0; i < out.length; i += 1) {
-    out.set([parseInt(hash.substring(i * 2, i * 2 + 2), 16)], i);
+  for (let o = outStartIndex, h = 0; o < outEndIndex; o++, h++) {
+    out.set([parseInt(hash.substring(h * 2, h * 2 + 2), 16)], o);
   }
   return out;
 }
@@ -33,12 +37,14 @@ export function shake256(out, msg) {
 /**
  * @param {Uint8Array} out
  * @param {Uint8Array} msg
+ * @param {number} outStartIndex
+ * @param {number} outEndIndex
  * @returns {Uint8Array}
  */
-export function sha256(out, msg) {
+export function sha256(out, msg, outStartIndex = 0, outEndIndex = out.length) {
   const hashOut = sha2Func256(msg);
-  for (let i = 0; i < out.length; i++) {
-    out.set([hashOut[i]], i);
+  for (let o = outStartIndex, h = 0; o < outEndIndex; o++, h++) {
+    out.set([hashOut[h]], o);
   }
   return out;
 }

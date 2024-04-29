@@ -12,8 +12,21 @@ import { addrToByte, setKeyAndMask, sha256, shake128, shake256, toByteLittleEndi
  * @param {Uint8Array} input
  * @param {Uint32Array[number]} inLen
  * @param {Uint32Array[number]} n
+ * @param {number} outStartIndex
+ * @param {number} outEndIndex
  */
-export function coreHash(hashFunction, out, typeValue, key, keyLen, input, inLen, n) {
+export function coreHash(
+  hashFunction,
+  out,
+  typeValue,
+  key,
+  keyLen,
+  input,
+  inLen,
+  n,
+  outStartIndex = 0,
+  outEndIndex = out.length
+) {
   const buf = new Uint8Array(inLen + n + keyLen);
   toByteLittleEndian(buf, typeValue, n);
   for (let i = new Uint32Array([0])[0]; i < keyLen; i++) {
@@ -25,13 +38,13 @@ export function coreHash(hashFunction, out, typeValue, key, keyLen, input, inLen
 
   switch (hashFunction) {
     case HASH_FUNCTION.SHA2_256:
-      sha256(out, buf);
+      sha256(out, buf, outStartIndex, outEndIndex);
       break;
     case HASH_FUNCTION.SHAKE_128:
-      shake128(out, buf);
+      shake128(out, buf, outStartIndex, outEndIndex);
       break;
     case HASH_FUNCTION.SHAKE_256:
-      shake256(out, buf);
+      shake256(out, buf, outStartIndex, outEndIndex);
       break;
     default:
       break;
@@ -44,9 +57,11 @@ export function coreHash(hashFunction, out, typeValue, key, keyLen, input, inLen
  * @param {Uint8Array} input
  * @param {Uint8Array} key
  * @param {Uint32Array[number]} keyLen
+ * @param {number} outStartIndex
+ * @param {number} outEndIndex
  */
-export function prf(hashFunction, out, input, key, keyLen) {
-  coreHash(hashFunction, out, 3, key, keyLen, input, 32, keyLen);
+export function prf(hashFunction, out, input, key, keyLen, outStartIndex = 0, outEndIndex = out.length) {
+  coreHash(hashFunction, out, 3, key, keyLen, input, 32, keyLen, outStartIndex, outEndIndex);
 }
 
 // TODO: Once all objects are modified as reference, complete this.
@@ -57,30 +72,30 @@ export function prf(hashFunction, out, input, key, keyLen) {
  * @param {Uint8Array} pubSeed
  * @param {Uint32Array} addr
  * @param {Uint32Array[number]} n
- * @returns {Uint8Array}
  */
 export function hashH(hashFunction, out, input, pubSeed, addr, n) {
-  let addrValue = addr;
-  const buf = new Uint8Array(2 * n);
-  let key = new Uint8Array(n);
-  const bitMask = new Uint8Array(2 * n);
-  let byteAddr = new Uint8Array(32);
+  if (addr.length !== 8) {
+    throw new Error('Size of addr array is not 8');
+  }
 
-  addrValue = setKeyAndMask(addrValue, 0);
-  byteAddr = addrToByte(byteAddr, addrValue);
-  key = prf(hashFunction, key, byteAddr, pubSeed, n);
+  const buf = new Uint8Array(2 * n);
+  const key = new Uint8Array(n);
+  const bitMask = new Uint8Array(2 * n);
+  const byteAddr = new Uint8Array(32);
+
+  setKeyAndMask(addr, 0);
+  addrToByte(byteAddr, addr);
+  prf(hashFunction, key, byteAddr, pubSeed, n);
 
   // Use MSB order
-  addrValue = setKeyAndMask(addrValue, 1);
-  byteAddr = addrToByte(byteAddr, addrValue);
-  bitMask = prf(hashFunction, bitMask.subarray(0, n), byteAddr, pubSeed, n);
-
-  // prf(hashFunction, bitMask[:n], byteAddr[:], pubSeed, n)
-  // misc.SetKeyAndMask(addr, 2)
-  // misc.AddrToByte(&byteAddr, addr)
-  // prf(hashFunction, bitMask[n:n+n], byteAddr[:], pubSeed, n)
-  // for i := uint32(0); i < 2*n; i++ {
-  // 	buf[i] = input[i] ^ bitMask[i]
-  // }
-  // coreHash(hashFunction, out, 1, key, n, buf, 2*n, n)
+  setKeyAndMask(addr, 1);
+  addrToByte(byteAddr, addr);
+  prf(hashFunction, bitMask, byteAddr, pubSeed, n, 0, n);
+  setKeyAndMask(addr, 2);
+  addrToByte(byteAddr, addr);
+  prf(hashFunction, bitMask, byteAddr, pubSeed, n, n, n + n);
+  for (let i = new Uint32Array([0])[0]; i < 2 * n; i++) {
+    buf.set([input[i] ^ bitMask[i]], i);
+  }
+  coreHash(hashFunction, out, 1, key, n, buf, 2 * n, n);
 }

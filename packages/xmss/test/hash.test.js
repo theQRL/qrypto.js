@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
 import { HASH_FUNCTION } from '../src/constants.js';
-import { coreHash, prf } from '../src/hash.js';
+import { coreHash, hashH, prf } from '../src/hash.js';
 
 describe('hash', () => {
   describe('coreHash', () => {
@@ -93,6 +93,53 @@ describe('hash', () => {
         2
       );
       const expectedOutValue = new Uint8Array([229, 148, 107, 211, 209, 43, 245]);
+
+      expect(outValue).to.deep.equal(expectedOutValue);
+    });
+  });
+
+  describe('hashH', () => {
+    it('should generate prf output for the hashFunction SHA2_256', () => {
+      const outValue = new Uint8Array([8, 4, 9, 1, 0, 1, 0]);
+      hashH(
+        HASH_FUNCTION.SHA2_256,
+        outValue,
+        new Uint8Array([2, 4, 3, 6]),
+        new Uint8Array([8, 4, 3, 2]),
+        new Uint32Array([3, 7, 2, 7, 2, 8, 7, 3]),
+        new Uint32Array([2])[0]
+      );
+      const expectedOutValue = new Uint8Array([251, 62, 233, 104, 61, 163, 240]);
+
+      expect(outValue).to.deep.equal(expectedOutValue);
+    });
+
+    it('should generate prf output for the hashFunction SHAKE_128', () => {
+      const outValue = new Uint8Array([8, 1, 0, 3, 6, 8, 9, 2, 6, 8]);
+      hashH(
+        HASH_FUNCTION.SHAKE_128,
+        outValue,
+        new Uint8Array([2, 4, 3, 4, 6, 8, 6]),
+        new Uint8Array([8, 4, 4, 43, 2]),
+        new Uint32Array([3, 7, 2, 8, 7, 3, 0, 0]),
+        new Uint32Array([3])[0]
+      );
+      const expectedOutValue = new Uint8Array([243, 139, 85, 6, 180, 216, 43, 72, 46, 11]);
+
+      expect(outValue).to.deep.equal(expectedOutValue);
+    });
+
+    it('should generate prf output for the hashFunction SHAKE_256', () => {
+      const outValue = new Uint8Array([2, 3, 5, 7, 8, 9, 1, 0]);
+      hashH(
+        HASH_FUNCTION.SHAKE_256,
+        outValue,
+        new Uint8Array([2, 3, 6]),
+        new Uint8Array([4, 3, 2]),
+        new Uint32Array([3, 0, 0, 0, 0, 0, 2, 8]),
+        new Uint32Array([1])[0]
+      );
+      const expectedOutValue = new Uint8Array([149, 194, 107, 177, 208, 102, 106, 74]);
 
       expect(outValue).to.deep.equal(expectedOutValue);
     });
