@@ -1,4 +1,5 @@
 /// <reference path="typedefs.js" />
+import { prf } from './hash.js';
 import { addrToByte, setChainAddr, setHashAddr, setKeyAndMask, shake256 } from './helper.js';
 
 /**
@@ -23,10 +24,10 @@ export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, s
   sk.set([0], 3);
 
   // Copy PUB_SEED to public key
-  let randombits = new Uint8Array(3 * n);
+  const randombits = new Uint8Array(3 * n);
 
   // shake256(randombits, 3 * n, seed, 48);  // FIXME: seed size has been hardcoded to 48
-  randombits = shake256(randombits, seed);
+  shake256(randombits, seed);
 
   const rnd = 96;
   const pks = new Uint32Array([32])[0];
@@ -67,14 +68,13 @@ export function genLeafWOTS(hashFunction, leaf, skSeed, xmssParams, pubSeed, lTr
  * @param {Uint32Array} addr
  */
 export function getSeed(hashFunction, seed, skSeed, n, addr) {
-  const chainAddr = setChainAddr(addr, 0);
-  const hashAddr = setHashAddr(chainAddr, 0);
-  const keyAndMaskAddr = setKeyAndMask(hashAddr, 0);
+  const bytes = new Uint8Array(32);
+
+  setChainAddr(addr, 0);
+  setHashAddr(addr, 0);
+  setKeyAndMask(addr, 0);
 
   // // Generate pseudorandom value
-  const bytes = new Uint8Array(32);
-  const addrBytes = addrToByte(bytes, keyAndMaskAddr);
-  // prf(hashFunction, seed, bytes[:], skSeed, n)
-
-  return { addr: keyAndMaskAddr };
+  addrToByte(bytes, addr);
+  prf(hashFunction, seed, bytes, skSeed, n);
 }
