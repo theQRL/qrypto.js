@@ -46,31 +46,25 @@ export function sha256(out, msg) {
 /**
  * @param {Uint32Array} addr
  * @param {Uint32Array[number]} chain
- * @returns {Uint32Array}
  */
 export function setChainAddr(addr, chain) {
   addr.set([chain], 5);
-  return addr;
 }
 
 /**
  * @param {Uint32Array} addr
  * @param {Uint32Array[number]} hash
- * @returns {Uint32Array}
  */
 export function setHashAddr(addr, hash) {
   addr.set([hash], 6);
-  return addr;
 }
 
 /**
  * @param {Uint32Array} addr
  * @param {Uint32Array[number]} keyAndMask
- * @returns {Uint32Array}
  */
 export function setKeyAndMask(addr, keyAndMask) {
   addr.set([keyAndMask], 7);
-  return addr;
 }
 
 /** @returns Number */
@@ -92,52 +86,47 @@ function getEndian() {
  * @param {Uint8Array} out
  * @param {Uint32Array[number]} input
  * @param {Uint32Array[number]} bytes
- * @returns {Uint8Array}
+ * @param {number} outStartIndex
  */
-export function toByteLittleEndian(out, input, bytes) {
+export function toByteLittleEndian(out, input, bytes, outStartIndex = 0) {
   let inValue = input;
   for (let i = new Int32Array([bytes - 1])[0]; i >= 0; i--) {
-    out.set([new Uint8Array([inValue & 0xff])[0]], i);
+    out.set([new Uint8Array([inValue & 0xff])[0]], i + outStartIndex);
     inValue >>= 8;
   }
-  return out;
 }
 
 /**
  * @param {Uint8Array} out
  * @param {Uint32Array[number]} input
  * @param {Uint32Array[number]} bytes
- * @returns {Uint8Array}
+ * @param {number} outStartIndex
  */
-function toByteBigEndian(out, input, bytes) {
+function toByteBigEndian(out, input, bytes, outStartIndex = 0) {
   let inValue = input;
   for (let i = new Int32Array([0])[0]; i < bytes; i++) {
-    out.set([new Uint8Array([inValue & 0xff])[0]], i);
+    out.set([new Uint8Array([inValue & 0xff])[0]], i + outStartIndex);
     inValue >>= 8;
   }
-  return out;
 }
 
 /**
  * @param {Uint8Array} out
  * @param {Uint32Array} addr
- * @returns {Uint8Array}
+ * @param {function(): ENDIAN[keyof typeof ENDIAN]} getEndianFunc
  */
 export function addrToByte(out, addr, getEndianFunc = getEndian) {
-  const outValue = out;
   switch (getEndianFunc()) {
     case ENDIAN.LITTLE:
       for (let i = 0; i < 8; i++) {
-        const startInd = i * 4;
-        outValue.set(toByteLittleEndian(outValue.slice(startInd, startInd + 4), addr[i], 4), startInd);
+        toByteLittleEndian(out, addr[i], 4, i * 4);
       }
-      return outValue;
+      break;
     case ENDIAN.BIG:
       for (let i = 0; i < 8; i++) {
-        const startInd = i * 4;
-        outValue.set(toByteBigEndian(outValue.slice(startInd, startInd + 4), addr[i], 4), startInd);
+        toByteBigEndian(out, addr[i], 4, i * 4);
       }
-      return outValue;
+      break;
     default:
       throw new Error('Invalid Endian');
   }

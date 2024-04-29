@@ -163,10 +163,10 @@ describe('helper', () => {
     it('should set the chain at index 5', () => {
       const addr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 8]);
       const chain = new Uint32Array([16])[0];
-      const newAddr = setChainAddr(addr, chain);
+      setChainAddr(addr, chain);
       const expectedAddr = new Uint32Array([1, 2, 3, 4, 5, 16, 7, 8]);
 
-      expect(newAddr).to.deep.equal(expectedAddr);
+      expect(addr).to.deep.equal(expectedAddr);
     });
   });
 
@@ -174,10 +174,10 @@ describe('helper', () => {
     it('should set the hash at index 6', () => {
       const addr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 8]);
       const hash = new Uint32Array([22])[0];
-      const newAddr = setHashAddr(addr, hash);
+      setHashAddr(addr, hash);
       const expectedAddr = new Uint32Array([1, 2, 3, 4, 5, 6, 22, 8]);
 
-      expect(newAddr).to.deep.equal(expectedAddr);
+      expect(addr).to.deep.equal(expectedAddr);
     });
   });
 
@@ -185,10 +185,10 @@ describe('helper', () => {
     it('should set the keyAndMask at index 7', () => {
       const addr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 8]);
       const keyAndMask = new Uint32Array([17])[0];
-      const newAddr = setKeyAndMask(addr, keyAndMask);
+      setKeyAndMask(addr, keyAndMask);
       const expectedAddr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 17]);
 
-      expect(newAddr).to.deep.equal(expectedAddr);
+      expect(addr).to.deep.equal(expectedAddr);
     });
   });
 
@@ -197,24 +197,24 @@ describe('helper', () => {
       const getEndianFunc = () => ENDIAN.LITTLE;
       const bytes = new Uint8Array(32);
       const addr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 8]);
-      const addrBytes = addrToByte(bytes, addr, getEndianFunc);
+      addrToByte(bytes, addr, getEndianFunc);
       const expectedUint8Array = new Uint8Array([
         0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, 7, 0, 0, 0, 8,
       ]);
 
-      expect(addrBytes).to.deep.equal(expectedUint8Array);
+      expect(bytes).to.deep.equal(expectedUint8Array);
     });
 
     it('should add addr to bytes in case of big endian', () => {
       const getEndianFunc = () => ENDIAN.BIG;
       const bytes = new Uint8Array(32);
       const addr = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 8]);
-      const addrBytes = addrToByte(bytes, addr, getEndianFunc);
+      addrToByte(bytes, addr, getEndianFunc);
       const expectedUint8Array = new Uint8Array([
         1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, 7, 0, 0, 0, 8, 0, 0, 0,
       ]);
 
-      expect(addrBytes).to.deep.equal(expectedUint8Array);
+      expect(bytes).to.deep.equal(expectedUint8Array);
     });
   });
 });
