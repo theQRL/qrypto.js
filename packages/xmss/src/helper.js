@@ -121,10 +121,10 @@ function getEndian() {
  * @param {Uint32Array[number]} bytes
  * @param {number} outStartIndex
  */
-export function toByteLittleEndian(out, input, bytes, outStartIndex = 0) {
+export function toByteLittleEndian(out, input, bytes, outStartIndex = 0, outEndIndex = outStartIndex + bytes - 1) {
   let inValue = input;
-  for (let i = new Int32Array([bytes - 1])[0]; i >= 0; i--) {
-    out.set([new Uint8Array([inValue & 0xff])[0]], i + outStartIndex);
+  for (let o = outEndIndex; o >= outStartIndex; o--) {
+    out.set([new Uint8Array([inValue & 0xff])[0]], o);
     inValue >>= 8;
   }
 }
@@ -135,10 +135,10 @@ export function toByteLittleEndian(out, input, bytes, outStartIndex = 0) {
  * @param {Uint32Array[number]} bytes
  * @param {number} outStartIndex
  */
-function toByteBigEndian(out, input, bytes, outStartIndex = 0) {
+function toByteBigEndian(out, input, bytes, outStartIndex, outEndIndex = outStartIndex + bytes) {
   let inValue = input;
-  for (let i = new Int32Array([0])[0]; i < bytes; i++) {
-    out.set([new Uint8Array([inValue & 0xff])[0]], i + outStartIndex);
+  for (let o = outStartIndex; o < outEndIndex; o++) {
+    out.set([new Uint8Array([inValue & 0xff])[0]], o);
     inValue >>= 8;
   }
 }
