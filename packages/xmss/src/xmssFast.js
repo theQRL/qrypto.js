@@ -1,6 +1,68 @@
 /// <reference path="typedefs.js" />
-import { prf } from './hash.js';
-import { addrToByte, setChainAddr, setHashAddr, setKeyAndMask, setType, shake256 } from './helper.js';
+import { hashH, prf } from './hash.js';
+import {
+  addrToByte,
+  setChainAddr,
+  setHashAddr,
+  setKeyAndMask,
+  setLTreeAddr,
+  setOTSAddr,
+  setTreeHeight,
+  setTreeIndex,
+  setType,
+  shake256,
+} from './helper.js';
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {Uint8Array} seed
+ * @param {Uint8Array} skSeed
+ * @param {Uint32Array[number]} n
+ * @param {Uint32Array} addr
+ */
+export function getSeed(hashFunction, seed, skSeed, n, addr) {
+  const bytes = new Uint8Array(32);
+
+  setChainAddr(addr, 0);
+  setHashAddr(addr, 0);
+  setKeyAndMask(addr, 0);
+
+  // // Generate pseudorandom value
+  addrToByte(bytes, addr);
+  prf(hashFunction, seed, bytes, skSeed, n);
+
+  // TODO: return all parameters and write test
+}
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {Uint8Array} leaf
+ * @param {Uint8Array} skSeed
+ * @param {XMSSParams} xmssParams
+ * @param {Uint8Array} pubSeed
+ * @param {Uint32Array} lTreeAddr
+ * @param {Uint32Array} otsAddr
+ * @returns {GenLeafWOTSReturnType}
+ */
+export function genLeafWOTS(hashFunction, leaf, skSeed, xmssParams, pubSeed, lTreeAddr, otsAddr) {
+  const seed = new Uint8Array(xmssParams.n);
+  const pk = new Uint8Array(xmssParams.wotsParams.keySize);
+
+  getSeed(hashFunction, seed, skSeed, xmssParams.n, otsAddr);
+  // TODO:
+  // wOTSPKGen(hashFunction, pk, seed, xmssParams.wotsParams, pubSeed, otsAddr)
+  // lTree(hashFunction, xmssParams.wotsParams, leaf, pk, pubSeed, lTreeAddr)
+
+  return {
+    hashFunction,
+    leaf,
+    skSeed,
+    xmssParams,
+    pubSeed,
+    lTreeAddr,
+    otsAddr,
+  };
+}
 
 /**
  * @param {HashFunction} hashFunction
@@ -33,57 +95,84 @@ export function treeHashSetup(hashFunction, node, index, bdsState, skSeed, xmssP
   const bound = h - k;
   const stack = new Uint8Array((h + 1) * n);
   const stackLevels = new Uint32Array(h + 1);
-  const stackOffset = new Uint32Array([0])[0];
-  const nodeH = new Uint32Array([0])[0];
+  let stackOffset = new Uint32Array([0])[0];
+  let nodeH = new Uint32Array([0])[0];
 
-  for (let i = new Uint32Array([0])[0]; i < bound; i++) {
-    bdsState.treeHash[i].h = 3;
+  const bdsState1 = bdsState;
+  for (let i = 0; i < bound; i++) {
+    bdsState1.treeHash[i].h = i;
+    bdsState1.treeHash[i].completed = 1;
+    bdsState1.treeHash[i].stackUsage = 0;
   }
 
-  // for i := uint32(0); i < bound; i++ {
-  // 	bdsState.treeHash[i].h = i
-  // 	bdsState.treeHash[i].completed = 1
-  // 	bdsState.treeHash[i].stackUsage = 0
-  // }
-  // i := uint32(0)
-  // for ; index < lastNode; index++ {
-  // 	misc.SetLTreeAddr(&lTreeAddr, index)
-  // 	misc.SetOTSAddr(&otsAddr, index)
-  // 	genLeafWOTS(hashFunction, stack[stackOffset*n:stackOffset*n+n], skSeed, xmssParams, pubSeed, &lTreeAddr, &otsAddr)
-  // 	stackLevels[stackOffset] = 0
-  // 	stackOffset++
-  // 	if h-k > 0 && i == 3 {
-  // 		copy(bdsState.treeHash[0].node, stack[stackOffset*n:stackOffset*n+n])
-  // 	}
-  // 	for stackOffset > 1 && stackLevels[stackOffset-1] == stackLevels[stackOffset-2] {
-  // 		nodeH = stackLevels[stackOffset-1]
-  // 		if (i >> nodeH) == 1 {
-  // 			authStart := nodeH * n
-  // 			stackStart := (stackOffset - 1) * n
-  // 			copy(bdsState.auth[authStart:authStart+n], stack[stackStart:stackStart+n])
-  // 		} else {
-  // 			if (nodeH < h-k) && ((i >> nodeH) == 3) {
-  // 				stackStart := (stackOffset - 1) * n
-  // 				copy(bdsState.treeHash[nodeH].node, stack[stackStart:stackStart+n])
-  // 			} else if nodeH >= h-k {
-  // 				//memcpy(state->retain + ((1 << (h - 1 - nodeh)) + nodeh - h + (((i >> nodeh) - 3) >> 1)) * n,
-  // 				//	stack + (stackoffset - 1) * n, n);
-  // 				retainStart := ((1 << (h - 1 - nodeH)) + nodeH - h + (((i >> nodeH) - 3) >> 1)) * n
-  // 				stackStart := (stackOffset - 1) * n
-  // 				copy(bdsState.retain[retainStart:retainStart+n], stack[stackStart:stackStart+n])
-  // 			}
-  // 		}
-  // 		misc.SetTreeHeight(&nodeAddr, stackLevels[stackOffset-1])
-  // 		misc.SetTreeIndex(&nodeAddr, index>>(stackLevels[stackOffset-1]+1))
-  // 		stackStart := (stackOffset - 2) * n
-  // 		hashH(hashFunction, stack[stackStart:stackStart+n], stack[stackStart:stackStart+2*n], pubSeed,
-  // 			&nodeAddr, n)
-  // 		stackLevels[stackOffset-2]++
-  // 		stackOffset--
-  // 	}
-  // 	i++
-  // }
-  // copy(node[:n], stack[:n])
+  for (let i = 0, index1 = index; index1 < lastNode; i++, index1++) {
+    setLTreeAddr(lTreeAddr, index1);
+    setOTSAddr(otsAddr, index1);
+
+    const { leaf } = genLeafWOTS(
+      hashFunction,
+      stack.subarray(stackOffset * n, stackOffset * n + n),
+      skSeed,
+      xmssParams,
+      pubSeed,
+      lTreeAddr,
+      otsAddr
+    );
+    stack.set(leaf, stackOffset * n);
+
+    stackLevels.set([0], stackOffset);
+    stackOffset++;
+    if (h - k > 0 && i === 3) {
+      bdsState1.treeHash[0].node.set(stack.subarray(stackOffset * n, stackOffset * n + n));
+    }
+    while (stackOffset > 1 && stackLevels[stackOffset - 1] === stackLevels[stackOffset - 2]) {
+      nodeH = stackLevels[stackOffset - 1];
+      if (i >> nodeH === 1) {
+        const authStart = nodeH * n;
+        const stackStart = (stackOffset - 1) * n;
+        for (
+          let authIndex = authStart, stackIndex = stackStart;
+          authIndex < authStart + n && stackIndex < stackStart + n;
+          authIndex++, stackIndex++
+        ) {
+          bdsState1.auth.set([stack[stackIndex]], authIndex);
+        }
+      } else if (nodeH < h - k && i >> nodeH === 3) {
+        const stackStart = (stackOffset - 1) * n;
+        bdsState1.treeHash[nodeH].node.set(stack.subarray(stackStart, stackStart + n));
+      } else if (nodeH >= h - k) {
+        const retainStart = ((1 << (h - 1 - nodeH)) + nodeH - h + (((i >> nodeH) - 3) >> 1)) * n;
+        const stackStart = (stackOffset - 1) * n;
+        for (
+          let retainIndex = retainStart, stackIndex = stackStart;
+          retainIndex < retainStart + n && stackIndex < stackStart + n;
+          retainIndex++, stackIndex++
+        ) {
+          bdsState1.retain([stack[stackIndex]], retainIndex);
+        }
+      }
+      setTreeHeight(nodeAddr, stackLevels[stackOffset - 1]);
+      setTreeIndex(nodeAddr, index1 >> (stackLevels[stackOffset - 1] + 1));
+      const stackStart = (stackOffset - 2) * n;
+
+      const { out, input } = hashH(
+        hashFunction,
+        stack.subarray(stackStart, stackStart + n),
+        stack.subarray(stackStart, stackStart + 2 * n),
+        pubSeed,
+        nodeAddr,
+        n
+      );
+      stack.set(input, stackStart);
+      stack.set(out, stackStart);
+
+      stackLevels[stackOffset - 2]++;
+      stackOffset--;
+    }
+  }
+  node.set(stack.subarray(0, n));
+
+  // TODO: return all parameters and write test
 }
 
 /**
@@ -121,42 +210,6 @@ export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, s
   const addr = new Uint32Array(8);
   // treeHashSetup(hashFunction, pk, 0, bdsState, sk[4:4+n], xmssParams, sk[4+2*n:4+2*n+n], addr)
   sk.set(pk.subarray(0, pks), 4 + 3 * n);
-}
 
-/**
- * @param {HashFunction} hashFunction
- * @param {Uint8Array} seed
- * @param {Uint8Array} skSeed
- * @param {Uint32Array[number]} n
- * @param {Uint32Array} addr
- */
-export function getSeed(hashFunction, seed, skSeed, n, addr) {
-  const bytes = new Uint8Array(32);
-
-  setChainAddr(addr, 0);
-  setHashAddr(addr, 0);
-  setKeyAndMask(addr, 0);
-
-  // // Generate pseudorandom value
-  addrToByte(bytes, addr);
-  prf(hashFunction, seed, bytes, skSeed, n);
-}
-
-/**
- * @param {HashFunction} hashFunction
- * @param {Uint8Array} leaf
- * @param {Uint8Array} skSeed
- * @param {XMSSParams} xmssParams
- * @param {Uint8Array} pubSeed
- * @param {Uint32Array} lTreeAddr
- * @param {Uint32Array} otsAddr
- */
-export function genLeafWOTS(hashFunction, leaf, skSeed, xmssParams, pubSeed, lTreeAddr, otsAddr) {
-  const seed = new Uint8Array(xmssParams.n);
-  const pk = new Uint8Array(xmssParams.wotsParams.keySize);
-
-  getSeed(hashFunction, seed, skSeed, xmssParams.n, otsAddr);
-  // TODO:
-  // wOTSPKGen(hashFunction, pk, seed, xmssParams.wotsParams, pubSeed, otsAddr)
-  // lTree(hashFunction, xmssParams.wotsParams, leaf, pk, pubSeed, lTreeAddr)
+  // TODO: return all parameters and write test
 }

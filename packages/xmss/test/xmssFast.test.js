@@ -4,14 +4,6 @@ import { HASH_FUNCTION } from '../src/constants.js';
 import { getSeed } from '../src/xmssFast.js';
 
 describe('xmssFast', () => {
-  xdescribe('XMSSFastGenKeyPair', () => {
-    it('TODO', () => {});
-  });
-
-  xdescribe('genLeafWOTS', () => {
-    it('TODO', () => {});
-  });
-
   describe('getSeed', () => {
     it('should update the seed variable with hashFunction SHA2_256', () => {
       const seed = new Uint8Array([2, 3, 5, 7, 4, 9, 1, 0]);
@@ -54,5 +46,19 @@ describe('xmssFast', () => {
 
       expect(seed).to.deep.equal(expectedSeed);
     });
+
+    xit('TODO: test the input and output of this function', () => {});
+  });
+
+  xdescribe('genLeafWOTS', () => {
+    it('TODO', () => {});
+  });
+
+  xdescribe('treeHashSetup', () => {
+    it('TODO', () => {});
+  });
+
+  xdescribe('XMSSFastGenKeyPair', () => {
+    it('TODO', () => {});
   });
 });
