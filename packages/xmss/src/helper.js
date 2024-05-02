@@ -70,6 +70,14 @@ export function setLTreeAddr(addr, lTree) {
 
 /**
  * @param {Uint32Array} addr
+ * @param {Uint32Array[number]} ots
+ */
+export function setOTSAddr(addr, ots) {
+  addr.set([ots], 4);
+}
+
+/**
+ * @param {Uint32Array} addr
  * @param {Uint32Array[number]} chain
  */
 export function setChainAddr(addr, chain) {

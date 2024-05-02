@@ -7,6 +7,7 @@ import {
   setHashAddr,
   setKeyAndMask,
   setLTreeAddr,
+  setOTSAddr,
   setTreeHeight,
   setTreeIndex,
   setType,
@@ -196,6 +197,17 @@ describe('helper', () => {
       const addr = new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8]);
       const lTree = new Uint32Array([20])[0];
       setLTreeAddr(addr, lTree);
+      const expectedAddr = new Uint32Array([0, 1, 2, 3, 20, 5, 6, 7, 8]);
+
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+  });
+
+  describe('setOTSAddr', () => {
+    it('should set the ots at index 4', () => {
+      const addr = new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+      const ots = new Uint32Array([20])[0];
+      setOTSAddr(addr, ots);
       const expectedAddr = new Uint32Array([0, 1, 2, 3, 20, 5, 6, 7, 8]);
 
       expect(addr).to.deep.equal(expectedAddr);
