@@ -80,6 +80,7 @@ export function genLeafWOTS(hashFunction, leaf, skSeed, xmssParams, pubSeed, lTr
  * @param {XMSSParams} xmssParams
  * @param {Uint8Array} pubSeed
  * @param {Uint32Array} addr
+ * @returns {TreeHashSetupReturnType}
  */
 export function treeHashSetup(hashFunction, node, index, bdsState, skSeed, xmssParams, pubSeed, addr) {
   const { n, h, k } = xmssParams;
@@ -179,7 +180,16 @@ export function treeHashSetup(hashFunction, node, index, bdsState, skSeed, xmssP
   }
   node.set(stack.subarray(0, n));
 
-  // TODO: return all parameters and write test
+  return {
+    hashFunction,
+    node,
+    index,
+    bdsState,
+    skSeed,
+    xmssParams,
+    pubSeed,
+    addr,
+  };
 }
 
 /**
