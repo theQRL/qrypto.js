@@ -29,10 +29,10 @@ export function coreHash(
 ) {
   const buf = new Uint8Array(inLen + n + keyLen);
   toByteLittleEndian(buf, typeValue, n);
-  for (let i = new Uint32Array([0])[0]; i < keyLen; i++) {
+  for (let i = 0; i < keyLen; i++) {
     buf.set([key[i]], i + n);
   }
-  for (let i = new Uint32Array([0])[0]; i < inLen; i++) {
+  for (let i = 0; i < inLen; i++) {
     buf.set([input[i]], keyLen + n + i);
   }
 
@@ -64,7 +64,6 @@ export function prf(hashFunction, out, input, key, keyLen, outStartIndex = 0, ou
   coreHash(hashFunction, out, 3, key, keyLen, input, 32, keyLen, outStartIndex, outEndIndex);
 }
 
-// TODO: Once all objects are modified as reference, complete this.
 /**
  * @param {HashFunction} hashFunction
  * @param {Uint8Array} out
@@ -91,7 +90,7 @@ export function hashH(hashFunction, out, input, pubSeed, addr, n) {
   setKeyAndMask(addr, 2);
   addrToByte(byteAddr, addr);
   prf(hashFunction, bitMask, byteAddr, pubSeed, n, n, n + n);
-  for (let i = new Uint32Array([0])[0]; i < 2 * n; i++) {
+  for (let i = 0; i < 2 * n; i++) {
     buf.set([input[i] ^ bitMask[i]], i);
   }
   coreHash(hashFunction, out, 1, key, n, buf, 2 * n, n);
