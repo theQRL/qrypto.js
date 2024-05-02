@@ -35,7 +35,7 @@
  * @property {Uint8Array} stackLevels
  * @property {Uint8Array} auth
  * @property {Uint8Array} keep
- * @property {TreeHashInst} treeHash
+ * @property {TreeHashInst[]} treeHash
  * @property {Uint8Array} retain
  * @property {Uint32Array[number]} nextLeaf
  */
