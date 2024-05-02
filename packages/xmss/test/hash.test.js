@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { describe, it } from 'mocha';
+import { describe, it, xit } from 'mocha';
 import { HASH_FUNCTION } from '../src/constants.js';
 import { coreHash, hashH, prf } from '../src/hash.js';
 
@@ -143,5 +143,7 @@ describe('hash', () => {
 
       expect(outValue).to.deep.equal(expectedOutValue);
     });
+
+    xit('TODO: test the input and output of this function', () => {});
   });
 });
