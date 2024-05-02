@@ -62,3 +62,12 @@
  * @property {Uint32Array} addr
  * @property {Uint32Array[number]} n
  */
+
+/**
+ * @typedef {Object} GetSeedReturnType
+ * @property {HashFunction} hashFunction
+ * @property {Uint8Array} seed
+ * @property {Uint8Array} skSeed
+ * @property {Uint32Array[number]} n
+ * @property {Uint32Array} addr
+ */

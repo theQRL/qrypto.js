@@ -19,6 +19,7 @@ import {
  * @param {Uint8Array} skSeed
  * @param {Uint32Array[number]} n
  * @param {Uint32Array} addr
+ * @returns {GetSeedReturnType}
  */
 export function getSeed(hashFunction, seed, skSeed, n, addr) {
   const bytes = new Uint8Array(32);
@@ -31,7 +32,13 @@ export function getSeed(hashFunction, seed, skSeed, n, addr) {
   addrToByte(bytes, addr);
   prf(hashFunction, seed, bytes, skSeed, n);
 
-  // TODO: return all parameters and write test
+  return {
+    hashFunction,
+    seed,
+    skSeed,
+    n,
+    addr,
+  };
 }
 
 /**
