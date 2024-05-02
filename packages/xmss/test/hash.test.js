@@ -144,6 +144,28 @@ describe('hash', () => {
       expect(outValue).to.deep.equal(expectedOutValue);
     });
 
-    xit('TODO: test the input and output of this function', () => {});
+    it('should return back all the arguments passed to it, as an object', () => {
+      const paramHashFunction = HASH_FUNCTION.SHAKE_256;
+      const paramOut = new Uint8Array([5, 1, 6, 3, 6]);
+      const paramInput = new Uint8Array([2, 5, 1, 6, 3, 6]);
+      const paramPubSeed = new Uint8Array([2, 5, 1, 5, 1, 6, 3, 6]);
+      const paramAddr = new Uint32Array([3, 5, 1, 2, 6, 8, 3, 2]);
+      const paramN = new Uint32Array([3])[0];
+      const { hashFunction, out, input, pubSeed, addr, n } = hashH(
+        paramHashFunction,
+        paramOut,
+        paramInput,
+        paramPubSeed,
+        paramAddr,
+        paramN
+      );
+
+      expect(paramHashFunction).to.equal(hashFunction);
+      expect(paramOut).to.deep.equal(out);
+      expect(paramInput).to.equal(input);
+      expect(paramPubSeed).to.equal(pubSeed);
+      expect(paramAddr).to.equal(addr);
+      expect(paramN).to.equal(n);
+    });
   });
 });
