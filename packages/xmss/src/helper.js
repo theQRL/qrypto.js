@@ -62,6 +62,14 @@ export function setType(addr, typeValue) {
 
 /**
  * @param {Uint32Array} addr
+ * @param {Uint32Array[number]} lTree
+ */
+export function setLTreeAddr(addr, lTree) {
+  addr.set([lTree], 4);
+}
+
+/**
+ * @param {Uint32Array} addr
  * @param {Uint32Array[number]} chain
  */
 export function setChainAddr(addr, chain) {
