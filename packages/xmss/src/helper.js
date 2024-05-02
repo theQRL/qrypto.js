@@ -135,7 +135,7 @@ export function toByteLittleEndian(out, input, bytes, outStartIndex = 0, outEndI
  * @param {Uint32Array[number]} bytes
  * @param {number} outStartIndex
  */
-function toByteBigEndian(out, input, bytes, outStartIndex, outEndIndex = outStartIndex + bytes) {
+function toByteBigEndian(out, input, bytes, outStartIndex = 0, outEndIndex = outStartIndex + bytes) {
   let inValue = input;
   for (let o = outStartIndex; o < outEndIndex; o++) {
     out.set([new Uint8Array([inValue & 0xff])[0]], o);
