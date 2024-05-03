@@ -117,6 +117,7 @@ export function treeHashSetup(hashFunction, node, index, bdsState, skSeed, xmssP
     setLTreeAddr(lTreeAddr, index1);
     setOTSAddr(otsAddr, index1);
 
+    // TODO: complete genLeafWOTS to run this function
     const { leaf } = genLeafWOTS(
       hashFunction,
       stack.subarray(stackOffset * n, stackOffset * n + n),
