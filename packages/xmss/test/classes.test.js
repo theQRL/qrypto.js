@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
-import { newBDSState, newTreeHashInst } from '../src/classes.js';
+import { newBDSState, newTreeHashInst, newWOTSParams, newXMSSParams } from '../src/classes.js';
 
 describe('classes', () => {
   describe('newTreeHashInst', () => {
@@ -55,6 +55,49 @@ describe('classes', () => {
       expect(bdsState.treeHash.length).to.equal(height - k);
       expect(bdsState.retain.length).to.equal(((1 << k) - k - 1) * n);
       expect(bdsState.nextLeaf).to.equal(0);
+    });
+  });
+
+  describe('newWOTSParams', () => {
+    it('should create a WOTSParams instance', () => {
+      const n = 6;
+      const w = 9;
+      const wotsParams = newWOTSParams(n, w);
+
+      expect(Object.getOwnPropertyNames(wotsParams)).to.deep.equal([
+        'n',
+        'w',
+        'logW',
+        'len1',
+        'len2',
+        'len',
+        'keySize',
+      ]);
+      expect(wotsParams.n).to.equal(n);
+      expect(wotsParams.w).to.equal(w);
+      expect(wotsParams.len1).to.equal(16);
+      expect(wotsParams.len2).to.equal(3);
+      expect(wotsParams.len).to.equal(19);
+      expect(wotsParams.n).to.equal(6);
+      expect(wotsParams.w).to.equal(9);
+      expect(wotsParams.logW).to.equal(3);
+      expect(wotsParams.keySize).to.equal(114);
+    });
+  });
+
+  describe('newXMSSParams', () => {
+    it('should create a WOTSParams instance', () => {
+      const n = 2;
+      const h = 4;
+      const w = 6;
+      const k = 8;
+      const xmssParams = newXMSSParams(n, h, w, k);
+
+      expect(Object.getOwnPropertyNames(xmssParams)).to.deep.equal(['wotsParams', 'n', 'h', 'k']);
+      expect(xmssParams.wotsParams).to.deep.equal(newWOTSParams(n, w));
+      expect(xmssParams.n).to.equal(n);
+      expect(xmssParams.h).to.equal(h);
+      expect(xmssParams.k).to.equal(k);
     });
   });
 });

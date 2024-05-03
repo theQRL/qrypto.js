@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
-import { newBDSState } from '../src/classes.js';
+import { newBDSState, newXMSSParams } from '../src/classes.js';
 import { HASH_FUNCTION } from '../src/constants.js';
 import { getSeed, treeHashSetup } from '../src/xmssFast.js';
 
@@ -81,7 +81,7 @@ describe('xmssFast', () => {
       const paramIndex = new Uint32Array([1])[0];
       const paramBdsState = newBDSState(4, 2, 6);
       const paramSkSeed = new Uint8Array([2, 5, 1, 9, 4, 9, 1, 0]);
-      const paramXmssParams = new Uint8Array([2, 5, 1, 9, 4, 9, 1, 0]);
+      const paramXmssParams = newXMSSParams(2, 4, 6, 8);
       const paramPubSeed = new Uint8Array([2, 5, 1, 9, 4, 9, 1, 0]);
       const paramAddr = new Uint32Array([2, 5, 1, 9, 4, 9, 1, 0]);
       const { hashFunction, node, index, bdsState, skSeed, xmssParams, pubSeed, addr } = treeHashSetup(

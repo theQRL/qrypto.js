@@ -2,10 +2,10 @@
 
 class TreeHashInstClass {
   constructor(n = 0) {
-    this.h = 0;
-    this.nextIdx = 0;
-    this.stackUsage = 0;
-    this.completed = 0;
+    [this.h] = new Uint32Array([0]);
+    [this.nextIdx] = new Uint32Array([0]);
+    [this.stackUsage] = new Uint32Array([0]);
+    [this.completed] = new Uint8Array([0]);
     this.node = new Uint8Array(n);
   }
 }
@@ -42,4 +42,45 @@ class BDSStateClass {
  */
 export function newBDSState(height, n, k) {
   return new BDSStateClass(height, n, k);
+}
+
+class WOTSParamsClass {
+  constructor(n, w) {
+    this.n = n;
+    this.w = w;
+    [this.logW] = new Uint32Array([Math.log2(w)]);
+    [this.len1] = new Uint32Array([Math.ceil((8 * n) / this.logW)]);
+    [this.len2] = new Uint32Array([Math.floor(Math.log2(this.len1 * (w - 1)) / this.logW) + 1]);
+    this.len = this.len1 + this.len2;
+    this.keySize = this.len * n;
+  }
+}
+
+/**
+ * @param {Uint32Array[number]} n
+ * @param {Uint32Array[number]} w
+ * @returns {WOTSParams}
+ */
+export function newWOTSParams(n, w) {
+  return new WOTSParamsClass(n, w);
+}
+
+class XMSSParamsClass {
+  constructor(n, h, w, k) {
+    this.wotsParams = newWOTSParams(n, w);
+    this.n = n;
+    this.h = h;
+    this.k = k;
+  }
+}
+
+/**
+ * @param {Uint32Array[number]} n
+ * @param {Uint32Array[number]} h
+ * @param {Uint32Array[number]} w
+ * @param {Uint32Array[number]} k
+ * @returns {XMSSParams}
+ */
+export function newXMSSParams(n, h, w, k) {
+  return new XMSSParamsClass(n, h, w, k);
 }
