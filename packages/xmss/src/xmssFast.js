@@ -118,7 +118,7 @@ export function treeHashSetup(hashFunction, node, index, bdsState, skSeed, xmssP
     setOTSAddr(otsAddr, index1);
 
     // TODO: complete genLeafWOTS to run this function
-    const { leaf } = genLeafWOTS(
+    genLeafWOTS(
       hashFunction,
       stack.subarray(stackOffset * n, stackOffset * n + n),
       skSeed,
@@ -127,7 +127,6 @@ export function treeHashSetup(hashFunction, node, index, bdsState, skSeed, xmssP
       lTreeAddr,
       otsAddr
     );
-    stack.set(leaf, stackOffset * n);
 
     stackLevels.set([0], stackOffset);
     stackOffset++;
@@ -164,7 +163,7 @@ export function treeHashSetup(hashFunction, node, index, bdsState, skSeed, xmssP
       setTreeIndex(nodeAddr, index1 >> (stackLevels[stackOffset - 1] + 1));
       const stackStart = (stackOffset - 2) * n;
 
-      const { out, input } = hashH(
+      hashH(
         hashFunction,
         stack.subarray(stackStart, stackStart + n),
         stack.subarray(stackStart, stackStart + 2 * n),
@@ -172,8 +171,6 @@ export function treeHashSetup(hashFunction, node, index, bdsState, skSeed, xmssP
         nodeAddr,
         n
       );
-      stack.set(input, stackStart);
-      stack.set(out, stackStart);
 
       stackLevels[stackOffset - 2]++;
       stackOffset--;
@@ -226,7 +223,17 @@ export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, s
   pk.set(sk.subarray(4 + 2 * n, 4 + 2 * n + pks), n);
 
   const addr = new Uint32Array(8);
-  // treeHashSetup(hashFunction, pk, 0, bdsState, sk[4:4+n], xmssParams, sk[4+2*n:4+2*n+n], addr)
+  treeHashSetup(
+    hashFunction,
+    pk,
+    0,
+    bdsState,
+    sk.subarray(4, 4 + n),
+    xmssParams,
+    sk.subarray(4 + 2 * n, 4 + 2 * n + n),
+    addr
+  );
+
   sk.set(pk.subarray(0, pks), 4 + 3 * n);
 
   // TODO: return all parameters and write test
