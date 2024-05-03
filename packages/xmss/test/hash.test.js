@@ -167,5 +167,27 @@ describe('hash', () => {
       expect(paramAddr).to.equal(addr);
       expect(paramN).to.equal(n);
     });
+
+    it('should modify the out and input variables correctly if the same variable sliced and passed for both', () => {
+      const paramHashFunction = HASH_FUNCTION.SHAKE_256;
+      const paramVariable = new Uint8Array([2, 3, 5, 1, 7, 3, 8, 3, 8, 3, 9, 2, 9, 2, 7, 7, 9]);
+      const paramPubSeed = new Uint8Array([2, 5, 1, 5, 1, 6, 3, 6]);
+      const paramAddr = new Uint32Array([3, 5, 1, 2, 6, 8, 3, 2]);
+      const paramN = new Uint32Array([2])[0];
+      const expectedParamVariable = new Uint8Array([2, 3, 66, 1, 214, 201, 214, 235, 3, 215, 9, 2, 9, 2, 7, 7, 9]);
+      const expectedOut = new Uint8Array([66, 1, 214, 201, 214, 235, 3, 215]);
+      const expectedInput = new Uint8Array([214, 201, 214, 235, 3, 215, 9, 2]);
+      const { out, input } = hashH(
+        paramHashFunction,
+        paramVariable.subarray(2, 10),
+        paramVariable.subarray(4, 12),
+        paramPubSeed,
+        paramAddr,
+        paramN
+      );
+      expect(paramVariable).to.deep.equal(expectedParamVariable);
+      expect(out).to.deep.equal(expectedOut);
+      expect(input).to.deep.equal(expectedInput);
+    });
   });
 });
