@@ -11,6 +11,7 @@ import {
   setTreeIndex,
   setType,
   shake256,
+  toByteLittleEndian,
 } from './helper.js';
 
 /**
@@ -22,13 +23,17 @@ import {
  * @returns {GetSeedReturnType}
  */
 export function getSeed(hashFunction, seed, skSeed, n, addr) {
+  if (addr.length !== 8) {
+    throw new Error('size should be an array of size 8');
+  }
+
   const bytes = new Uint8Array(32);
 
   setChainAddr(addr, 0);
   setHashAddr(addr, 0);
   setKeyAndMask(addr, 0);
 
-  // // Generate pseudorandom value
+  // Generate pseudorandom value
   addrToByte(bytes, addr);
   prf(hashFunction, seed, bytes, skSeed, n);
 
@@ -39,6 +44,49 @@ export function getSeed(hashFunction, seed, skSeed, n, addr) {
     n,
     addr,
   };
+}
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {Uint8Array} outSeeds
+ * @param {Uint8Array} inSeeds
+ * @param {Uint32Array[number]} n
+ * @param {Uint32Array[number]} len
+ */
+export function expandSeed(hashFunction, outSeeds, inSeeds, n, len) {
+  const ctr = new Uint8Array(32);
+  for (let i = 0; i < len; i++) {
+    toByteLittleEndian(ctr, i, 32);
+    prf(hashFunction, outSeeds.subarray(i * n, i * n + n), ctr, inSeeds, n);
+  }
+}
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {Uint8Array} pk
+ * @param {Uint8Array} sk
+ * @param {WOTSParams} wOTSParams
+ * @param {Uint8Array} pubSeed
+ * @param {Uint32Array} addr
+ */
+export function wOTSPKGen(hashFunction, pk, sk, wOTSParams, pubSeed, addr) {
+  if (addr.length !== 8) {
+    throw new Error('size should be an array of size 8');
+  }
+
+  expandSeed(hashFunction, pk, sk, wOTSParams.n, wOTSParams.len);
+  // for i := uint32(0); i < wOTSParams.len; i++ {
+  // 	misc.SetChainAddr(addr, i)
+  // 	pkStartOffset := i * wOTSParams.n
+  // 	genChain(hashFunction,
+  // 		pk[pkStartOffset:pkStartOffset+wOTSParams.n],
+  // 		pk[pkStartOffset:pkStartOffset+wOTSParams.n],
+  // 		0,
+  // 		wOTSParams.w-1,
+  // 		wOTSParams,
+  // 		pubSeed,
+  // 		addr)
+  // }
 }
 
 /**
@@ -56,8 +104,8 @@ export function genLeafWOTS(hashFunction, leaf, skSeed, xmssParams, pubSeed, lTr
   const pk = new Uint8Array(xmssParams.wotsParams.keySize);
 
   getSeed(hashFunction, seed, skSeed, xmssParams.n, otsAddr);
+  wOTSPKGen(hashFunction, pk, seed, xmssParams.wotsParams, pubSeed, otsAddr);
   // TODO:
-  // wOTSPKGen(hashFunction, pk, seed, xmssParams.wotsParams, pubSeed, otsAddr)
   // lTree(hashFunction, xmssParams.wotsParams, leaf, pk, pubSeed, lTreeAddr)
 
   return {
@@ -156,7 +204,7 @@ export function treeHashSetup(hashFunction, node, index, bdsState, skSeed, xmssP
           retainIndex < retainStart + n && stackIndex < stackStart + n;
           retainIndex++, stackIndex++
         ) {
-          bdsState1.retain([stack[stackIndex]], retainIndex);
+          bdsState1.retain.set([stack[stackIndex]], retainIndex);
         }
       }
       setTreeHeight(nodeAddr, stackLevels[stackOffset - 1]);
