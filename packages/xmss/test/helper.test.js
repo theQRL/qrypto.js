@@ -170,6 +170,24 @@ describe('helper', () => {
 
       expect(out).to.deep.equal(expectedSha256Out);
     });
+
+    it('should return the SHA256 hashed Uint8Array with message[96] and out[32]', () => {
+      const message = new Uint8Array([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 5, 3, 1, 3,
+        2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 0, 0, 0, 4, 0, 0, 0, 3, 0, 0,
+        0, 2, 0, 0, 0, 2, 0, 0, 0, 7, 0, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0, 0,
+      ]);
+      let out = new Uint8Array([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      ]);
+      out = sha256(out, message);
+      const expectedSha256Out = new Uint8Array([
+        207, 210, 131, 49, 77, 71, 254, 199, 74, 126, 55, 160, 149, 168, 40, 122, 175, 166, 2, 131, 91, 171, 241, 142,
+        164, 96, 194, 33, 28, 47, 233, 120,
+      ]);
+
+      expect(out).to.deep.equal(expectedSha256Out);
+    });
   });
 
   describe('setType', () => {
