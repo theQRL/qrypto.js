@@ -114,7 +114,6 @@ export function genChain(hashFunction, out, input, start, steps, params, pubSeed
 
   for (let i = start; i < start + steps && i < params.w; i++) {
     setHashAddr(addr, i);
-    // TODO: complete hashF
     hashF(hashFunction, out, out, pubSeed, addr, params.n);
   }
 }
@@ -136,7 +135,7 @@ export function wOTSPKGen(hashFunction, pk, sk, wOTSParams, pubSeed, addr) {
   for (let i = 0; i < wOTSParams.len; i++) {
     setChainAddr(addr, i);
     const pkStartOffset = i * wOTSParams.n;
-    // TODO: complete genChain
+    // TODO: test this one genChain is completed
     genChain(
       hashFunction,
       pk.subarray(pkStartOffset, pkStartOffset + wOTSParams.n),

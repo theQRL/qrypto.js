@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
-import { newBDSState, newXMSSParams } from '../src/classes.js';
+import { newBDSState, newWOTSParams, newXMSSParams } from '../src/classes.js';
 import { HASH_FUNCTION } from '../src/constants.js';
-import { XMSSFastGenKeyPair, expandSeed, getSeed, hashF, treeHashSetup } from '../src/xmssFast.js';
+import { XMSSFastGenKeyPair, expandSeed, genChain, getSeed, hashF, treeHashSetup } from '../src/xmssFast.js';
 
 describe('xmssFast', () => {
   describe('getSeed', () => {
@@ -86,7 +86,7 @@ describe('xmssFast', () => {
   });
 
   describe('hashF', () => {
-    it('should set the result to the out variable', () => {
+    it('should set the result to the out variable, with SHAKE_128', () => {
       const out = new Uint8Array([3, 5, 1, 2, 7, 2, 7, 3]);
       const input = new Uint8Array([1, 3, 4, 4, 3, 2, 2, 7, 3]);
       const pubSeed = new Uint8Array([9, 2, 4, 5, 7, 4, 4, 3, 2, 2, 7, 3]);
@@ -94,15 +94,166 @@ describe('xmssFast', () => {
       const n = 2;
       const expectedOut = new Uint8Array([116, 78, 210, 153, 143, 44, 226, 60]);
       const expectedInput = new Uint8Array([1, 3, 4, 4, 3, 2, 2, 7, 3]);
+      const expectedPubSeed = new Uint8Array([9, 2, 4, 5, 7, 4, 4, 3, 2, 2, 7, 3]);
+      const expectedAddr = new Uint32Array([7, 4, 8, 2, 6, 0, 2, 1]);
       hashF(HASH_FUNCTION.SHAKE_128, out, input, pubSeed, addr, n);
 
       expect(out).to.deep.equal(expectedOut);
       expect(input).to.deep.equal(expectedInput);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+
+    it('should set the result to the out variable, with SHA2_256', () => {
+      const out = new Uint8Array([
+        1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 3, 5, 1, 2, 7,
+        2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3,
+      ]);
+      const pubSeed = new Uint8Array([
+        4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5,
+        7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8,
+      ]);
+      const addr = new Uint32Array([4, 3, 2, 2, 7, 3, 2, 9]);
+      const n = 32;
+      const expectedOut = new Uint8Array([
+        83, 91, 26, 111, 69, 189, 212, 121, 108, 125, 181, 168, 17, 241, 17, 230, 56, 127, 47, 57, 163, 111, 24, 196,
+        47, 222, 103, 251, 212, 239, 249, 202, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3,
+      ]);
+      const expectedPubSeed = new Uint8Array([
+        4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5,
+        7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8,
+      ]);
+      const expectedAddr = new Uint32Array([4, 3, 2, 2, 7, 3, 2, 1]);
+      hashF(HASH_FUNCTION.SHA2_256, out, out, pubSeed, addr, n);
+
+      expect(out).to.deep.equal(expectedOut);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
     });
   });
 
-  xdescribe('genChain', () => {
-    it('TODO', () => {});
+  describe('genChain', () => {
+    it('should generate chain in the out variable, with SHA2_256 hashing', () => {
+      const out = new Uint8Array([
+        3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7,
+        2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3,
+      ]);
+      const input = new Uint8Array([
+        1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1,
+        3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3,
+      ]);
+      const start = 2;
+      const steps = 3;
+      const n = 32;
+      const w = 16;
+      const params = newWOTSParams(n, w);
+      const pubSeed = new Uint8Array([
+        4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5,
+        7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8,
+      ]);
+      const addr = new Uint32Array([4, 3, 2, 2, 7, 3, 9, 9]);
+      const expectedOut = new Uint8Array([
+        197, 123, 154, 206, 7, 143, 128, 162, 193, 109, 38, 180, 195, 173, 174, 146, 36, 234, 80, 133, 124, 153, 70,
+        115, 58, 80, 76, 86, 193, 191, 221, 51, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3,
+      ]);
+      const expectedInput = new Uint8Array([
+        1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1,
+        3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3,
+      ]);
+      const expectedPubSeed = new Uint8Array([
+        4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5,
+        7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8,
+      ]);
+      const expectedAddr = new Uint32Array([4, 3, 2, 2, 7, 3, 4, 1]);
+      genChain(HASH_FUNCTION.SHA2_256, out, input, start, steps, params, pubSeed, addr);
+
+      expect(out).to.deep.equal(expectedOut);
+      expect(input).to.deep.equal(expectedInput);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+
+    it('should generate chain in the out variable, with SHAKE_128 hashing', () => {
+      const out = new Uint8Array([
+        3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7,
+        2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3,
+      ]);
+      const input = new Uint8Array([
+        1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1,
+        3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3,
+      ]);
+      const start = 2;
+      const steps = 3;
+      const n = 32;
+      const w = 16;
+      const params = newWOTSParams(n, w);
+      const pubSeed = new Uint8Array([
+        4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5,
+        7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8,
+      ]);
+      const addr = new Uint32Array([4, 3, 2, 2, 7, 3, 9, 9]);
+      const expectedOut = new Uint8Array([
+        126, 158, 240, 254, 2, 207, 160, 28, 89, 7, 124, 212, 241, 132, 115, 192, 89, 122, 120, 55, 111, 108, 39, 12,
+        245, 8, 193, 38, 121, 9, 182, 22, 88, 25, 33, 165, 206, 27, 78, 209, 188, 168, 169, 152, 123, 89, 28, 156, 221,
+        219, 139, 155, 187, 208, 187, 224,
+      ]);
+      const expectedInput = new Uint8Array([
+        1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1,
+        3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3,
+      ]);
+      const expectedPubSeed = new Uint8Array([
+        4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5,
+        7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8,
+      ]);
+      const expectedAddr = new Uint32Array([4, 3, 2, 2, 7, 3, 4, 1]);
+      genChain(HASH_FUNCTION.SHAKE_128, out, input, start, steps, params, pubSeed, addr);
+
+      expect(out).to.deep.equal(expectedOut);
+      expect(input).to.deep.equal(expectedInput);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+
+    it('should generate chain in the out variable, with SHAKE_256 hashing', () => {
+      const out = new Uint8Array([
+        3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7,
+        2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3, 3, 5, 1, 2, 7, 2, 7, 3,
+      ]);
+      const input = new Uint8Array([
+        1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1,
+        3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3,
+      ]);
+      const start = 2;
+      const steps = 3;
+      const n = 32;
+      const w = 16;
+      const params = newWOTSParams(n, w);
+      const pubSeed = new Uint8Array([
+        4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5,
+        7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8,
+      ]);
+      const addr = new Uint32Array([4, 3, 2, 2, 7, 3, 9, 9]);
+      const expectedOut = new Uint8Array([
+        121, 146, 54, 55, 196, 31, 10, 12, 19, 109, 71, 78, 5, 168, 158, 206, 238, 140, 113, 6, 130, 213, 31, 76, 12,
+        144, 71, 101, 230, 114, 67, 227, 169, 137, 68, 82, 97, 135, 175, 221, 70, 21, 69, 124, 120, 36, 198, 23, 15, 20,
+        90, 202, 78, 187, 105, 87,
+      ]);
+      const expectedInput = new Uint8Array([
+        1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1,
+        3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3, 1, 3, 4, 4, 3, 2, 2, 7, 3,
+      ]);
+      const expectedPubSeed = new Uint8Array([
+        4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5,
+        7, 8, 4, 5, 3, 1, 3, 2, 2, 7, 3, 4, 5, 7, 8,
+      ]);
+      const expectedAddr = new Uint32Array([4, 3, 2, 2, 7, 3, 4, 1]);
+      genChain(HASH_FUNCTION.SHAKE_256, out, input, start, steps, params, pubSeed, addr);
+
+      expect(out).to.deep.equal(expectedOut);
+      expect(input).to.deep.equal(expectedInput);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
+    });
   });
 
   xdescribe('wOTSPKGen', () => {
