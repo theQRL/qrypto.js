@@ -1,5 +1,5 @@
 /// <reference path="typedefs.js" />
-import { hashH, prf } from './hash.js';
+import { coreHash, hashH, prf } from './hash.js';
 import {
   addrToByte,
   setChainAddr,
@@ -24,7 +24,7 @@ import {
  */
 export function getSeed(hashFunction, seed, skSeed, n, addr) {
   if (addr.length !== 8) {
-    throw new Error('size should be an array of size 8');
+    throw new Error('addr should be an array of size 8');
   }
 
   const bytes = new Uint8Array(32);
@@ -63,6 +63,64 @@ export function expandSeed(hashFunction, outSeeds, inSeeds, n, len) {
 
 /**
  * @param {HashFunction} hashFunction
+ * @param {Uint8Array} out
+ * @param {Uint8Array} input
+ * @param {Uint8Array} pubSeed
+ * @param {Uint32Array} addr
+ * @param {Uint32Array[number]} n
+ */
+export function hashF(hashFunction, out, input, pubSeed, addr, n) {
+  if (addr.length !== 8) {
+    throw new Error('addr should be an array of size 8');
+  }
+
+  const buf = new Uint8Array(n);
+  const key = new Uint8Array(n);
+  const bitMask = new Uint8Array(n);
+  const byteAddr = new Uint8Array(32);
+
+  setKeyAndMask(addr, 0);
+  addrToByte(byteAddr, addr);
+  prf(hashFunction, key, byteAddr, pubSeed, n);
+
+  setKeyAndMask(addr, 1);
+  addrToByte(byteAddr, addr);
+  prf(hashFunction, bitMask, byteAddr, pubSeed, n);
+
+  for (let i = 0; i < n; i++) {
+    buf.set([input[i] ^ bitMask[i]], i);
+  }
+  coreHash(hashFunction, out, 0, key, n, buf, n, n);
+}
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {Uint8Array} out
+ * @param {Uint8Array} input
+ * @param {Uint32Array[number]} start
+ * @param {Uint32Array[number]} steps
+ * @param {WOTSParams} params
+ * @param {Uint8Array} pubSeed
+ * @param {Uint32Array} addr
+ */
+export function genChain(hashFunction, out, input, start, steps, params, pubSeed, addr) {
+  if (addr.length !== 8) {
+    throw new Error('addr should be an array of size 8');
+  }
+
+  for (let j = 0; j < params.n; j++) {
+    out.set([input[j]], j);
+  }
+
+  for (let i = start; i < start + steps && i < params.w; i++) {
+    setHashAddr(addr, i);
+    // TODO: complete hashF
+    hashF(hashFunction, out, out, pubSeed, addr, params.n);
+  }
+}
+
+/**
+ * @param {HashFunction} hashFunction
  * @param {Uint8Array} pk
  * @param {Uint8Array} sk
  * @param {WOTSParams} wOTSParams
@@ -71,22 +129,25 @@ export function expandSeed(hashFunction, outSeeds, inSeeds, n, len) {
  */
 export function wOTSPKGen(hashFunction, pk, sk, wOTSParams, pubSeed, addr) {
   if (addr.length !== 8) {
-    throw new Error('size should be an array of size 8');
+    throw new Error('addr should be an array of size 8');
   }
 
   expandSeed(hashFunction, pk, sk, wOTSParams.n, wOTSParams.len);
-  // for i := uint32(0); i < wOTSParams.len; i++ {
-  // 	misc.SetChainAddr(addr, i)
-  // 	pkStartOffset := i * wOTSParams.n
-  // 	genChain(hashFunction,
-  // 		pk[pkStartOffset:pkStartOffset+wOTSParams.n],
-  // 		pk[pkStartOffset:pkStartOffset+wOTSParams.n],
-  // 		0,
-  // 		wOTSParams.w-1,
-  // 		wOTSParams,
-  // 		pubSeed,
-  // 		addr)
-  // }
+  for (let i = 0; i < wOTSParams.len; i++) {
+    setChainAddr(addr, i);
+    const pkStartOffset = i * wOTSParams.n;
+    // TODO: complete genChain
+    genChain(
+      hashFunction,
+      pk.subarray(pkStartOffset, pkStartOffset + wOTSParams.n),
+      pk.subarray(pkStartOffset, pkStartOffset + wOTSParams.n),
+      0,
+      wOTSParams.w - 1,
+      wOTSParams,
+      pubSeed,
+      addr
+    );
+  }
 }
 
 /**

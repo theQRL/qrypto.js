@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { describe, it } from 'mocha';
 import { newBDSState, newXMSSParams } from '../src/classes.js';
 import { HASH_FUNCTION } from '../src/constants.js';
-import { XMSSFastGenKeyPair, expandSeed, getSeed, treeHashSetup } from '../src/xmssFast.js';
+import { XMSSFastGenKeyPair, expandSeed, getSeed, hashF, treeHashSetup } from '../src/xmssFast.js';
 
 describe('xmssFast', () => {
   describe('getSeed', () => {
@@ -83,6 +83,26 @@ describe('xmssFast', () => {
       expect(outSeeds).to.deep.equal(expectedOutSeeds);
       expect(inSeeds).to.deep.equal(expectedInSeeds);
     });
+  });
+
+  describe('hashF', () => {
+    it('should set the result to the out variable', () => {
+      const out = new Uint8Array([3, 5, 1, 2, 7, 2, 7, 3]);
+      const input = new Uint8Array([1, 3, 4, 4, 3, 2, 2, 7, 3]);
+      const pubSeed = new Uint8Array([9, 2, 4, 5, 7, 4, 4, 3, 2, 2, 7, 3]);
+      const addr = new Uint32Array([7, 4, 8, 2, 6, 0, 2, 5]);
+      const n = 2;
+      const expectedOut = new Uint8Array([116, 78, 210, 153, 143, 44, 226, 60]);
+      const expectedInput = new Uint8Array([1, 3, 4, 4, 3, 2, 2, 7, 3]);
+      hashF(HASH_FUNCTION.SHAKE_128, out, input, pubSeed, addr, n);
+
+      expect(out).to.deep.equal(expectedOut);
+      expect(input).to.deep.equal(expectedInput);
+    });
+  });
+
+  xdescribe('genChain', () => {
+    it('TODO', () => {});
   });
 
   xdescribe('wOTSPKGen', () => {
