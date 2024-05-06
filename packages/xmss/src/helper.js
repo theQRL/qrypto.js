@@ -43,7 +43,7 @@ export function shake256(out, msg, outStartIndex = 0, outEndIndex = out.length) 
  */
 export function sha256(out, msg, outStartIndex = 0, outEndIndex = out.length) {
   const hashOut = sha2Func256(msg);
-  for (let o = outStartIndex, h = 0; o < outEndIndex; o++, h++) {
+  for (let o = outStartIndex, h = 0; o < outEndIndex && h < hashOut.length; o++, h++) {
     out.set([hashOut[h]], o);
   }
   return out;
