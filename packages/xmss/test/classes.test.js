@@ -59,7 +59,7 @@ describe('classes', () => {
   });
 
   describe('newWOTSParams', () => {
-    it('should create a WOTSParams instance', () => {
+    it('should create a WOTSParams instance, with n[6] and w[9]', () => {
       const n = 6;
       const w = 9;
       const wotsParams = newWOTSParams(n, w);
@@ -82,6 +82,106 @@ describe('classes', () => {
       expect(wotsParams.w).to.equal(9);
       expect(wotsParams.logW).to.equal(3);
       expect(wotsParams.keySize).to.equal(114);
+    });
+
+    it('should create a WOTSParams instance, with n[32] and w[16]', () => {
+      const n = 32;
+      const w = 16;
+      const wotsParams = newWOTSParams(n, w);
+
+      expect(Object.getOwnPropertyNames(wotsParams)).to.deep.equal([
+        'n',
+        'w',
+        'logW',
+        'len1',
+        'len2',
+        'len',
+        'keySize',
+      ]);
+      expect(wotsParams.n).to.equal(n);
+      expect(wotsParams.w).to.equal(w);
+      expect(wotsParams.len1).to.equal(64);
+      expect(wotsParams.len2).to.equal(3);
+      expect(wotsParams.len).to.equal(67);
+      expect(wotsParams.n).to.equal(32);
+      expect(wotsParams.w).to.equal(16);
+      expect(wotsParams.logW).to.equal(4);
+      expect(wotsParams.keySize).to.equal(2144);
+    });
+
+    it('should create a WOTSParams instance, with n[8] and w[7]', () => {
+      const n = 8;
+      const w = 7;
+      const wotsParams = newWOTSParams(n, w);
+
+      expect(Object.getOwnPropertyNames(wotsParams)).to.deep.equal([
+        'n',
+        'w',
+        'logW',
+        'len1',
+        'len2',
+        'len',
+        'keySize',
+      ]);
+      expect(wotsParams.n).to.equal(n);
+      expect(wotsParams.w).to.equal(w);
+      expect(wotsParams.len1).to.equal(32);
+      expect(wotsParams.len2).to.equal(4);
+      expect(wotsParams.len).to.equal(36);
+      expect(wotsParams.n).to.equal(8);
+      expect(wotsParams.w).to.equal(7);
+      expect(wotsParams.logW).to.equal(2);
+      expect(wotsParams.keySize).to.equal(288);
+    });
+
+    it('should create a WOTSParams instance, with n[13] and w[11]', () => {
+      const n = 13;
+      const w = 11;
+      const wotsParams = newWOTSParams(n, w);
+
+      expect(Object.getOwnPropertyNames(wotsParams)).to.deep.equal([
+        'n',
+        'w',
+        'logW',
+        'len1',
+        'len2',
+        'len',
+        'keySize',
+      ]);
+      expect(wotsParams.n).to.equal(n);
+      expect(wotsParams.w).to.equal(w);
+      expect(wotsParams.len1).to.equal(34);
+      expect(wotsParams.len2).to.equal(3);
+      expect(wotsParams.len).to.equal(37);
+      expect(wotsParams.n).to.equal(13);
+      expect(wotsParams.w).to.equal(11);
+      expect(wotsParams.logW).to.equal(3);
+      expect(wotsParams.keySize).to.equal(481);
+    });
+
+    it('should create a WOTSParams instance, with n[7] and w[8]', () => {
+      const n = 7;
+      const w = 8;
+      const wotsParams = newWOTSParams(n, w);
+
+      expect(Object.getOwnPropertyNames(wotsParams)).to.deep.equal([
+        'n',
+        'w',
+        'logW',
+        'len1',
+        'len2',
+        'len',
+        'keySize',
+      ]);
+      expect(wotsParams.n).to.equal(n);
+      expect(wotsParams.w).to.equal(w);
+      expect(wotsParams.len1).to.equal(18);
+      expect(wotsParams.len2).to.equal(3);
+      expect(wotsParams.len).to.equal(21);
+      expect(wotsParams.n).to.equal(7);
+      expect(wotsParams.w).to.equal(8);
+      expect(wotsParams.logW).to.equal(3);
+      expect(wotsParams.keySize).to.equal(147);
     });
   });
 

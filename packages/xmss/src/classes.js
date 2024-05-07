@@ -49,7 +49,7 @@ class WOTSParamsClass {
     this.n = n;
     this.w = w;
     [this.logW] = new Uint32Array([Math.log2(w)]);
-    [this.len1] = new Uint32Array([Math.ceil((8 * n) / this.logW)]);
+    [this.len1] = new Uint32Array([Math.floor((8 * n) / this.logW)]);
     [this.len2] = new Uint32Array([Math.floor(Math.log2(this.len1 * (w - 1)) / this.logW) + 1]);
     this.len = this.len1 + this.len2;
     this.keySize = this.len * n;
