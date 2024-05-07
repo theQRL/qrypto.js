@@ -135,7 +135,6 @@ export function wOTSPKGen(hashFunction, pk, sk, wOTSParams, pubSeed, addr) {
   for (let i = 0; i < wOTSParams.len; i++) {
     setChainAddr(addr, i);
     const pkStartOffset = i * wOTSParams.n;
-    // TODO: test this one genChain is completed
     genChain(
       hashFunction,
       pk.subarray(pkStartOffset, pkStartOffset + wOTSParams.n),
