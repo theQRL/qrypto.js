@@ -141,6 +141,61 @@ export function wOTSPKGen(hashFunction, pk, sk, wOTSParams, pubSeed, addr) {
 
 /**
  * @param {HashFunction} hashFunction
+ * @param {WOTSParams} params
+ * @param {Uint8Array} leaf
+ * @param {Uint8Array} wotsPK
+ * @param {Uint8Array} pubSeed
+ * @param {Uint32Array} addr
+ */
+export function lTree(hashFunction, params, leaf, wotsPK, pubSeed, addr) {
+  if (addr.length !== 8) {
+    throw new Error('addr should be an array of size 8');
+  }
+
+  let l = params.len;
+  const { n } = params;
+
+  let [height] = new Uint32Array([0]);
+  let [bound] = new Uint32Array([0]);
+
+  setTreeHeight(addr, height);
+  while (l > 1) {
+    bound = l >> 1;
+    for (let i = 0; i < bound; i++) {
+      setTreeIndex(addr, i);
+      const outStartOffset = i * n;
+      const inStartOffset = i * 2 * n;
+      hashH(
+        hashFunction,
+        wotsPK.subarray(outStartOffset, outStartOffset + n),
+        wotsPK.subarray(inStartOffset, inStartOffset + 2 * n),
+        pubSeed,
+        addr,
+        n
+      );
+    }
+    if (l % 2 === 1) {
+      const destStartOffset = (l >> 1) * n;
+      const srcStartOffset = (l - 1) * n;
+      for (
+        let destIndex = destStartOffset, srcIndex = srcStartOffset;
+        destIndex < destStartOffset + n && srcIndex < srcStartOffset + n;
+        destIndex++, srcIndex++
+      ) {
+        wotsPK.set([wotsPK[srcIndex]], destIndex);
+      }
+      l = (l >> 1) + 1;
+    } else {
+      l >>= 1;
+    }
+    height++;
+    setTreeHeight(addr, height);
+  }
+  leaf.set(wotsPK.subarray(0, n));
+}
+
+/**
+ * @param {HashFunction} hashFunction
  * @param {Uint8Array} leaf
  * @param {Uint8Array} skSeed
  * @param {XMSSParams} xmssParams
@@ -154,7 +209,7 @@ export function genLeafWOTS(hashFunction, leaf, skSeed, xmssParams, pubSeed, lTr
 
   getSeed(hashFunction, seed, skSeed, xmssParams.n, otsAddr);
   wOTSPKGen(hashFunction, pk, seed, xmssParams.wotsParams, pubSeed, otsAddr);
-  // TODO:
+  // TODO: complete lTree
   // lTree(hashFunction, xmssParams.wotsParams, leaf, pk, pubSeed, lTreeAddr)
 }
 
