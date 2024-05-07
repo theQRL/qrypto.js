@@ -1,4 +1,3 @@
-// Object property types
 /**
  * @typedef {Object} WOTSParams
  * @property {Uint32Array[number]} len1
@@ -39,18 +38,4 @@
  * @property {TreeHashInst[]} treeHash
  * @property {Uint8Array} retain
  * @property {Uint32Array[number]} nextLeaf
- */
-
-// Function return types
-
-/**
- * @typedef {Object} TreeHashSetupReturnType
- * @property {HashFunction} hashFunction
- * @property {Uint8Array} node
- * @property {Uint32Array[number]} index
- * @property {BDSState} bdsState
- * @property {Uint8Array} skSeed
- * @property {XMSSParams} xmssParams
- * @property {Uint8Array} pubSeed
- * @property {Uint32Array} addr
  */
