@@ -71,7 +71,6 @@ export function prf(hashFunction, out, input, key, keyLen, outStartIndex = 0, ou
  * @param {Uint8Array} pubSeed
  * @param {Uint32Array} addr
  * @param {Uint32Array[number]} n
- * @returns {HashHReturnType}
  */
 export function hashH(hashFunction, out, input, pubSeed, addr, n) {
   const buf = new Uint8Array(2 * n);
@@ -94,13 +93,4 @@ export function hashH(hashFunction, out, input, pubSeed, addr, n) {
     buf.set([input[i] ^ bitMask[i]], i);
   }
   coreHash(hashFunction, out, 1, key, n, buf, 2 * n, n);
-
-  return {
-    hashFunction,
-    out,
-    input,
-    pubSeed,
-    addr,
-    n,
-  };
 }

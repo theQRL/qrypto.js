@@ -54,16 +54,6 @@
  */
 
 /**
- * @typedef {Object} HashHReturnType
- * @property {HashFunction} hashFunction
- * @property {Uint8Array} out
- * @property {Uint8Array} input
- * @property {Uint8Array} pubSeed
- * @property {Uint32Array} addr
- * @property {Uint32Array[number]} n
- */
-
-/**
  * @typedef {Object} GetSeedReturnType
  * @property {HashFunction} hashFunction
  * @property {Uint8Array} seed
