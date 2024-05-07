@@ -209,8 +209,7 @@ export function genLeafWOTS(hashFunction, leaf, skSeed, xmssParams, pubSeed, lTr
 
   getSeed(hashFunction, seed, skSeed, xmssParams.n, otsAddr);
   wOTSPKGen(hashFunction, pk, seed, xmssParams.wotsParams, pubSeed, otsAddr);
-  // TODO: complete lTree
-  // lTree(hashFunction, xmssParams.wotsParams, leaf, pk, pubSeed, lTreeAddr)
+  lTree(hashFunction, xmssParams.wotsParams, leaf, pk, pubSeed, lTreeAddr);
 }
 
 /**
@@ -365,6 +364,4 @@ export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, s
   );
 
   sk.set(pk.subarray(0, pks), 4 + 3 * n);
-
-  // TODO: return all parameters and write test
 }

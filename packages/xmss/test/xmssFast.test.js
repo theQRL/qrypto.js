@@ -6,6 +6,7 @@ import {
   XMSSFastGenKeyPair,
   expandSeed,
   genChain,
+  genLeafWOTS,
   getSeed,
   hashF,
   lTree,
@@ -466,8 +467,73 @@ describe('xmssFast', () => {
     });
   });
 
-  xdescribe('TODO: genLeafWOTS', () => {
-    it('TODO', () => {});
+  describe('genLeafWOTS', () => {
+    it('should generate leafWOTS, with SHA2_256 hashing', () => {
+      const leaf = new Uint8Array([3, 5, 4, 7, 2, 6, 1, 5, 1, 2, 5, 3, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2, 6]);
+      const skSeed = new Uint8Array([3, 5, 1, 5, 1, 2, 5, 3, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2, 6]);
+      const xmssParams = newXMSSParams(2, 2, 5, 2);
+      const pubSeed = new Uint8Array([3, 5, 1, 5, 1, 2, 5, 3, 6, 7, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2, 6]);
+      const lTreeAddr = new Uint32Array([44, 11, 6, 7, 3, 22, 9, 9]);
+      const otsAddr = new Uint32Array([44, 11, 6, 7, 22, 44, 9, 9]);
+      const expectedLeaf = new Uint8Array([113, 175, 4, 7, 2, 6, 1, 5, 1, 2, 5, 3, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2, 6]);
+      const expectedSkSeed = new Uint8Array([3, 5, 1, 5, 1, 2, 5, 3, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2, 6]);
+      const expectedPubSeed = new Uint8Array([3, 5, 1, 5, 1, 2, 5, 3, 6, 7, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2, 6]);
+      const expectedLTreeAddr = new Uint32Array([44, 11, 6, 7, 3, 4, 0, 2]);
+      const expectedOtsAddr = new Uint32Array([44, 11, 6, 7, 22, 10, 3, 1]);
+      genLeafWOTS(HASH_FUNCTION.SHA2_256, leaf, skSeed, xmssParams, pubSeed, lTreeAddr, otsAddr);
+
+      expect(leaf).to.deep.equal(expectedLeaf);
+      expect(skSeed).to.deep.equal(expectedSkSeed);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(lTreeAddr).to.deep.equal(expectedLTreeAddr);
+      expect(otsAddr).to.deep.equal(expectedOtsAddr);
+    });
+
+    it('should generate leafWOTS, with SHAKE_128 hashing', () => {
+      const leaf = new Uint8Array([8, 3, 5, 4, 7, 2, 6, 1, 5, 1, 2, 5, 3, 2, 6, 8, 2, 7, 3, 5, 1, 2, 5, 3, 2]);
+      const skSeed = new Uint8Array([9, 3, 5, 1, 5, 1, 2, 5, 3, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2]);
+      const xmssParams = newXMSSParams(4, 3, 3, 9);
+      const pubSeed = new Uint8Array([9, 5, 1, 5, 1, 2, 5, 3, 6, 7, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2, 6]);
+      const lTreeAddr = new Uint32Array([44, 11, 6, 7, 37, 22, 9, 9]);
+      const otsAddr = new Uint32Array([44, 11, 6, 7, 22, 44, 99, 9]);
+      const expectedLeaf = new Uint8Array([
+        114, 164, 49, 129, 7, 2, 6, 1, 5, 1, 2, 5, 3, 2, 6, 8, 2, 7, 3, 5, 1, 2, 5, 3, 2,
+      ]);
+      const expectedSkSeed = new Uint8Array([9, 3, 5, 1, 5, 1, 2, 5, 3, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2]);
+      const expectedPubSeed = new Uint8Array([9, 5, 1, 5, 1, 2, 5, 3, 6, 7, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2, 6]);
+      const expectedLTreeAddr = new Uint32Array([44, 11, 6, 7, 37, 6, 0, 2]);
+      const expectedOtsAddr = new Uint32Array([44, 11, 6, 7, 22, 38, 1, 1]);
+      genLeafWOTS(HASH_FUNCTION.SHAKE_128, leaf, skSeed, xmssParams, pubSeed, lTreeAddr, otsAddr);
+
+      expect(leaf).to.deep.equal(expectedLeaf);
+      expect(skSeed).to.deep.equal(expectedSkSeed);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(lTreeAddr).to.deep.equal(expectedLTreeAddr);
+      expect(otsAddr).to.deep.equal(expectedOtsAddr);
+    });
+
+    it('should generate leafWOTS, with SHAKE_256 hashing', () => {
+      const leaf = new Uint8Array([4, 3, 56, 7, 22, 44, 86, 41, 2, 6, 8, 2, 7, 3, 5, 1, 2, 5, 3, 2]);
+      const skSeed = new Uint8Array([9, 3, 5, 1, 5, 1, 2, 5, 3, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2, 44, 86, 41]);
+      const xmssParams = newXMSSParams(9, 7, 6, 5);
+      const pubSeed = new Uint8Array([9, 44, 86, 41, 5, 1, 5, 1, 2, 5, 3, 6, 7, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2, 6]);
+      const lTreeAddr = new Uint32Array([44, 11, 6, 74, 37, 22, 9, 9]);
+      const otsAddr = new Uint32Array([44, 11, 63, 7, 22, 44, 99, 9]);
+      const expectedLeaf = new Uint8Array([21, 71, 160, 38, 68, 19, 241, 160, 86, 6, 8, 2, 7, 3, 5, 1, 2, 5, 3, 2]);
+      const expectedSkSeed = new Uint8Array([9, 3, 5, 1, 5, 1, 2, 5, 3, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2, 44, 86, 41]);
+      const expectedPubSeed = new Uint8Array([
+        9, 44, 86, 41, 5, 1, 5, 1, 2, 5, 3, 6, 7, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2, 6,
+      ]);
+      const expectedLTreeAddr = new Uint32Array([44, 11, 6, 74, 37, 6, 0, 2]);
+      const expectedOtsAddr = new Uint32Array([44, 11, 63, 7, 22, 39, 4, 1]);
+      genLeafWOTS(HASH_FUNCTION.SHAKE_256, leaf, skSeed, xmssParams, pubSeed, lTreeAddr, otsAddr);
+
+      expect(leaf).to.deep.equal(expectedLeaf);
+      expect(skSeed).to.deep.equal(expectedSkSeed);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(lTreeAddr).to.deep.equal(expectedLTreeAddr);
+      expect(otsAddr).to.deep.equal(expectedOtsAddr);
+    });
   });
 
   xdescribe('TODO: treeHashSetup', () => {
