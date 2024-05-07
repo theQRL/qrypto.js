@@ -20,7 +20,6 @@ import {
  * @param {Uint8Array} skSeed
  * @param {Uint32Array[number]} n
  * @param {Uint32Array} addr
- * @returns {GetSeedReturnType}
  */
 export function getSeed(hashFunction, seed, skSeed, n, addr) {
   if (addr.length !== 8) {
@@ -36,14 +35,6 @@ export function getSeed(hashFunction, seed, skSeed, n, addr) {
   // Generate pseudorandom value
   addrToByte(bytes, addr);
   prf(hashFunction, seed, bytes, skSeed, n);
-
-  return {
-    hashFunction,
-    seed,
-    skSeed,
-    n,
-    addr,
-  };
 }
 
 /**

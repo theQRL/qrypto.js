@@ -47,27 +47,6 @@ describe('xmssFast', () => {
 
       expect(seed).to.deep.equal(expectedSeed);
     });
-
-    it('should return back all the arguments passed to it, as an object', () => {
-      const paramHashFunction = HASH_FUNCTION.SHAKE_256;
-      const paramSeed = new Uint8Array([2, 3, 5, 7, 4, 9, 1, 0]);
-      const paramSkSeed = new Uint8Array([2, 5, 1, 9, 4, 9, 1, 0]);
-      const paramN = new Uint32Array([1])[0];
-      const paramAddr = new Uint32Array([3, 0, 0, 0, 0, 0, 2, 8]);
-      const { hashFunction, seed, skSeed, n, addr } = getSeed(
-        paramHashFunction,
-        paramSeed,
-        paramSkSeed,
-        paramN,
-        paramAddr
-      );
-
-      expect(paramHashFunction).to.equal(hashFunction);
-      expect(paramSeed).to.equal(seed);
-      expect(paramSkSeed).to.equal(skSeed);
-      expect(paramN).to.equal(n);
-      expect(paramAddr).to.equal(addr);
-    });
   });
 
   describe('expandSeed', () => {

@@ -54,15 +54,6 @@
  */
 
 /**
- * @typedef {Object} GetSeedReturnType
- * @property {HashFunction} hashFunction
- * @property {Uint8Array} seed
- * @property {Uint8Array} skSeed
- * @property {Uint32Array[number]} n
- * @property {Uint32Array} addr
- */
-
-/**
  * @typedef {Object} TreeHashSetupReturnType
  * @property {HashFunction} hashFunction
  * @property {Uint8Array} node
