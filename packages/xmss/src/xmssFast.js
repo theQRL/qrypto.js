@@ -147,7 +147,6 @@ export function wOTSPKGen(hashFunction, pk, sk, wOTSParams, pubSeed, addr) {
  * @param {Uint8Array} pubSeed
  * @param {Uint32Array} lTreeAddr
  * @param {Uint32Array} otsAddr
- * @returns {GenLeafWOTSReturnType}
  */
 export function genLeafWOTS(hashFunction, leaf, skSeed, xmssParams, pubSeed, lTreeAddr, otsAddr) {
   const seed = new Uint8Array(xmssParams.n);
@@ -157,16 +156,6 @@ export function genLeafWOTS(hashFunction, leaf, skSeed, xmssParams, pubSeed, lTr
   wOTSPKGen(hashFunction, pk, seed, xmssParams.wotsParams, pubSeed, otsAddr);
   // TODO:
   // lTree(hashFunction, xmssParams.wotsParams, leaf, pk, pubSeed, lTreeAddr)
-
-  return {
-    hashFunction,
-    leaf,
-    skSeed,
-    xmssParams,
-    pubSeed,
-    lTreeAddr,
-    otsAddr,
-  };
 }
 
 /**

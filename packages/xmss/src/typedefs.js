@@ -42,16 +42,6 @@
  */
 
 // Function return types
-/**
- * @typedef {Object} GenLeafWOTSReturnType
- * @property {HashFunction} hashFunction
- * @property {Uint8Array} leaf
- * @property {Uint8Array} skSeed
- * @property {XMSSParams} xmssParams
- * @property {Uint8Array} pubSeed
- * @property {Uint32Array} lTreeAddr
- * @property {Uint32Array} otsAddr
- */
 
 /**
  * @typedef {Object} TreeHashSetupReturnType
