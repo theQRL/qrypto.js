@@ -333,22 +333,18 @@ export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, s
 
   const { n } = xmssParams;
 
-  // Set idx = 0
-  sk.set([0], 0);
-  sk.set([0], 1);
-  sk.set([0], 2);
-  sk.set([0], 3);
+  sk.set([0, 0, 0, 0]);
 
-  // Copy PUB_SEED to public key
   const randombits = new Uint8Array(3 * n);
 
-  // shake256(randombits, 3 * n, seed, 48);  // FIXME: seed size has been hardcoded to 48
   shake256(randombits, seed);
 
   const rnd = 96;
   const pks = new Uint32Array([32])[0];
   sk.set(randombits.subarray(0, rnd), 4);
-  pk.set(sk.subarray(4 + 2 * n, 4 + 2 * n + pks), n);
+  for (let pkIndex = n, skIndex = 4 + 2 * n; pkIndex < pk.length && skIndex < 4 + 2 * n + pks; pkIndex++, skIndex++) {
+    pk.set([sk[skIndex]], pkIndex);
+  }
 
   const addr = new Uint32Array(8);
   treeHashSetup(
@@ -362,6 +358,7 @@ export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, s
     addr
   );
 
-  sk.set(pk.subarray(0, pks), 4 + 3 * n);
-  // TODO: complete testcases for this
+  for (let skIndex = 4 + 3 * n, pkIndex = 0; skIndex < sk.length && pkIndex < pks; skIndex++, pkIndex++) {
+    sk.set([pk[pkIndex]], skIndex);
+  }
 }
