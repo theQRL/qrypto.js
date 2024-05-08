@@ -536,28 +536,91 @@ describe('xmssFast', () => {
     });
   });
 
-  xdescribe('TODO: treeHashSetup', () => {
-    it('TODO: should return back all the arguments passed to it, as an object', () => {
-      const paramHashFunction = HASH_FUNCTION.SHAKE_128;
-      const paramNode = new Uint8Array([2, 3, 5, 7, 4, 9, 1, 0]);
-      const paramIndex = new Uint32Array([1])[0];
-      const paramBdsState = newBDSState(4, 2, 6);
-      const paramSkSeed = new Uint8Array([2, 5, 1, 9, 4, 9, 1, 0]);
-      const paramXmssParams = newXMSSParams(2, 4, 6, 8);
-      const paramPubSeed = new Uint8Array([2, 5, 1, 9, 4, 9, 1, 0]);
-      const paramAddr = new Uint32Array([2, 5, 1, 9, 4, 9, 1, 0]);
-      treeHashSetup(
-        paramHashFunction,
-        paramNode,
-        paramIndex,
-        paramBdsState,
-        paramSkSeed,
-        paramXmssParams,
-        paramPubSeed,
-        paramAddr
-      );
+  describe('treeHashSetup', () => {
+    it('should setup tree hash, with SHA2_256 hashing', () => {
+      const index = 5;
+      const height = 3;
+      const k = 3;
+      const w = 7;
+      const n = 3;
+      const node = new Uint8Array([56, 7, 22, 44, 86, 41, 2, 6, 8, 2, 7, 3, 5, 1, 2, 5, 3, 2]);
+      const bdsState = newBDSState(height, n, k);
+      const skSeed = new Uint8Array([9, 7, 52, 4, 86, 41, 2, 6, 8, 2, 7, 3, 5, 1, 2, 5, 3, 2]);
+      const xmssParams = newXMSSParams(n, height, w, k);
+      const pubSeed = new Uint8Array([56, 7, 22, 44, 86, 41, 2, 6, 8, 2, 7, 3, 5, 1, 2, 5, 3, 54]);
+      const addr = new Uint32Array([88, 7, 22, 44, 86, 41, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2]);
+      const expectedNode = new Uint8Array([2, 31, 4, 44, 86, 41, 2, 6, 8, 2, 7, 3, 5, 1, 2, 5, 3, 2]);
+      const expectedSkSeed = new Uint8Array([9, 7, 52, 4, 86, 41, 2, 6, 8, 2, 7, 3, 5, 1, 2, 5, 3, 2]);
+      const expectedPubSeed = new Uint8Array([56, 7, 22, 44, 86, 41, 2, 6, 8, 2, 7, 3, 5, 1, 2, 5, 3, 54]);
+      const expectedAddr = new Uint32Array([88, 7, 22, 44, 86, 41, 2, 6, 2, 7, 3, 5, 1, 2, 5, 3, 2]);
+      treeHashSetup(HASH_FUNCTION.SHA2_256, node, index, bdsState, skSeed, xmssParams, pubSeed, addr);
 
-      // TODO assert something here
+      expect(node).to.deep.equal(expectedNode);
+      expect(skSeed).to.deep.equal(expectedSkSeed);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+
+    it('should setup tree hash, with SHAKE_128 hashing', () => {
+      const index = 7;
+      const height = 4;
+      const k = 2;
+      const w = 5;
+      const n = 9;
+      const node = new Uint8Array([13, 11, 5, 8, 5, 13, 3, 2, 6, 15, 11, 8, 14, 11, 15, 14]);
+      const bdsState = newBDSState(height, n, k);
+      const skSeed = new Uint8Array([
+        7, 16, 18, 11, 12, 6, 19, 15, 15, 6, 15, 1, 13, 17, 21, 1, 8, 19, 17, 6, 18, 5, 16,
+      ]);
+      const xmssParams = newXMSSParams(n, height, w, k);
+      const pubSeed = new Uint8Array([
+        9, 3, 21, 13, 13, 11, 14, 20, 23, 25, 0, 0, 17, 18, 11, 9, 6, 10, 15, 14, 7, 11, 14, 15, 9, 6,
+      ]);
+      const addr = new Uint32Array([14, 7, 15, 7, 4, 7, 15, 11, 7, 15, 4, 9, 11, 5, 4, 2, 6]);
+      const expectedNode = new Uint8Array([210, 218, 43, 76, 124, 84, 203, 50, 76, 15, 11, 8, 14, 11, 15, 14]);
+      const expectedSkSeed = new Uint8Array([
+        7, 16, 18, 11, 12, 6, 19, 15, 15, 6, 15, 1, 13, 17, 21, 1, 8, 19, 17, 6, 18, 5, 16,
+      ]);
+      const expectedPubSeed = new Uint8Array([
+        9, 3, 21, 13, 13, 11, 14, 20, 23, 25, 0, 0, 17, 18, 11, 9, 6, 10, 15, 14, 7, 11, 14, 15, 9, 6,
+      ]);
+      const expectedAddr = new Uint32Array([14, 7, 15, 7, 4, 7, 15, 11, 7, 15, 4, 9, 11, 5, 4, 2, 6]);
+      treeHashSetup(HASH_FUNCTION.SHAKE_128, node, index, bdsState, skSeed, xmssParams, pubSeed, addr);
+
+      expect(node).to.deep.equal(expectedNode);
+      expect(skSeed).to.deep.equal(expectedSkSeed);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+
+    it('should setup tree hash, with SHAKE_256 hashing', () => {
+      const index = 12;
+      const height = 7;
+      const k = 4;
+      const w = 9;
+      const n = 12;
+      const node = new Uint8Array([0, 13, 3, 10, 11, 12, 2, 9, 10, 8, 11, 2, 5, 5, 3, 1]);
+      const bdsState = newBDSState(height, n, k);
+      const skSeed = new Uint8Array([12, 7, 16, 12, 1, 16, 12, 5, 3, 15, 14, 20, 13, 7, 21, 3, 0, 13, 7, 12, 3, 21, 4]);
+      const xmssParams = newXMSSParams(n, height, w, k);
+      const pubSeed = new Uint8Array([
+        16, 4, 24, 16, 4, 6, 16, 7, 19, 14, 13, 9, 3, 13, 10, 8, 0, 16, 16, 13, 4, 18, 20, 1, 8,
+      ]);
+      const addr = new Uint32Array([3, 6, 0, 12, 4, 0, 16, 2, 16, 0, 5, 10, 14, 13, 12, 7, 4]);
+      const expectedNode = new Uint8Array([151, 183, 128, 14, 204, 52, 114, 135, 104, 226, 31, 18, 5, 5, 3, 1]);
+      const expectedSkSeed = new Uint8Array([
+        12, 7, 16, 12, 1, 16, 12, 5, 3, 15, 14, 20, 13, 7, 21, 3, 0, 13, 7, 12, 3, 21, 4,
+      ]);
+      const expectedPubSeed = new Uint8Array([
+        16, 4, 24, 16, 4, 6, 16, 7, 19, 14, 13, 9, 3, 13, 10, 8, 0, 16, 16, 13, 4, 18, 20, 1, 8,
+      ]);
+      const expectedAddr = new Uint32Array([3, 6, 0, 12, 4, 0, 16, 2, 16, 0, 5, 10, 14, 13, 12, 7, 4]);
+      treeHashSetup(HASH_FUNCTION.SHAKE_256, node, index, bdsState, skSeed, xmssParams, pubSeed, addr);
+
+      expect(node).to.deep.equal(expectedNode);
+      expect(skSeed).to.deep.equal(expectedSkSeed);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
     });
   });
 

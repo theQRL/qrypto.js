@@ -257,7 +257,6 @@ export function treeHashSetup(hashFunction, node, index, bdsState, skSeed, xmssP
     setLTreeAddr(lTreeAddr, index1);
     setOTSAddr(otsAddr, index1);
 
-    // TODO: complete genLeafWOTS to run this function
     genLeafWOTS(
       hashFunction,
       stack.subarray(stackOffset * n, stackOffset * n + n),
@@ -364,4 +363,5 @@ export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, s
   );
 
   sk.set(pk.subarray(0, pks), 4 + 3 * n);
+  // TODO: complete testcases for this
 }
