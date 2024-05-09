@@ -362,3 +362,78 @@ export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, s
     sk.set([pk[pkIndex]], skIndex);
   }
 }
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {TreeHashInst} treeHash
+ * @param {BDSState} bdsState
+ * @param {Uint8Array} skSeed
+ * @param {XMSSParams} params
+ * @param {Uint8Array} pubSeed
+ * @param {Uint32Array} addr
+ */
+export function treeHashUpdate(hashFunction, treeHash, bdsState, skSeed, params, pubSeed, addr) {
+  const treeHash1 = treeHash;
+  const bdsState1 = bdsState;
+
+  const { n } = params;
+
+  const otsAddr = new Uint32Array(8);
+  const lTreeAddr = new Uint32Array(8);
+  const nodeAddr = new Uint32Array(8);
+
+  otsAddr.set(addr.subarray(0, 3));
+  setType(otsAddr, 0);
+
+  lTreeAddr.set(addr.subarray(0, 3));
+  setType(lTreeAddr, 1);
+
+  nodeAddr.set(addr.subarray(0, 3));
+  setType(nodeAddr, 2);
+
+  setLTreeAddr(lTreeAddr, treeHash1.nextIdx);
+  setOTSAddr(otsAddr, treeHash1.nextIdx);
+
+  const nodeBuffer = new Uint8Array(2 * n);
+  let [nodeHeight] = new Uint32Array([0]);
+
+  genLeafWOTS(hashFunction, nodeBuffer, skSeed, params, pubSeed, lTreeAddr, otsAddr);
+
+  while (treeHash1.stackUsage > 0 && bdsState1.stackLevels[bdsState1.stackOffset - 1] === nodeHeight) {
+    for (let i = n, j = 0; i < n + n && j < n; i++, j++) {
+      nodeBuffer.set([nodeBuffer[j]], i);
+    }
+    const srcOffset = (bdsState1.stackOffset - 1) * n;
+    for (
+      let nodeIndex = 0, stackIndex = srcOffset;
+      nodeIndex < n && stackIndex < srcOffset + n;
+      nodeIndex++, stackIndex++
+    ) {
+      nodeBuffer.set([bdsState1.stack[stackIndex]], nodeIndex);
+    }
+    setTreeHeight(nodeAddr, nodeHeight);
+    setTreeIndex(nodeAddr, treeHash1.nextIdx >> (nodeHeight + 1));
+    hashH(hashFunction, nodeBuffer.subarray(0, n), nodeBuffer, pubSeed, nodeAddr, n);
+    nodeHeight++;
+    treeHash1.stackUsage--;
+    bdsState1.stackOffset--;
+  }
+
+  if (nodeHeight === treeHash1.h) {
+    treeHash1.node.set(nodeBuffer.subarray(0, n));
+    treeHash1.completed = 1;
+  } else {
+    const destOffset = bdsState1.stackOffset * n;
+    for (
+      let stackIndex = destOffset, nodeIndex = 0;
+      stackIndex < destOffset + n && nodeIndex < n;
+      stackIndex++, nodeIndex++
+    ) {
+      bdsState1.stack.set([nodeBuffer[nodeIndex]], stackIndex);
+    }
+    treeHash1.stackUsage++;
+    bdsState1.stackLevels.set([nodeHeight], bdsState1.stackOffset);
+    bdsState1.stackOffset++;
+    treeHash1.nextIdx++;
+  }
+}
