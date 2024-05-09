@@ -10,6 +10,7 @@ import {
   getSeed,
   hashF,
   lTree,
+  treeHashMinHeightOnStack,
   treeHashSetup,
   treeHashUpdate,
   wOTSPKGen,
@@ -865,6 +866,52 @@ describe('xmssFast', () => {
       expect(skSeed).to.deep.equal(expectedSkSeed);
       expect(pubSeed).to.deep.equal(expectedPubSeed);
       expect(addr).to.deep.equal(expectedAddr);
+    });
+  });
+
+  describe('treeHashMinHeightOnStack', () => {
+    it('should update r with stackOffset[0] and modified values', () => {
+      const height = 9;
+      const k = 5;
+      const w = 3;
+      const n = 5;
+      const state = newBDSState(height, n, k);
+      const params = newXMSSParams(n, height, w, k);
+      const r = treeHashMinHeightOnStack(state, params, state.treeHash[0]);
+
+      expect(r).to.equal(9);
+    });
+
+    it('should update r with stackOffset[6] and modified values', () => {
+      const height = 11;
+      const k = 4;
+      const w = 2;
+      const n = 3;
+      const params = newXMSSParams(n, height, w, k);
+      const state = newBDSState(height, n, k);
+      state.stackOffset = 6;
+      state.treeHash[0].stackUsage = 4;
+      state.stackLevels = new Uint8Array([33, 45, 2, 4, 77, 23, 2]);
+      const r = treeHashMinHeightOnStack(state, params, state.treeHash[0]);
+
+      expect(r).to.equal(2);
+    });
+
+    it('should update r with stackOffset[17] and modified values', () => {
+      const height = 5;
+      const k = 1;
+      const w = 9;
+      const n = 2;
+      const params = newXMSSParams(n, height, w, k);
+      const state = newBDSState(height, n, k);
+      state.stackOffset = 17;
+      state.treeHash[0].stackUsage = 12;
+      state.stackLevels = new Uint8Array([
+        66, 2, 5, 77, 8, 6, 99, 0, 1, 66, 2, 5, 77, 8, 6, 99, 0, 1, 66, 2, 5, 77, 8, 6, 99, 0, 1,
+      ]);
+      const r = treeHashMinHeightOnStack(state, params, state.treeHash[0]);
+
+      expect(r).to.equal(0);
     });
   });
 });

@@ -437,3 +437,20 @@ export function treeHashUpdate(hashFunction, treeHash, bdsState, skSeed, params,
     treeHash1.nextIdx++;
   }
 }
+
+/**
+ * @param {BDSState} state
+ * @param {XMSSParams} params
+ * @param {TreeHashInst} treeHash
+ * @returns {Uint8Array[number]}
+ */
+export function treeHashMinHeightOnStack(state, params, treeHash) {
+  let r = params.h;
+  for (let i = 0; i < treeHash.stackUsage; i++) {
+    const stackLevelOffset = state.stackLevels[state.stackOffset - i - 1];
+    if (stackLevelOffset < r) {
+      r = stackLevelOffset;
+    }
+  }
+  return r;
+}
