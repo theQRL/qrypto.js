@@ -454,3 +454,50 @@ export function treeHashMinHeightOnStack(state, params, treeHash) {
   }
   return r;
 }
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {BDSState} bdsState
+ * @param {Uint32Array[number]} updates
+ * @param {Uint8Array} skSeed
+ * @param {XMSSParams} params
+ * @param {Uint8Array} pubSeed
+ * @param {Uint32Array} addr
+ * @returns {Uint32Array[number]}
+ */
+export function bdsTreeHashUpdate(hashFunction, bdsState, updates, skSeed, params, pubSeed, addr) {
+  if (addr.length !== 8) {
+    throw new Error('addr should be an array of size 8');
+  }
+
+  const { h, k } = params;
+  let [used] = new Uint32Array([0]);
+  let [lMin] = new Uint32Array([0]);
+  let [level] = new Uint32Array([0]);
+  let [low] = new Uint32Array([0]);
+
+  for (let j = 0; j < updates; j++) {
+    lMin = h;
+    level = h - k;
+    for (let i = 0; i < h - k; i++) {
+      if (bdsState.treeHash[i].completed === 1) {
+        low = h;
+      } else if (bdsState.treeHash[i].stackUsage === 0) {
+        low = i;
+      } else {
+        low = treeHashMinHeightOnStack(bdsState, params, bdsState.treeHash[i]);
+      }
+      if (low < lMin) {
+        level = i;
+        lMin = low;
+      }
+    }
+    if (level === h - k) {
+      break;
+    }
+    treeHashUpdate(hashFunction, bdsState.treeHash[level], bdsState, skSeed, params, pubSeed, addr);
+    used++;
+  }
+
+  return updates - used;
+}

@@ -4,6 +4,7 @@ import { newBDSState, newTreeHashInst, newWOTSParams, newXMSSParams } from '../s
 import { HASH_FUNCTION } from '../src/constants.js';
 import {
   XMSSFastGenKeyPair,
+  bdsTreeHashUpdate,
   expandSeed,
   genChain,
   genLeafWOTS,
@@ -912,6 +913,106 @@ describe('xmssFast', () => {
       const r = treeHashMinHeightOnStack(state, params, state.treeHash[0]);
 
       expect(r).to.equal(0);
+    });
+  });
+
+  describe('bdsTreeHashUpdate', () => {
+    it('should update the tree hash, with SHA2_256 hashing', () => {
+      const height = 5;
+      const k = 1;
+      const w = 9;
+      const n = 1;
+      const bdsState = newBDSState(height, n, k);
+      const updates = 7;
+      const skSeed = new Uint8Array([
+        48, 3, 114, 49, 48, 108, 59, 28, 95, 70, 106, 69, 16, 59, 67, 96, 73, 25, 74, 107, 16, 68, 22, 77, 47, 22, 56,
+        72, 19, 17, 64, 6, 48, 59, 80, 84, 54, 96, 47, 5, 30, 117, 22,
+      ]);
+      const params = newXMSSParams(n, height, w, k);
+      const pubSeed = new Uint8Array([
+        98, 48, 44, 60, 17, 40, 99, 56, 68, 64, 41, 49, 66, 70, 92, 4, 92, 30, 92, 63, 105, 34, 15, 83, 120, 23, 24, 82,
+        74, 122, 52, 70, 81, 9, 39, 47,
+      ]);
+      const addr = new Uint32Array([31, 6, 19, 87, 120, 41, 13, 62]);
+      const expectedSkSeed = new Uint8Array([
+        48, 3, 114, 49, 48, 108, 59, 28, 95, 70, 106, 69, 16, 59, 67, 96, 73, 25, 74, 107, 16, 68, 22, 77, 47, 22, 56,
+        72, 19, 17, 64, 6, 48, 59, 80, 84, 54, 96, 47, 5, 30, 117, 22,
+      ]);
+      const expectedPubSeed = new Uint8Array([
+        98, 48, 44, 60, 17, 40, 99, 56, 68, 64, 41, 49, 66, 70, 92, 4, 92, 30, 92, 63, 105, 34, 15, 83, 120, 23, 24, 82,
+        74, 122, 52, 70, 81, 9, 39, 47,
+      ]);
+      const expectedAddr = new Uint32Array([31, 6, 19, 87, 120, 41, 13, 62]);
+      const result = bdsTreeHashUpdate(HASH_FUNCTION.SHA2_256, bdsState, updates, skSeed, params, pubSeed, addr);
+
+      expect(result).to.equal(3);
+      expect(skSeed).to.be.deep.equal(expectedSkSeed);
+      expect(pubSeed).to.be.deep.equal(expectedPubSeed);
+      expect(addr).to.be.deep.equal(expectedAddr);
+    });
+
+    it('should update the tree hash, with SHAKE_128 hashing', () => {
+      const height = 11;
+      const k = 4;
+      const w = 7;
+      const n = 3;
+      const bdsState = newBDSState(height, n, k);
+      const updates = 9;
+      const skSeed = new Uint8Array([
+        19, 121, 122, 105, 79, 66, 63, 46, 7, 70, 81, 116, 68, 38, 99, 11, 1, 111, 113, 105, 3, 19, 1, 45, 114, 82, 21,
+        92, 49, 34, 40, 40, 52, 96, 50, 119, 39,
+      ]);
+      const params = newXMSSParams(n, height, w, k);
+      const pubSeed = new Uint8Array([
+        69, 86, 0, 98, 15, 38, 75, 103, 95, 8, 1, 107, 88, 71, 96, 116, 60, 30, 53, 79, 45, 41, 52, 59, 52, 75, 31, 39,
+      ]);
+      const addr = new Uint32Array([66, 37, 9, 40, 120, 12, 45, 75]);
+      const expectedSkSeed = new Uint8Array([
+        19, 121, 122, 105, 79, 66, 63, 46, 7, 70, 81, 116, 68, 38, 99, 11, 1, 111, 113, 105, 3, 19, 1, 45, 114, 82, 21,
+        92, 49, 34, 40, 40, 52, 96, 50, 119, 39,
+      ]);
+      const expectedPubSeed = new Uint8Array([
+        69, 86, 0, 98, 15, 38, 75, 103, 95, 8, 1, 107, 88, 71, 96, 116, 60, 30, 53, 79, 45, 41, 52, 59, 52, 75, 31, 39,
+      ]);
+      const expectedAddr = new Uint32Array([66, 37, 9, 40, 120, 12, 45, 75]);
+      const result = bdsTreeHashUpdate(HASH_FUNCTION.SHAKE_128, bdsState, updates, skSeed, params, pubSeed, addr);
+
+      expect(result).to.equal(2);
+      expect(skSeed).to.be.deep.equal(expectedSkSeed);
+      expect(pubSeed).to.be.deep.equal(expectedPubSeed);
+      expect(addr).to.be.deep.equal(expectedAddr);
+    });
+
+    it('should update the tree hash, with SHAKE_256 hashing', () => {
+      const height = 17;
+      const k = 13;
+      const w = 3;
+      const n = 7;
+      const bdsState = newBDSState(height, n, k);
+      const updates = 17;
+      const skSeed = new Uint8Array([
+        54, 13, 56, 92, 0, 42, 95, 70, 71, 103, 60, 115, 79, 49, 18, 48, 60, 100, 106, 112,
+      ]);
+      const params = newXMSSParams(n, height, w, k);
+      const pubSeed = new Uint8Array([
+        120, 51, 60, 88, 35, 43, 78, 70, 1, 55, 14, 93, 81, 81, 51, 66, 101, 25, 43, 14, 58, 30, 23, 120, 107, 37, 47,
+        30, 93, 66, 28, 54, 80, 59, 66, 118, 81, 46, 50,
+      ]);
+      const addr = new Uint32Array([115, 41, 69, 102, 20, 38, 94, 33]);
+      const expectedSkSeed = new Uint8Array([
+        54, 13, 56, 92, 0, 42, 95, 70, 71, 103, 60, 115, 79, 49, 18, 48, 60, 100, 106, 112,
+      ]);
+      const expectedPubSeed = new Uint8Array([
+        120, 51, 60, 88, 35, 43, 78, 70, 1, 55, 14, 93, 81, 81, 51, 66, 101, 25, 43, 14, 58, 30, 23, 120, 107, 37, 47,
+        30, 93, 66, 28, 54, 80, 59, 66, 118, 81, 46, 50,
+      ]);
+      const expectedAddr = new Uint32Array([115, 41, 69, 102, 20, 38, 94, 33]);
+      const result = bdsTreeHashUpdate(HASH_FUNCTION.SHAKE_256, bdsState, updates, skSeed, params, pubSeed, addr);
+
+      expect(result).to.equal(13);
+      expect(skSeed).to.be.deep.equal(expectedSkSeed);
+      expect(pubSeed).to.be.deep.equal(expectedPubSeed);
+      expect(addr).to.be.deep.equal(expectedAddr);
     });
   });
 });
