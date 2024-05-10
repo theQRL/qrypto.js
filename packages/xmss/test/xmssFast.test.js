@@ -4,6 +4,7 @@ import { newBDSState, newTreeHashInst, newWOTSParams, newXMSSParams } from '../s
 import { HASH_FUNCTION } from '../src/constants.js';
 import {
   XMSSFastGenKeyPair,
+  bdsRound,
   bdsTreeHashUpdate,
   expandSeed,
   genChain,
@@ -1011,6 +1012,131 @@ describe('xmssFast', () => {
 
       expect(result).to.equal(13);
       expect(skSeed).to.be.deep.equal(expectedSkSeed);
+      expect(pubSeed).to.be.deep.equal(expectedPubSeed);
+      expect(addr).to.be.deep.equal(expectedAddr);
+    });
+  });
+
+  describe('bdsRound', () => {
+    it('should run bdsRound, with SHA2_256 hashing', () => {
+      const height = 19;
+      const k = 7;
+      const w = 13;
+      const n = 17;
+      const bdsState = newBDSState(height, n, k);
+      const leadIdx = 5;
+      const skSeed = new Uint8Array([
+        70, 83, 15, 49, 57, 52, 66, 63, 65, 12, 40, 23, 101, 116, 113, 89, 12, 51, 52, 107, 5, 105, 100, 95, 97, 2, 99,
+        100, 7, 26, 87,
+      ]);
+      const params = newXMSSParams(n, height, w, k);
+      const pubSeed = new Uint8Array([
+        104, 21, 2, 55, 96, 74, 64, 10, 56, 15, 22, 117, 28, 73, 44, 84, 101, 54, 113, 6, 75, 69, 49, 28, 25, 113, 45,
+      ]);
+      const addr = new Uint32Array([90, 24, 2, 6, 90, 59, 13, 81]);
+      const expectedBdsState = newBDSState(height, n, k);
+      expectedBdsState.treeHash[0].nextIdx = 9;
+      expectedBdsState.auth = new Uint8Array([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 42, 208, 202, 71, 56, 36, 188, 231, 251, 107, 154, 115,
+        168, 101, 62, 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      ]);
+      const expectedSkSeed = new Uint8Array([
+        70, 83, 15, 49, 57, 52, 66, 63, 65, 12, 40, 23, 101, 116, 113, 89, 12, 51, 52, 107, 5, 105, 100, 95, 97, 2, 99,
+        100, 7, 26, 87,
+      ]);
+      const expectedParams = newXMSSParams(n, height, w, k);
+      const expectedPubSeed = new Uint8Array([
+        104, 21, 2, 55, 96, 74, 64, 10, 56, 15, 22, 117, 28, 73, 44, 84, 101, 54, 113, 6, 75, 69, 49, 28, 25, 113, 45,
+      ]);
+      const expectedAddr = new Uint32Array([90, 24, 2, 6, 90, 59, 13, 81]);
+      bdsRound(HASH_FUNCTION.SHA2_256, bdsState, leadIdx, skSeed, params, pubSeed, addr);
+
+      expect(bdsState).to.be.deep.equal(expectedBdsState);
+      expect(skSeed).to.be.deep.equal(expectedSkSeed);
+      expect(params).to.be.deep.equal(expectedParams);
+      expect(pubSeed).to.be.deep.equal(expectedPubSeed);
+      expect(addr).to.be.deep.equal(expectedAddr);
+    });
+
+    it('should run bdsRound, with SHAKE_128 hashing', () => {
+      const height = 8;
+      const k = 8;
+      const w = 19;
+      const n = 3;
+      const bdsState = newBDSState(height, n, k);
+      const leadIdx = 13;
+      const skSeed = new Uint8Array([
+        99, 61, 110, 52, 106, 2, 60, 29, 32, 61, 24, 43, 111, 118, 40, 80, 20, 11, 87, 7, 28, 69, 118, 75, 62, 53, 106,
+        116, 79, 18, 102, 93, 26, 83, 31, 1, 101, 20, 92, 77, 11, 6, 94, 96, 26, 71,
+      ]);
+      const params = newXMSSParams(n, height, w, k);
+      const pubSeed = new Uint8Array([
+        100, 59, 118, 122, 23, 56, 39, 27, 37, 74, 104, 15, 117, 63, 119, 59, 82, 83, 84, 111, 13, 97, 41, 81, 13, 50,
+        16, 53, 113, 101, 104, 25, 29, 23,
+      ]);
+      const addr = new Uint32Array([114, 21, 27, 15, 50, 21, 28, 7]);
+      const expectedBdsState = newBDSState(height, n, k);
+      expectedBdsState.auth = new Uint8Array([
+        0, 0, 0, 85, 31, 105, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      ]);
+      const expectedSkSeed = new Uint8Array([
+        99, 61, 110, 52, 106, 2, 60, 29, 32, 61, 24, 43, 111, 118, 40, 80, 20, 11, 87, 7, 28, 69, 118, 75, 62, 53, 106,
+        116, 79, 18, 102, 93, 26, 83, 31, 1, 101, 20, 92, 77, 11, 6, 94, 96, 26, 71,
+      ]);
+      const expectedParams = newXMSSParams(n, height, w, k);
+      const expectedPubSeed = new Uint8Array([
+        100, 59, 118, 122, 23, 56, 39, 27, 37, 74, 104, 15, 117, 63, 119, 59, 82, 83, 84, 111, 13, 97, 41, 81, 13, 50,
+        16, 53, 113, 101, 104, 25, 29, 23,
+      ]);
+      const expectedAddr = new Uint32Array([114, 21, 27, 15, 50, 21, 28, 7]);
+      bdsRound(HASH_FUNCTION.SHAKE_128, bdsState, leadIdx, skSeed, params, pubSeed, addr);
+
+      expect(bdsState).to.be.deep.equal(expectedBdsState);
+      expect(skSeed).to.be.deep.equal(expectedSkSeed);
+      expect(params).to.be.deep.equal(expectedParams);
+      expect(pubSeed).to.be.deep.equal(expectedPubSeed);
+      expect(addr).to.be.deep.equal(expectedAddr);
+    });
+
+    it('should run bdsRound, with SHAKE_256 hashing', () => {
+      const height = 7;
+      const k = 7;
+      const w = 5;
+      const n = 2;
+      const bdsState = newBDSState(height, n, k);
+      const leadIdx = 9;
+      const skSeed = new Uint8Array([
+        41, 85, 10, 57, 96, 43, 82, 123, 20, 60, 25, 5, 0, 15, 57, 69, 6, 27, 57, 43, 24, 43, 102, 100, 20, 14, 5, 64,
+        31, 72, 120, 6, 8, 92, 95, 120, 33, 73, 85, 36, 57, 68, 94,
+      ]);
+      const params = newXMSSParams(n, height, w, k);
+      const pubSeed = new Uint8Array([
+        88, 43, 72, 0, 117, 19, 84, 73, 52, 34, 20, 4, 24, 24, 50, 11, 119, 17, 39, 15, 66, 45, 81, 38, 71, 102,
+      ]);
+      const addr = new Uint32Array([86, 82, 23, 31, 36, 115, 37, 70]);
+      const expectedBdsState = newBDSState(height, n, k);
+      expectedBdsState.auth = new Uint8Array([0, 0, 8, 122, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+      const expectedSkSeed = new Uint8Array([
+        41, 85, 10, 57, 96, 43, 82, 123, 20, 60, 25, 5, 0, 15, 57, 69, 6, 27, 57, 43, 24, 43, 102, 100, 20, 14, 5, 64,
+        31, 72, 120, 6, 8, 92, 95, 120, 33, 73, 85, 36, 57, 68, 94,
+      ]);
+      const expectedParams = newXMSSParams(n, height, w, k);
+      const expectedPubSeed = new Uint8Array([
+        88, 43, 72, 0, 117, 19, 84, 73, 52, 34, 20, 4, 24, 24, 50, 11, 119, 17, 39, 15, 66, 45, 81, 38, 71, 102,
+      ]);
+      const expectedAddr = new Uint32Array([86, 82, 23, 31, 36, 115, 37, 70]);
+      bdsRound(HASH_FUNCTION.SHAKE_256, bdsState, leadIdx, skSeed, params, pubSeed, addr);
+
+      expect(bdsState).to.be.deep.equal(expectedBdsState);
+      expect(skSeed).to.be.deep.equal(expectedSkSeed);
+      expect(params).to.be.deep.equal(expectedParams);
       expect(pubSeed).to.be.deep.equal(expectedPubSeed);
       expect(addr).to.be.deep.equal(expectedAddr);
     });

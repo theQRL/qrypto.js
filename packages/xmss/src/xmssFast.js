@@ -501,3 +501,114 @@ export function bdsTreeHashUpdate(hashFunction, bdsState, updates, skSeed, param
 
   return updates - used;
 }
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {BDSState} bdsState
+ * @param {Uint32Array[number]} leafIdx
+ * @param {Uint8Array} skSeed
+ * @param {XMSSParams} params
+ * @param {Uint8Array} pubSeed
+ * @param {Uint32Array} addr
+ */
+export function bdsRound(hashFunction, bdsState, leafIdx, skSeed, params, pubSeed, addr) {
+  if (addr.length !== 8) {
+    throw new Error('addr should be an array of size 8');
+  }
+
+  const bdsState1 = bdsState;
+  const { n, h, k } = params;
+
+  let tau = h;
+  const buf = new Uint8Array(2 * n);
+
+  const otsAddr = new Uint32Array(8);
+  const lTreeAddr = new Uint32Array(8);
+  const nodeAddr = new Uint32Array(8);
+
+  otsAddr.set(addr.subarray(0, 3));
+  setType(otsAddr, 0);
+
+  lTreeAddr.set(addr.subarray(0, 3));
+  setType(lTreeAddr, 1);
+
+  nodeAddr.set(addr.subarray(0, 3));
+  setType(nodeAddr, 2);
+
+  for (let i = 0; i < h; i++) {
+    if ((leafIdx >> i) % 2 === 0) {
+      tau = i;
+      break;
+    }
+  }
+
+  if (tau > 0) {
+    let srcOffset = (tau - 1) * n;
+    for (let bufIndex = 0, authIndex = srcOffset; bufIndex < n && authIndex < srcOffset + n; bufIndex++, authIndex++) {
+      buf.set([bdsState1.auth[authIndex]], bufIndex);
+    }
+
+    srcOffset = ((tau - 1) >> 1) * n;
+    for (
+      let bufIndex = n, keepIndex = srcOffset;
+      bufIndex < 2 * n && keepIndex < srcOffset + n;
+      bufIndex++, keepIndex++
+    ) {
+      buf.set([bdsState1.keep[keepIndex]], bufIndex);
+    }
+  }
+
+  if (((leafIdx >> (tau + 1)) & 1) == 0 && tau < h - 1) {
+    const destOffset = (tau >> 1) * n;
+    const srcOffset = tau * n;
+    for (
+      let keepIndex = destOffset, authIndex = srcOffset;
+      keepIndex < destOffset + n && authIndex < srcOffset + n;
+      keepIndex++, authIndex++
+    ) {
+      bdsState1.keep.set([bdsState1.auth[authIndex]], keepIndex);
+    }
+  }
+
+  if (tau === 0) {
+    setLTreeAddr(lTreeAddr, leafIdx);
+    setOTSAddr(otsAddr, leafIdx);
+    genLeafWOTS(hashFunction, bdsState1.auth.subarray(0, n), skSeed, params, pubSeed, lTreeAddr, otsAddr);
+  } else {
+    setTreeHeight(nodeAddr, tau - 1);
+    setTreeIndex(nodeAddr, leafIdx >> tau);
+    hashH(hashFunction, bdsState1.auth.subarray(tau * n, tau * n + n), buf, pubSeed, nodeAddr, n);
+    for (let i = 0; i < tau; i++) {
+      if (i < h - k) {
+        for (let authIndex = i * n, nodeIndex = 0; authIndex < i * n + n && nodeIndex < n; authIndex++, nodeIndex++) {
+          bdsState1.auth.set([bdsState1.treeHash[i].node[nodeIndex]], authIndex);
+        }
+      } else {
+        const offset = (1 << (h - 1 - i)) + i - h;
+        const rowIdx = ((leafIdx >> i) - 1) >> 1;
+        const srcOffset = (offset + rowIdx) * n;
+        for (
+          let authIndex = i * n, retainIndex = srcOffset;
+          authIndex < i * n + n && retainIndex < srcOffset + n;
+          authIndex++, retainIndex++
+        ) {
+          bdsState1.auth.set([bdsState1.retain[retainIndex]], authIndex);
+        }
+      }
+    }
+
+    let compareValue = h - k;
+    if (tau < h - k) {
+      compareValue = tau;
+    }
+    for (let i = 0; i < compareValue; i++) {
+      const startIdx = leafIdx + 1 + 3 * (1 << i);
+      if (startIdx < 1 << h) {
+        bdsState1.treeHash[i].h = i;
+        bdsState1.treeHash[i].nextIdx = startIdx;
+        bdsState1.treeHash[i].completed = 0;
+        bdsState1.treeHash[i].stackUsage = 0;
+      }
+    }
+  }
+}
