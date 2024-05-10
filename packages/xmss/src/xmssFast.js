@@ -372,6 +372,10 @@ export function XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, s
  * @param {Uint32Array} addr
  */
 export function treeHashUpdate(hashFunction, treeHash, bdsState, skSeed, params, pubSeed, addr) {
+  if (addr.length !== 8) {
+    throw new Error('addr should be an array of size 8');
+  }
+
   const treeHash1 = treeHash;
   const bdsState1 = bdsState;
 

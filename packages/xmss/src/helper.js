@@ -165,6 +165,10 @@ function toByteBigEndian(out, input, bytes, outStartIndex = 0, outEndIndex = out
  * @param {function(): ENDIAN[keyof typeof ENDIAN]} getEndianFunc
  */
 export function addrToByte(out, addr, getEndianFunc = getEndian) {
+  if (addr.length !== 8) {
+    throw new Error('addr should be an array of size 8');
+  }
+
   switch (getEndianFunc()) {
     case ENDIAN.LITTLE:
       for (let i = 0; i < 8; i++) {
