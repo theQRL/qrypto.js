@@ -82,7 +82,6 @@ export function hashH(hashFunction, out, input, pubSeed, addr, n) {
   addrToByte(byteAddr, addr);
   prf(hashFunction, key, byteAddr, pubSeed, n);
 
-  // Use MSB order
   setKeyAndMask(addr, 1);
   addrToByte(byteAddr, addr);
   prf(hashFunction, bitMask, byteAddr, pubSeed, n, 0, n);

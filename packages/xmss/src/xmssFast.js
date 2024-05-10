@@ -32,7 +32,6 @@ export function getSeed(hashFunction, seed, skSeed, n, addr) {
   setHashAddr(addr, 0);
   setKeyAndMask(addr, 0);
 
-  // Generate pseudorandom value
   addrToByte(bytes, addr);
   prf(hashFunction, seed, bytes, skSeed, n);
 }
@@ -558,7 +557,7 @@ export function bdsRound(hashFunction, bdsState, leafIdx, skSeed, params, pubSee
     }
   }
 
-  if (((leafIdx >> (tau + 1)) & 1) == 0 && tau < h - 1) {
+  if (((leafIdx >> (tau + 1)) & 1) === 0 && tau < h - 1) {
     const destOffset = (tau >> 1) * n;
     const srcOffset = tau * n;
     for (
