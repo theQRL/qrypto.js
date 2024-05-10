@@ -612,3 +612,54 @@ export function bdsRound(hashFunction, bdsState, leafIdx, skSeed, params, pubSee
     }
   }
 }
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {XMSSParams} params
+ * @param {Uint8Array} sk
+ * @param {BDSState} bdsState
+ * @param {Uint32Array[number]} newIdx
+ * @returns {Uint32Array[number]}
+ */
+export function xmssFastUpdate(hashFunction, params, sk, bdsState, newIdx) {
+  const [numElems] = new Uint32Array([1 << params.h]);
+  const currentIdx =
+    (new Uint32Array([sk[0]])[0] << 24) |
+    (new Uint32Array([sk[1]])[0] << 16) |
+    (new Uint32Array([sk[2]])[0] << 8) |
+    new Uint32Array([sk[3]])[0];
+
+  if (newIdx >= numElems) {
+    throw new Error('Index too high');
+  }
+  if (newIdx < currentIdx) {
+    throw new Error('Cannot rewind');
+  }
+
+  const skSeed = new Uint8Array(params.n);
+  skSeed.set(sk.subarray(4, 4 + params.n));
+
+  const startOffset = 4 + 2 * 32;
+  const pubSeed = new Uint8Array(params.n);
+  for (
+    let pubSeedIndex = 0, skIndex = startOffset;
+    pubSeedIndex < 32 && skIndex < startOffset + 32;
+    pubSeedIndex++, skIndex++
+  ) {
+    pubSeed.set([sk[skIndex]], pubSeedIndex);
+  }
+
+  const otsAddr = new Uint32Array(8);
+
+  for (let j = currentIdx; j < newIdx; j++) {
+    if (j >= numElems) {
+      return -1;
+    }
+    bdsRound(hashFunction, bdsState, j, skSeed, params, pubSeed, otsAddr);
+    bdsTreeHashUpdate(hashFunction, bdsState, (params.h - params.k) >> 1, skSeed, params, pubSeed, otsAddr);
+  }
+
+  sk.set(new Uint8Array([(newIdx >> 24) & 0xff, (newIdx >> 16) & 0xff, (newIdx >> 8) & 0xff, newIdx & 0xff]));
+
+  return 0;
+}

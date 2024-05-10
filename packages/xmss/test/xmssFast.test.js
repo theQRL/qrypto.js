@@ -16,6 +16,7 @@ import {
   treeHashSetup,
   treeHashUpdate,
   wOTSPKGen,
+  xmssFastUpdate,
 } from '../src/xmssFast.js';
 
 describe('xmssFast', () => {
@@ -1139,6 +1140,132 @@ describe('xmssFast', () => {
       expect(params).to.be.deep.equal(expectedParams);
       expect(pubSeed).to.be.deep.equal(expectedPubSeed);
       expect(addr).to.be.deep.equal(expectedAddr);
+    });
+  });
+
+  describe('xmssFastUpdate', () => {
+    it('should run xmssFastUpdate, with SHA2_256 hashing', () => {
+      const height = 3;
+      const k = 3;
+      const w = 7;
+      const n = 32;
+      const params = newXMSSParams(n, height, w, k);
+      const sk = new Uint8Array([
+        0, 0, 0, 6, 46, 113, 78, 56, 72, 75, 36, 107, 42, 106, 92, 60, 39, 82, 14, 5, 3, 73, 26, 95, 93, 101, 2, 54,
+        119, 20, 21, 48, 91, 82, 60, 55, 82, 27, 109, 57, 82, 54, 82, 71, 55, 27, 56, 90, 94, 122, 24, 67, 38, 61, 71,
+        88, 51, 56, 43, 4, 25, 104, 69, 29, 107, 104, 119, 19, 120, 24, 106, 55, 118, 98, 116, 121, 0, 62, 70, 26, 120,
+        54, 46, 56, 89, 63, 96, 6, 112, 61, 116, 69, 87, 41, 63, 84, 100, 64, 84, 41,
+      ]);
+      const bdsState = newBDSState(height, n, k);
+      const newIdx = 7;
+      const expectedParams = newXMSSParams(n, height, w, k);
+      const expectedSk = new Uint8Array([
+        0, 0, 0, 7, 46, 113, 78, 56, 72, 75, 36, 107, 42, 106, 92, 60, 39, 82, 14, 5, 3, 73, 26, 95, 93, 101, 2, 54,
+        119, 20, 21, 48, 91, 82, 60, 55, 82, 27, 109, 57, 82, 54, 82, 71, 55, 27, 56, 90, 94, 122, 24, 67, 38, 61, 71,
+        88, 51, 56, 43, 4, 25, 104, 69, 29, 107, 104, 119, 19, 120, 24, 106, 55, 118, 98, 116, 121, 0, 62, 70, 26, 120,
+        54, 46, 56, 89, 63, 96, 6, 112, 61, 116, 69, 87, 41, 63, 84, 100, 64, 84, 41,
+      ]);
+      const expectedBdsState = newBDSState(height, n, k);
+      expectedBdsState.auth = new Uint8Array([
+        49, 213, 235, 117, 46, 204, 160, 72, 250, 230, 95, 157, 190, 176, 137, 110, 7, 217, 1, 40, 120, 71, 19, 141, 92,
+        252, 208, 17, 90, 173, 194, 253, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0,
+      ]);
+      xmssFastUpdate(HASH_FUNCTION.SHA2_256, params, sk, bdsState, newIdx);
+
+      expect(params).to.be.deep.equal(expectedParams);
+      expect(sk).to.be.deep.equal(expectedSk);
+      expect(bdsState).to.be.deep.equal(expectedBdsState);
+    });
+
+    it('should run xmssFastUpdate, with SHAKE_128 hashing', () => {
+      const height = 4;
+      const k = 4;
+      const w = 9;
+      const n = 45;
+      const params = newXMSSParams(n, height, w, k);
+      const sk = new Uint8Array([
+        0, 0, 0, 3, 103, 122, 114, 30, 58, 4, 56, 78, 68, 71, 122, 11, 67, 97, 17, 117, 54, 114, 39, 29, 116, 118, 47,
+        80, 64, 79, 31, 116, 23, 79, 35, 74, 69, 76, 100, 0, 32, 49, 95, 17, 113, 61, 67, 17, 64, 123, 81, 9, 77, 1, 12,
+        52, 93, 39, 98, 91, 61, 67, 39, 66, 104, 94, 112, 62, 9, 75, 85, 10, 91, 17, 6, 38, 49, 100, 67, 116, 104, 88,
+        121, 15, 75, 19, 11, 85, 47, 40, 81, 99, 11, 35, 94, 48, 71, 93, 49, 110, 79, 24, 4, 107, 31, 40, 11, 63, 4, 60,
+        71, 41, 50, 31, 46, 93, 89, 24, 6, 106,
+      ]);
+      const bdsState = newBDSState(height, n, k);
+      const newIdx = 12;
+      const expectedParams = newXMSSParams(n, height, w, k);
+      const expectedSk = new Uint8Array([
+        0, 0, 0, 12, 103, 122, 114, 30, 58, 4, 56, 78, 68, 71, 122, 11, 67, 97, 17, 117, 54, 114, 39, 29, 116, 118, 47,
+        80, 64, 79, 31, 116, 23, 79, 35, 74, 69, 76, 100, 0, 32, 49, 95, 17, 113, 61, 67, 17, 64, 123, 81, 9, 77, 1, 12,
+        52, 93, 39, 98, 91, 61, 67, 39, 66, 104, 94, 112, 62, 9, 75, 85, 10, 91, 17, 6, 38, 49, 100, 67, 116, 104, 88,
+        121, 15, 75, 19, 11, 85, 47, 40, 81, 99, 11, 35, 94, 48, 71, 93, 49, 110, 79, 24, 4, 107, 31, 40, 11, 63, 4, 60,
+        71, 41, 50, 31, 46, 93, 89, 24, 6, 106,
+      ]);
+      const expectedBdsState = newBDSState(height, n, k);
+      expectedBdsState.auth = new Uint8Array([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 53, 159, 241, 197, 124, 57, 75, 123, 185, 188, 67, 196, 196, 19,
+        240, 85, 132, 200, 39, 236, 192, 31, 23, 211, 8, 141, 183, 61, 74, 156, 214, 141, 207, 28, 165, 31, 175, 160,
+        77, 142, 47, 134, 163, 23, 116, 179, 97, 228, 225, 232, 198, 2, 80, 141, 198, 3, 12, 40, 68, 60, 108, 206, 128,
+        232, 213, 67, 148, 214, 12, 134, 45, 216, 4, 169, 106, 67, 236, 253, 249, 178, 17, 200, 163, 130, 2, 239, 104,
+        245, 75, 252,
+      ]);
+      xmssFastUpdate(HASH_FUNCTION.SHAKE_128, params, sk, bdsState, newIdx);
+
+      expect(params).to.be.deep.equal(expectedParams);
+      expect(sk).to.be.deep.equal(expectedSk);
+      expect(bdsState).to.be.deep.equal(expectedBdsState);
+    });
+
+    it('should run xmssFastUpdate, with SHAKE_256 hashing', () => {
+      const height = 5;
+      const k = 2;
+      const w = 7;
+      const n = 43;
+      const params = newXMSSParams(n, height, w, k);
+      const sk = new Uint8Array([
+        0, 0, 0, 8, 4, 6, 9, 3, 1, 7, 11, 11, 7, 4, 0, 3, 4, 5, 14, 4, 2, 8, 8, 13, 11, 11, 2, 8, 15, 5, 6, 12, 6, 3,
+        12, 3, 14, 12, 12, 6, 14, 2, 2, 3, 1, 13, 10, 3, 5, 7, 1, 13, 4, 1, 9, 10, 13, 14, 13, 12, 1, 11, 10, 0, 6, 9,
+        4, 4, 10, 2, 12, 9, 11, 6, 10, 7, 1, 1, 15, 11, 5, 2, 13, 4, 14, 0, 5, 5, 7, 11, 12, 2, 11, 10, 11, 14, 0, 4,
+        11, 13, 2, 8, 7, 12,
+      ]);
+      const bdsState = newBDSState(height, n, k);
+      const newIdx = 11;
+      const expectedParams = newXMSSParams(n, height, w, k);
+      const expectedSk = new Uint8Array([
+        0, 0, 0, 11, 4, 6, 9, 3, 1, 7, 11, 11, 7, 4, 0, 3, 4, 5, 14, 4, 2, 8, 8, 13, 11, 11, 2, 8, 15, 5, 6, 12, 6, 3,
+        12, 3, 14, 12, 12, 6, 14, 2, 2, 3, 1, 13, 10, 3, 5, 7, 1, 13, 4, 1, 9, 10, 13, 14, 13, 12, 1, 11, 10, 0, 6, 9,
+        4, 4, 10, 2, 12, 9, 11, 6, 10, 7, 1, 1, 15, 11, 5, 2, 13, 4, 14, 0, 5, 5, 7, 11, 12, 2, 11, 10, 11, 14, 0, 4,
+        11, 13, 2, 8, 7, 12,
+      ]);
+      const expectedBdsState = newBDSState(height, n, k);
+      expectedBdsState.auth = new Uint8Array([
+        200, 244, 50, 124, 192, 59, 101, 213, 23, 189, 77, 9, 69, 219, 51, 71, 79, 121, 221, 254, 7, 183, 105, 174, 52,
+        21, 251, 244, 136, 232, 170, 73, 137, 64, 177, 30, 58, 119, 255, 164, 141, 65, 139, 196, 21, 29, 188, 225, 177,
+        78, 86, 251, 72, 239, 169, 198, 168, 39, 122, 9, 95, 67, 164, 202, 28, 38, 172, 229, 109, 26, 184, 141, 227, 16,
+        127, 185, 93, 213, 31, 196, 193, 215, 73, 99, 116, 146, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      ]);
+      expectedBdsState.treeHash[0].nextIdx = 13;
+      expectedBdsState.treeHash[0].completed = 1;
+      expectedBdsState.treeHash[0].node = new Uint8Array([
+        142, 121, 89, 51, 222, 132, 141, 239, 203, 102, 222, 248, 214, 163, 198, 70, 235, 50, 230, 76, 202, 244, 237,
+        10, 1, 13, 72, 211, 14, 163, 88, 3, 178, 85, 188, 209, 128, 15, 81, 152, 232, 179, 246,
+      ]);
+      expectedBdsState.treeHash[1].completed = 1;
+      expectedBdsState.treeHash[1].node = new Uint8Array([
+        132, 54, 132, 224, 183, 42, 146, 132, 114, 20, 149, 229, 220, 110, 162, 166, 102, 67, 96, 176, 247, 191, 111, 1,
+        100, 178, 152, 214, 56, 97, 147, 58, 92, 104, 169, 196, 151, 233, 207, 135, 215, 157, 156,
+      ]);
+      xmssFastUpdate(HASH_FUNCTION.SHAKE_256, params, sk, bdsState, newIdx);
+
+      expect(params).to.be.deep.equal(expectedParams);
+      expect(sk).to.be.deep.equal(expectedSk);
+      expect(bdsState).to.be.deep.equal(expectedBdsState);
     });
   });
 });
