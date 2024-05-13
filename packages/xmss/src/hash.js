@@ -12,21 +12,8 @@ import { addrToByte, setKeyAndMask, sha256, shake128, shake256, toByteLittleEndi
  * @param {Uint8Array} input
  * @param {Uint32Array[number]} inLen
  * @param {Uint32Array[number]} n
- * @param {number} outStartIndex
- * @param {number} outEndIndex
  */
-export function coreHash(
-  hashFunction,
-  out,
-  typeValue,
-  key,
-  keyLen,
-  input,
-  inLen,
-  n,
-  outStartIndex = 0,
-  outEndIndex = out.length
-) {
+export function coreHash(hashFunction, out, typeValue, key, keyLen, input, inLen, n) {
   const buf = new Uint8Array(inLen + n + keyLen);
   toByteLittleEndian(buf, typeValue, n);
   for (let i = 0; i < keyLen; i++) {
@@ -38,13 +25,13 @@ export function coreHash(
 
   switch (hashFunction) {
     case HASH_FUNCTION.SHA2_256:
-      sha256(out, buf, outStartIndex, outEndIndex);
+      sha256(out, buf);
       break;
     case HASH_FUNCTION.SHAKE_128:
-      shake128(out, buf, outStartIndex, outEndIndex);
+      shake128(out, buf);
       break;
     case HASH_FUNCTION.SHAKE_256:
-      shake256(out, buf, outStartIndex, outEndIndex);
+      shake256(out, buf);
       break;
     default:
       break;
@@ -57,11 +44,9 @@ export function coreHash(
  * @param {Uint8Array} input
  * @param {Uint8Array} key
  * @param {Uint32Array[number]} keyLen
- * @param {number} outStartIndex
- * @param {number} outEndIndex
  */
-export function prf(hashFunction, out, input, key, keyLen, outStartIndex = 0, outEndIndex = out.length) {
-  coreHash(hashFunction, out, 3, key, keyLen, input, 32, keyLen, outStartIndex, outEndIndex);
+export function prf(hashFunction, out, input, key, keyLen) {
+  coreHash(hashFunction, out, 3, key, keyLen, input, 32, keyLen);
 }
 
 /**
@@ -88,10 +73,10 @@ export function hashH(hashFunction, out, input, pubSeed, addr, n) {
 
   setKeyAndMask(addr, 1);
   addrToByte(byteAddr, addr);
-  prf(hashFunction, bitMask, byteAddr, pubSeed, n, 0, n);
+  prf(hashFunction, bitMask.subarray(0, n), byteAddr, pubSeed, n);
   setKeyAndMask(addr, 2);
   addrToByte(byteAddr, addr);
-  prf(hashFunction, bitMask, byteAddr, pubSeed, n, n, n + n);
+  prf(hashFunction, bitMask.subarray(n, n + n), byteAddr, pubSeed, n);
   for (let i = 0; i < 2 * n; i++) {
     buf.set([input[i] ^ bitMask[i]], i);
   }

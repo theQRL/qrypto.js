@@ -7,14 +7,12 @@ const { shake256: sha3Shake256, shake128: sha3Shake128 } = jsSha3CommonJsPackage
 /**
  * @param {Uint8Array} out
  * @param {Uint8Array} msg
- * @param {number} outStartIndex
- * @param {number} outEndIndex
  * @returns {Uint8Array}
  */
-export function shake128(out, msg, outStartIndex = 0, outEndIndex = out.length) {
+export function shake128(out, msg) {
   const hash = sha3Shake128(msg, 8 * out.length);
-  for (let o = outStartIndex, h = 0; o < outEndIndex; o++, h++) {
-    out.set([parseInt(hash.substring(h * 2, h * 2 + 2), 16)], o);
+  for (let i = 0, h = 0; i < out.length; i++, h++) {
+    out.set([parseInt(hash.substring(h * 2, h * 2 + 2), 16)], i);
   }
   return out;
 }
@@ -22,14 +20,12 @@ export function shake128(out, msg, outStartIndex = 0, outEndIndex = out.length) 
 /**
  * @param {Uint8Array} out
  * @param {Uint8Array} msg
- * @param {number} outStartIndex
- * @param {number} outEndIndex
  * @returns {Uint8Array}
  */
-export function shake256(out, msg, outStartIndex = 0, outEndIndex = out.length) {
+export function shake256(out, msg) {
   const hash = sha3Shake256(msg, 8 * out.length);
-  for (let o = outStartIndex, h = 0; o < outEndIndex; o++, h++) {
-    out.set([parseInt(hash.substring(h * 2, h * 2 + 2), 16)], o);
+  for (let i = 0, h = 0; i < out.length; i++, h++) {
+    out.set([parseInt(hash.substring(h * 2, h * 2 + 2), 16)], i);
   }
   return out;
 }
@@ -37,14 +33,12 @@ export function shake256(out, msg, outStartIndex = 0, outEndIndex = out.length) 
 /**
  * @param {Uint8Array} out
  * @param {Uint8Array} msg
- * @param {number} outStartIndex
- * @param {number} outEndIndex
  * @returns {Uint8Array}
  */
-export function sha256(out, msg, outStartIndex = 0, outEndIndex = out.length) {
+export function sha256(out, msg) {
   const hashOut = sha2Func256(msg);
-  for (let o = outStartIndex, h = 0; o < outEndIndex && h < hashOut.length; o++, h++) {
-    out.set([hashOut[h]], o);
+  for (let i = 0, h = 0; i < out.length && h < hashOut.length; i++, h++) {
+    out.set([hashOut[h]], i);
   }
   return out;
 }
@@ -135,12 +129,11 @@ function getEndian() {
  * @param {Uint8Array} out
  * @param {Uint32Array[number]} input
  * @param {Uint32Array[number]} bytes
- * @param {number} outStartIndex
  */
-export function toByteLittleEndian(out, input, bytes, outStartIndex = 0, outEndIndex = outStartIndex + bytes - 1) {
+export function toByteLittleEndian(out, input, bytes) {
   let inValue = input;
-  for (let o = outEndIndex; o >= outStartIndex; o--) {
-    out.set([new Uint8Array([inValue & 0xff])[0]], o);
+  for (let i = bytes - 1; i >= 0; i--) {
+    out.set([new Uint8Array([inValue & 0xff])[0]], i);
     inValue >>= 8;
   }
 }
@@ -149,12 +142,11 @@ export function toByteLittleEndian(out, input, bytes, outStartIndex = 0, outEndI
  * @param {Uint8Array} out
  * @param {Uint32Array[number]} input
  * @param {Uint32Array[number]} bytes
- * @param {number} outStartIndex
  */
-function toByteBigEndian(out, input, bytes, outStartIndex = 0, outEndIndex = outStartIndex + bytes) {
+function toByteBigEndian(out, input, bytes) {
   let inValue = input;
-  for (let o = outStartIndex; o < outEndIndex; o++) {
-    out.set([new Uint8Array([inValue & 0xff])[0]], o);
+  for (let i = 0; i < bytes; i++) {
+    out.set([new Uint8Array([inValue & 0xff])[0]], i);
     inValue >>= 8;
   }
 }
@@ -172,12 +164,12 @@ export function addrToByte(out, addr, getEndianFunc = getEndian) {
   switch (getEndianFunc()) {
     case ENDIAN.LITTLE:
       for (let i = 0; i < 8; i++) {
-        toByteLittleEndian(out, addr[i], 4, i * 4);
+        toByteLittleEndian(out.subarray(i * 4, i * 4 + 4), addr[i], 4);
       }
       break;
     case ENDIAN.BIG:
       for (let i = 0; i < 8; i++) {
-        toByteBigEndian(out, addr[i], 4, i * 4);
+        toByteBigEndian(out.subarray(i * 4, i * 4 + 4), addr[i], 4);
       }
       break;
     default:
