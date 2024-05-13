@@ -106,14 +106,12 @@ const { shake256: sha3Shake256, shake128: sha3Shake128 } = jsSha3CommonJsPackage
 /**
  * @param {Uint8Array} out
  * @param {Uint8Array} msg
- * @param {number} outStartIndex
- * @param {number} outEndIndex
  * @returns {Uint8Array}
  */
-function shake128(out, msg, outStartIndex = 0, outEndIndex = out.length) {
+function shake128(out, msg) {
   const hash = sha3Shake128(msg, 8 * out.length);
-  for (let o = outStartIndex, h = 0; o < outEndIndex; o++, h++) {
-    out.set([parseInt(hash.substring(h * 2, h * 2 + 2), 16)], o);
+  for (let i = 0, h = 0; i < out.length; i++, h++) {
+    out.set([parseInt(hash.substring(h * 2, h * 2 + 2), 16)], i);
   }
   return out;
 }
@@ -121,14 +119,12 @@ function shake128(out, msg, outStartIndex = 0, outEndIndex = out.length) {
 /**
  * @param {Uint8Array} out
  * @param {Uint8Array} msg
- * @param {number} outStartIndex
- * @param {number} outEndIndex
  * @returns {Uint8Array}
  */
-function shake256(out, msg, outStartIndex = 0, outEndIndex = out.length) {
+function shake256(out, msg) {
   const hash = sha3Shake256(msg, 8 * out.length);
-  for (let o = outStartIndex, h = 0; o < outEndIndex; o++, h++) {
-    out.set([parseInt(hash.substring(h * 2, h * 2 + 2), 16)], o);
+  for (let i = 0, h = 0; i < out.length; i++, h++) {
+    out.set([parseInt(hash.substring(h * 2, h * 2 + 2), 16)], i);
   }
   return out;
 }
@@ -136,14 +132,12 @@ function shake256(out, msg, outStartIndex = 0, outEndIndex = out.length) {
 /**
  * @param {Uint8Array} out
  * @param {Uint8Array} msg
- * @param {number} outStartIndex
- * @param {number} outEndIndex
  * @returns {Uint8Array}
  */
-function sha256(out, msg, outStartIndex = 0, outEndIndex = out.length) {
+function sha256(out, msg) {
   const hashOut = sha256$1.sha256(msg);
-  for (let o = outStartIndex, h = 0; o < outEndIndex && h < hashOut.length; o++, h++) {
-    out.set([hashOut[h]], o);
+  for (let i = 0, h = 0; i < out.length && h < hashOut.length; i++, h++) {
+    out.set([hashOut[h]], i);
   }
   return out;
 }
@@ -234,12 +228,11 @@ function getEndian() {
  * @param {Uint8Array} out
  * @param {Uint32Array[number]} input
  * @param {Uint32Array[number]} bytes
- * @param {number} outStartIndex
  */
-function toByteLittleEndian(out, input, bytes, outStartIndex = 0, outEndIndex = outStartIndex + bytes - 1) {
+function toByteLittleEndian(out, input, bytes) {
   let inValue = input;
-  for (let o = outEndIndex; o >= outStartIndex; o--) {
-    out.set([new Uint8Array([inValue & 0xff])[0]], o);
+  for (let i = bytes - 1; i >= 0; i--) {
+    out.set([new Uint8Array([inValue & 0xff])[0]], i);
     inValue >>= 8;
   }
 }
@@ -248,12 +241,11 @@ function toByteLittleEndian(out, input, bytes, outStartIndex = 0, outEndIndex = 
  * @param {Uint8Array} out
  * @param {Uint32Array[number]} input
  * @param {Uint32Array[number]} bytes
- * @param {number} outStartIndex
  */
-function toByteBigEndian(out, input, bytes, outStartIndex = 0, outEndIndex = outStartIndex + bytes) {
+function toByteBigEndian(out, input, bytes) {
   let inValue = input;
-  for (let o = outStartIndex; o < outEndIndex; o++) {
-    out.set([new Uint8Array([inValue & 0xff])[0]], o);
+  for (let i = 0; i < bytes; i++) {
+    out.set([new Uint8Array([inValue & 0xff])[0]], i);
     inValue >>= 8;
   }
 }
@@ -271,12 +263,12 @@ function addrToByte(out, addr, getEndianFunc = getEndian) {
   switch (getEndianFunc()) {
     case ENDIAN.LITTLE:
       for (let i = 0; i < 8; i++) {
-        toByteLittleEndian(out, addr[i], 4, i * 4);
+        toByteLittleEndian(out.subarray(i * 4, i * 4 + 4), addr[i], 4);
       }
       break;
     case ENDIAN.BIG:
       for (let i = 0; i < 8; i++) {
-        toByteBigEndian(out, addr[i], 4, i * 4);
+        toByteBigEndian(out.subarray(i * 4, i * 4 + 4), addr[i], 4);
       }
       break;
     default:
@@ -296,21 +288,8 @@ function addrToByte(out, addr, getEndianFunc = getEndian) {
  * @param {Uint8Array} input
  * @param {Uint32Array[number]} inLen
  * @param {Uint32Array[number]} n
- * @param {number} outStartIndex
- * @param {number} outEndIndex
  */
-function coreHash(
-  hashFunction,
-  out,
-  typeValue,
-  key,
-  keyLen,
-  input,
-  inLen,
-  n,
-  outStartIndex = 0,
-  outEndIndex = out.length
-) {
+function coreHash(hashFunction, out, typeValue, key, keyLen, input, inLen, n) {
   const buf = new Uint8Array(inLen + n + keyLen);
   toByteLittleEndian(buf, typeValue, n);
   for (let i = 0; i < keyLen; i++) {
@@ -322,13 +301,13 @@ function coreHash(
 
   switch (hashFunction) {
     case HASH_FUNCTION.SHA2_256:
-      sha256(out, buf, outStartIndex, outEndIndex);
+      sha256(out, buf);
       break;
     case HASH_FUNCTION.SHAKE_128:
-      shake128(out, buf, outStartIndex, outEndIndex);
+      shake128(out, buf);
       break;
     case HASH_FUNCTION.SHAKE_256:
-      shake256(out, buf, outStartIndex, outEndIndex);
+      shake256(out, buf);
       break;
   }
 }
@@ -339,11 +318,9 @@ function coreHash(
  * @param {Uint8Array} input
  * @param {Uint8Array} key
  * @param {Uint32Array[number]} keyLen
- * @param {number} outStartIndex
- * @param {number} outEndIndex
  */
-function prf(hashFunction, out, input, key, keyLen, outStartIndex = 0, outEndIndex = out.length) {
-  coreHash(hashFunction, out, 3, key, keyLen, input, 32, keyLen, outStartIndex, outEndIndex);
+function prf(hashFunction, out, input, key, keyLen) {
+  coreHash(hashFunction, out, 3, key, keyLen, input, 32, keyLen);
 }
 
 /**
@@ -370,10 +347,10 @@ function hashH(hashFunction, out, input, pubSeed, addr, n) {
 
   setKeyAndMask(addr, 1);
   addrToByte(byteAddr, addr);
-  prf(hashFunction, bitMask, byteAddr, pubSeed, n, 0, n);
+  prf(hashFunction, bitMask.subarray(0, n), byteAddr, pubSeed, n);
   setKeyAndMask(addr, 2);
   addrToByte(byteAddr, addr);
-  prf(hashFunction, bitMask, byteAddr, pubSeed, n, n, n + n);
+  prf(hashFunction, bitMask.subarray(n, n + n), byteAddr, pubSeed, n);
   for (let i = 0; i < 2 * n; i++) {
     buf.set([input[i] ^ bitMask[i]], i);
   }
