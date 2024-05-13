@@ -98,8 +98,8 @@ export function genChain(hashFunction, out, input, start, steps, params, pubSeed
     throw new Error('addr should be an array of size 8');
   }
 
-  for (let j = 0; j < params.n; j++) {
-    out.set([input[j]], j);
+  for (let i = 0; i < params.n; i++) {
+    out.set([input[i]], i);
   }
 
   for (let i = start; i < start + steps && i < params.w; i++) {
@@ -654,11 +654,11 @@ export function xmssFastUpdate(hashFunction, params, sk, bdsState, newIdx) {
 
   const otsAddr = new Uint32Array(8);
 
-  for (let j = currentIdx; j < newIdx; j++) {
-    if (j >= numElems) {
+  for (let i = currentIdx; i < newIdx; i++) {
+    if (i >= numElems) {
       return -1;
     }
-    bdsRound(hashFunction, bdsState, j, skSeed, params, pubSeed, otsAddr);
+    bdsRound(hashFunction, bdsState, i, skSeed, params, pubSeed, otsAddr);
     bdsTreeHashUpdate(hashFunction, bdsState, (params.h - params.k) >> 1, skSeed, params, pubSeed, otsAddr);
   }
 
