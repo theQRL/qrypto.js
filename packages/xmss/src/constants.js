@@ -8,3 +8,10 @@ export const HASH_FUNCTION = {
   SHAKE_128: 1,
   SHAKE_256: 2,
 };
+
+export const COMMON = {
+  DESCRIPTOR_SIZE: 3,
+  ADDRESS_SIZE: 20,
+  SEED_SIZE: 48,
+  EXTENDED_SEED_SIZE: 51,
+};
