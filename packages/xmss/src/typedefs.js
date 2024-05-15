@@ -50,6 +50,11 @@
  * @property {SignatureType} signatureType
  * @property {Uint8Array[number]} height
  * @property {AddrFormatType} addrFormatType
+ * @property {function():Uint8Array[number]} getHeight
+ * @property {function():HashFunction} getHashFunction
+ * @property {function():SignatureType} getSignatureType
+ * @property {function():AddrFormatType} getAddrFormatType
+ * @property {function():Uint8Array} getBytes
  */
 
 /**

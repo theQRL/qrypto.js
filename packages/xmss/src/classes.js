@@ -89,6 +89,34 @@ export function newXMSSParams(n, h, w, k) {
 }
 
 class QRLDescriptorClass {
+  /** @returns {Uint8Array[number]} */
+  getHeight() {
+    return this.height;
+  }
+
+  /** @returns {HashFunction} */
+  getHashFunction() {
+    return this.hashFunction;
+  }
+
+  /** @returns {SignatureType} */
+  getSignatureType() {
+    return this.signatureType;
+  }
+
+  /** @returns {AddrFormatType} */
+  getAddrFormatType() {
+    return this.addrFormatType;
+  }
+
+  /** @returns {Uint8Array} */
+  getBytes() {
+    const output = new Uint8Array(COMMON.DESCRIPTOR_SIZE);
+    output.set([(this.signatureType << 4) | (this.hashFunction & 0x0f)], 0);
+    output.set([(this.addrFormatType << 4) | ((this.height >> 1) & 0x0f)], 1);
+    return output;
+  }
+
   constructor(hashFunction, signatureType, height, addrFormatType) {
     this.hashFunction = hashFunction;
     this.signatureType = signatureType;
