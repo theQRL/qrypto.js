@@ -15,3 +15,7 @@ export const COMMON = Object.freeze({
   SEED_SIZE: 48,
   EXTENDED_SEED_SIZE: 51,
 });
+
+export const ARRAY_SIZES = Object.freeze({
+  EXTENDED_PK_SIZE: 67,
+});

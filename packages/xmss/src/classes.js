@@ -1,5 +1,7 @@
 /// <reference path="typedefs.js" />
 
+import { ARRAY_SIZES, COMMON } from './constants.js';
+
 class TreeHashInstClass {
   constructor(n = 0) {
     [this.h] = new Uint32Array([0]);
@@ -84,4 +86,65 @@ class XMSSParamsClass {
  */
 export function newXMSSParams(n, h, w, k) {
   return new XMSSParamsClass(n, h, w, k);
+}
+
+class QRLDescriptorClass {
+  constructor(hashFunction, signatureType, height, addrFormatType) {
+    this.hashFunction = hashFunction;
+    this.signatureType = signatureType;
+    this.height = height;
+    this.addrFormatType = addrFormatType;
+  }
+}
+
+/**
+ * @param {Uint8Array[number]} height
+ * @param {HashFunction} hashFunction
+ * @param {SignatureType} signatureType
+ * @param {AddrFormatType} addrFormatType
+ * @returns {QRLDescriptor}
+ */
+export function newQRLDescriptor(height, hashFunction, signatureType, addrFormatType) {
+  return new QRLDescriptorClass(hashFunction, signatureType, height, addrFormatType);
+}
+
+/**
+ * @param {Uint8Array} descriptorBytes
+ * @returns {QRLDescriptor}
+ */
+export function newQRLDescriptorFromBytes(descriptorBytes) {
+  if (descriptorBytes.length !== 3) {
+    throw new Error('Descriptor size should be 3 bytes');
+  }
+
+  return new QRLDescriptorClass(
+    descriptorBytes[0] & 0x0f,
+    (descriptorBytes[0] >> 4) & 0x0f,
+    (descriptorBytes[1] & 0x0f) << 1,
+    (descriptorBytes[1] & 0xf0) >> 4
+  );
+}
+
+/**
+ * @param {Uint8Array} extendedSeed
+ * @returns {QRLDescriptor}
+ */
+export function newQRLDescriptorFromExtendedSeed(extendedSeed) {
+  if (extendedSeed.length !== COMMON.EXTENDED_SEED_SIZE) {
+    throw new Error(`extendedSeed should be an array of size ${COMMON.EXTENDED_SEED_SIZE}`);
+  }
+
+  return newQRLDescriptorFromBytes(extendedSeed.subarray(0, COMMON.DESCRIPTOR_SIZE));
+}
+
+/**
+ * @param {Uint8Array} extendedPk
+ * @returns {QRLDescriptor}
+ */
+export function newQRLDescriptorFromExtendedPk(extendedPk) {
+  if (extendedPk.length !== ARRAY_SIZES.EXTENDED_PK_SIZE) {
+    throw new Error(`extendedPk should be an array of size ${ARRAY_SIZES.EXTENDED_PK_SIZE}`);
+  }
+
+  return newQRLDescriptorFromBytes(extendedPk.subarray(0, COMMON.DESCRIPTOR_SIZE));
 }
