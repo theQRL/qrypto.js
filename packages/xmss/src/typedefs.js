@@ -51,3 +51,14 @@
  * @property {Uint8Array[number]} height
  * @property {AddrFormatType} addrFormatType
  */
+
+/**
+ * @typedef {Object} XMSS
+ * @property {XMSSParams} xmssParams
+ * @property {HashFunction} hashFunction
+ * @property {Uint8Array[number]} height
+ * @property {Uint8Array} sk
+ * @property {Uint8Array} seed
+ * @property {BDSState} bdsState
+ * @property {QRLDescriptor} desc
+ */
