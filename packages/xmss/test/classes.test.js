@@ -10,7 +10,7 @@ import {
   newWOTSParams,
   newXMSSParams,
 } from '../src/classes.js';
-import { ARRAY_SIZES, COMMON, HASH_FUNCTION } from '../src/constants.js';
+import { COMMON, CONSTANTS, HASH_FUNCTION } from '../src/constants.js';
 
 describe('classes', () => {
   describe('newTreeHashInst', () => {
@@ -369,7 +369,7 @@ describe('classes', () => {
       const extendedPk = new Uint8Array([56, 87]);
 
       expect(() => newQRLDescriptorFromExtendedPk(extendedPk)).to.throw(
-        `extendedPk should be an array of size ${ARRAY_SIZES.EXTENDED_PK_SIZE}`
+        `extendedPk should be an array of size ${CONSTANTS.EXTENDED_PK_SIZE}`
       );
     });
 

@@ -1,3 +1,7 @@
+export const CONSTANTS = Object.freeze({
+  EXTENDED_PK_SIZE: 67,
+});
+
 export const ENDIAN = Object.freeze({
   LITTLE: 0,
   BIG: 1,
@@ -14,10 +18,6 @@ export const COMMON = Object.freeze({
   ADDRESS_SIZE: 20,
   SEED_SIZE: 48,
   EXTENDED_SEED_SIZE: 51,
-});
-
-export const ARRAY_SIZES = Object.freeze({
-  EXTENDED_PK_SIZE: 67,
 });
 
 export const WOTS_PARAM = Object.freeze({

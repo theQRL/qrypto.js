@@ -1,6 +1,6 @@
 /// <reference path="typedefs.js" />
 
-import { ARRAY_SIZES, COMMON } from './constants.js';
+import { COMMON, CONSTANTS } from './constants.js';
 
 class TreeHashInstClass {
   constructor(n = 0) {
@@ -170,8 +170,8 @@ export function newQRLDescriptorFromExtendedSeed(extendedSeed) {
  * @returns {QRLDescriptor}
  */
 export function newQRLDescriptorFromExtendedPk(extendedPk) {
-  if (extendedPk.length !== ARRAY_SIZES.EXTENDED_PK_SIZE) {
-    throw new Error(`extendedPk should be an array of size ${ARRAY_SIZES.EXTENDED_PK_SIZE}`);
+  if (extendedPk.length !== CONSTANTS.EXTENDED_PK_SIZE) {
+    throw new Error(`extendedPk should be an array of size ${CONSTANTS.EXTENDED_PK_SIZE}`);
   }
 
   return newQRLDescriptorFromBytes(extendedPk.subarray(0, COMMON.DESCRIPTOR_SIZE));
