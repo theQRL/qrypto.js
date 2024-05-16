@@ -19,3 +19,9 @@ export const COMMON = Object.freeze({
 export const ARRAY_SIZES = Object.freeze({
   EXTENDED_PK_SIZE: 67,
 });
+
+export const WOTS_PARAM = Object.freeze({
+  K: 2,
+  W: 16,
+  N: 32,
+});
