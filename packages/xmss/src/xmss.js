@@ -1,7 +1,7 @@
 /// <reference path="typedefs.js" />
 
-import { newBDSState, newXMSSParams } from './classes.js';
-import { COMMON, WOTS_PARAM } from './constants.js';
+import { newBDSState, newQRLDescriptor, newXMSSParams } from './classes.js';
+import { COMMON, CONSTANTS, WOTS_PARAM } from './constants.js';
 import { XMSSFastGenKeyPair } from './xmssFast.js';
 
 /**
@@ -13,6 +13,7 @@ export function initializeTree(desc, seed) {
   if (seed.length !== COMMON.SEED_SIZE) {
     throw new Error(`seed should be an array of size ${COMMON.SEED_SIZE}`);
   }
+
   const [height] = new Uint32Array([desc.getHeight()]);
   const hashFunction = desc.getHashFunction();
   const sk = new Uint8Array(132);
@@ -41,4 +42,23 @@ export function initializeTree(desc, seed) {
   };
 }
 
-export const temp = 1;
+/**
+ * @param {Uint8Array} seed
+ * @param {Uint8Array[number]} height
+ * @param {HashFunction} hashFunction
+ * @param {AddrFormatType} addrFormatType
+ * @returns {XMSS}
+ */
+export function newXMSSFromSeed(seed, height, hashFunction, addrFormatType) {
+  if (seed.length !== COMMON.SEED_SIZE) {
+    throw new Error(`seed should be an array of size ${COMMON.SEED_SIZE}`);
+  }
+
+  const signatureType = CONSTANTS.XMSS_SIG;
+  if (height > CONSTANTS.MAX_HEIGHT) {
+    throw new Error('Height should be <= 254');
+  }
+  const desc = newQRLDescriptor(height, hashFunction, signatureType, addrFormatType);
+
+  return initializeTree(desc, seed);
+}

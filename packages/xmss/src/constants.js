@@ -1,5 +1,7 @@
 export const CONSTANTS = Object.freeze({
   EXTENDED_PK_SIZE: 67,
+  XMSS_SIG: 1,
+  MAX_HEIGHT: 254,
 });
 
 export const ENDIAN = Object.freeze({
