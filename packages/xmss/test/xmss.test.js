@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { describe } from 'mocha';
 import { newQRLDescriptor, newQRLDescriptorFromExtendedSeed } from '../src/classes.js';
 import { COMMON, HASH_FUNCTION } from '../src/constants.js';
-import { initializeTree, newXMSSFromSeed } from '../src/xmss.js';
+import { initializeTree, newXMSSFromExtendedSeed, newXMSSFromSeed } from '../src/xmss.js';
 
 describe('xmss', function testFunction() {
   this.timeout(0);
@@ -741,6 +741,227 @@ describe('xmss', function testFunction() {
       const expectedXmssTree = {
         xmssParams: expectedXmssParams,
         hashFunction: 1,
+        height: 6,
+        sk: expectedSk,
+        seed: expectedSeed,
+        bdsState: expectedBdsState,
+        desc: expectedDesc,
+      };
+
+      expect(xmssTree.xmssParams).to.deep.equal(expectedXmssTree.xmssParams);
+      expect(xmssTree.hashFunction).to.deep.equal(expectedXmssTree.hashFunction);
+      expect(xmssTree.height).to.deep.equal(expectedXmssTree.height);
+      expect(xmssTree.sk).to.deep.equal(expectedXmssTree.sk);
+      expect(xmssTree.seed).to.deep.equal(expectedXmssTree.seed);
+      expect(xmssTree.bdsState).to.deep.equal(expectedXmssTree.bdsState);
+      expect(xmssTree.desc).to.deep.equal(expectedXmssTree.desc);
+      expect(xmssTree).to.deep.equal(expectedXmssTree);
+    });
+  });
+
+  describe('newXMSSFromExtendedSeed', () => {
+    it('should generate xmss tree for extendedSeed[214, 194 ...]', () => {
+      const extendedSeed = new Uint8Array([
+        214, 194, 166, 208, 12, 19, 66, 136, 10, 70, 2, 11, 194, 117, 223, 80, 115, 176, 220, 223, 5, 105, 238, 186,
+        102, 21, 34, 20, 242, 103, 8, 210, 212, 21, 85, 234, 167, 59, 19, 225, 9, 17, 49, 51, 0, 158, 70, 214, 108, 85,
+        175,
+      ]);
+      const xmssTree = newXMSSFromExtendedSeed(extendedSeed);
+      const expectedXmssParams = {
+        wotsParams: {
+          len1: 64,
+          len2: 3,
+          len: 67,
+          n: 32,
+          w: 16,
+          logW: 4,
+          keySize: 2144,
+        },
+        n: 32,
+        h: 4,
+        k: 2,
+      };
+      const expectedSk = new Uint8Array([
+        0, 0, 0, 0, 76, 200, 159, 241, 89, 59, 24, 197, 174, 65, 210, 144, 235, 195, 150, 124, 138, 113, 75, 34, 143,
+        30, 141, 35, 142, 22, 247, 240, 38, 10, 111, 175, 75, 10, 150, 235, 154, 111, 135, 53, 166, 223, 200, 146, 170,
+        63, 73, 200, 95, 145, 52, 87, 65, 118, 183, 231, 208, 118, 223, 174, 23, 214, 117, 125, 91, 29, 99, 142, 39,
+        242, 26, 197, 139, 26, 234, 136, 11, 174, 61, 89, 230, 40, 210, 127, 38, 84, 171, 208, 182, 193, 182, 52, 74,
+        225, 50, 195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      ]);
+      const expectedSeed = new Uint8Array([
+        208, 12, 19, 66, 136, 10, 70, 2, 11, 194, 117, 223, 80, 115, 176, 220, 223, 5, 105, 238, 186, 102, 21, 34, 20,
+        242, 103, 8, 210, 212, 21, 85, 234, 167, 59, 19, 225, 9, 17, 49, 51, 0, 158, 70, 214, 108, 85, 175,
+      ]);
+      const expectedBdsState = {
+        stack: new Uint8Array([
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ]),
+        stackOffset: 0,
+        stackLevels: new Uint8Array([0, 0, 0, 0, 0]),
+        auth: new Uint8Array([
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ]),
+        keep: new Uint8Array([
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ]),
+        treeHash: [
+          {
+            h: 0,
+            nextIdx: 0,
+            stackUsage: 0,
+            completed: 1,
+            node: new Uint8Array([
+              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ]),
+          },
+          {
+            h: 1,
+            nextIdx: 0,
+            stackUsage: 0,
+            completed: 1,
+            node: new Uint8Array([
+              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ]),
+          },
+        ],
+        retain: new Uint8Array([
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ]),
+        nextLeaf: 0,
+      };
+      const expectedDesc = { hashFunction: 6, signatureType: 13, height: 4, addrFormatType: 12 };
+      const expectedXmssTree = {
+        xmssParams: expectedXmssParams,
+        hashFunction: 6,
+        height: 4,
+        sk: expectedSk,
+        seed: expectedSeed,
+        bdsState: expectedBdsState,
+        desc: expectedDesc,
+      };
+
+      expect(xmssTree.xmssParams).to.deep.equal(expectedXmssTree.xmssParams);
+      expect(xmssTree.hashFunction).to.deep.equal(expectedXmssTree.hashFunction);
+      expect(xmssTree.height).to.deep.equal(expectedXmssTree.height);
+      expect(xmssTree.sk).to.deep.equal(expectedXmssTree.sk);
+      expect(xmssTree.seed).to.deep.equal(expectedXmssTree.seed);
+      expect(xmssTree.bdsState).to.deep.equal(expectedXmssTree.bdsState);
+      expect(xmssTree.desc).to.deep.equal(expectedXmssTree.desc);
+      expect(xmssTree).to.deep.equal(expectedXmssTree);
+    });
+
+    it('should generate xmss tree for extendedSeed[184, 179 ...]', () => {
+      const extendedSeed = new Uint8Array([
+        184, 179, 172, 206, 173, 95, 229, 42, 104, 198, 74, 183, 196, 51, 147, 126, 200, 172, 30, 224, 248, 240, 36,
+        250, 252, 58, 45, 66, 252, 41, 126, 29, 58, 90, 176, 180, 147, 126, 198, 154, 6, 130, 232, 28, 62, 24, 43, 50,
+        158, 217, 228,
+      ]);
+      const xmssTree = newXMSSFromExtendedSeed(extendedSeed);
+      const expectedXmssParams = {
+        wotsParams: {
+          len1: 64,
+          len2: 3,
+          len: 67,
+          n: 32,
+          w: 16,
+          logW: 4,
+          keySize: 2144,
+        },
+        n: 32,
+        h: 6,
+        k: 2,
+      };
+      const expectedSk = new Uint8Array([
+        0, 0, 0, 0, 171, 188, 99, 188, 157, 216, 137, 54, 83, 153, 230, 71, 16, 220, 222, 55, 49, 208, 81, 194, 210, 3,
+        113, 98, 171, 116, 198, 153, 233, 129, 139, 200, 188, 96, 151, 144, 72, 209, 75, 167, 160, 255, 144, 234, 182,
+        93, 110, 175, 29, 219, 31, 141, 248, 11, 185, 233, 156, 115, 198, 167, 250, 195, 39, 5, 124, 181, 255, 157, 62,
+        40, 32, 194, 40, 252, 181, 40, 170, 152, 83, 106, 16, 192, 251, 238, 74, 211, 167, 179, 37, 196, 118, 9, 175,
+        28, 66, 91, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      ]);
+      const expectedSeed = new Uint8Array([
+        206, 173, 95, 229, 42, 104, 198, 74, 183, 196, 51, 147, 126, 200, 172, 30, 224, 248, 240, 36, 250, 252, 58, 45,
+        66, 252, 41, 126, 29, 58, 90, 176, 180, 147, 126, 198, 154, 6, 130, 232, 28, 62, 24, 43, 50, 158, 217, 228,
+      ]);
+      const expectedBdsState = {
+        stack: new Uint8Array([
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0,
+        ]),
+        stackOffset: 0,
+        stackLevels: new Uint8Array([0, 0, 0, 0, 0, 0, 0]),
+        auth: new Uint8Array([
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0,
+        ]),
+        keep: new Uint8Array([
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ]),
+        treeHash: [
+          {
+            h: 0,
+            nextIdx: 0,
+            stackUsage: 0,
+            completed: 1,
+            node: new Uint8Array([
+              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ]),
+          },
+          {
+            h: 1,
+            nextIdx: 0,
+            stackUsage: 0,
+            completed: 1,
+            node: new Uint8Array([
+              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ]),
+          },
+          {
+            h: 2,
+            nextIdx: 0,
+            stackUsage: 0,
+            completed: 1,
+            node: new Uint8Array([
+              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ]),
+          },
+          {
+            h: 3,
+            nextIdx: 0,
+            stackUsage: 0,
+            completed: 1,
+            node: new Uint8Array([
+              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ]),
+          },
+        ],
+        retain: new Uint8Array([
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ]),
+        nextLeaf: 0,
+      };
+      const expectedDesc = { hashFunction: 8, signatureType: 11, height: 6, addrFormatType: 11 };
+      const expectedXmssTree = {
+        xmssParams: expectedXmssParams,
+        hashFunction: 8,
         height: 6,
         sk: expectedSk,
         seed: expectedSeed,

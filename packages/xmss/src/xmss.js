@@ -1,6 +1,6 @@
 /// <reference path="typedefs.js" />
 
-import { newBDSState, newQRLDescriptor, newXMSSParams } from './classes.js';
+import { newBDSState, newQRLDescriptor, newQRLDescriptorFromExtendedSeed, newXMSSParams } from './classes.js';
 import { COMMON, CONSTANTS, WOTS_PARAM } from './constants.js';
 import { XMSSFastGenKeyPair } from './xmssFast.js';
 
@@ -59,6 +59,22 @@ export function newXMSSFromSeed(seed, height, hashFunction, addrFormatType) {
     throw new Error('Height should be <= 254');
   }
   const desc = newQRLDescriptor(height, hashFunction, signatureType, addrFormatType);
+
+  return initializeTree(desc, seed);
+}
+
+/**
+ * @param {Uint8Array} extendedSeed
+ * @returns {XMSS}
+ */
+export function newXMSSFromExtendedSeed(extendedSeed) {
+  if (extendedSeed.length !== COMMON.EXTENDED_SEED_SIZE) {
+    throw new Error(`extendedSeed should be an array of size ${COMMON.EXTENDED_SEED_SIZE}`);
+  }
+
+  const desc = newQRLDescriptorFromExtendedSeed(extendedSeed);
+  const seed = new Uint8Array(COMMON.SEED_SIZE);
+  seed.set(extendedSeed.subarray(COMMON.DESCRIPTOR_SIZE));
 
   return initializeTree(desc, seed);
 }
