@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { describe } from 'mocha';
 import { newQRLDescriptor, newQRLDescriptorFromExtendedSeed } from '../src/classes.js';
 import { COMMON, HASH_FUNCTION } from '../src/constants.js';
-import { initializeTree, newXMSSFromExtendedSeed, newXMSSFromSeed } from '../src/xmss.js';
+import { initializeTree, newXMSSFromExtendedSeed, newXMSSFromHeight, newXMSSFromSeed } from '../src/xmss.js';
 
 describe('xmss', function testFunction() {
   this.timeout(0);
@@ -977,6 +977,33 @@ describe('xmss', function testFunction() {
       expect(xmssTree.bdsState).to.deep.equal(expectedXmssTree.bdsState);
       expect(xmssTree.desc).to.deep.equal(expectedXmssTree.desc);
       expect(xmssTree).to.deep.equal(expectedXmssTree);
+    });
+  });
+
+  describe('newXMSSFromHeight', () => {
+    it('should generate a xmss tree', () => {
+      const height = 6;
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const xmssTree = newXMSSFromHeight(height, hashFunction);
+
+      expect(Object.getOwnPropertyNames(xmssTree)).to.deep.equal([
+        'xmssParams',
+        'hashFunction',
+        'height',
+        'sk',
+        'seed',
+        'bdsState',
+        'desc',
+      ]);
+    });
+
+    it('should generate a xmss tree from random seed each time', () => {
+      const height = 6;
+      const hashFunction = HASH_FUNCTION.SHAKE_256;
+      const { seed: randomSeed1 } = newXMSSFromHeight(height, hashFunction);
+      const { seed: randomSeed2 } = newXMSSFromHeight(height, hashFunction);
+
+      expect(randomSeed1).not.to.deep.equal(randomSeed2);
     });
   });
 });

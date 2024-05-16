@@ -1,6 +1,5 @@
 export const CONSTANTS = Object.freeze({
   EXTENDED_PK_SIZE: 67,
-  XMSS_SIG: 1,
   MAX_HEIGHT: 254,
 });
 
@@ -20,6 +19,8 @@ export const COMMON = Object.freeze({
   ADDRESS_SIZE: 20,
   SEED_SIZE: 48,
   EXTENDED_SEED_SIZE: 51,
+  XMSS_SIG: 1,
+  SHA256_2X: 0,
 });
 
 export const WOTS_PARAM = Object.freeze({

@@ -1,5 +1,6 @@
 /// <reference path="typedefs.js" />
 
+import { randomBytes } from '@noble/hashes/utils';
 import { newBDSState, newQRLDescriptor, newQRLDescriptorFromExtendedSeed, newXMSSParams } from './classes.js';
 import { COMMON, CONSTANTS, WOTS_PARAM } from './constants.js';
 import { XMSSFastGenKeyPair } from './xmssFast.js';
@@ -54,7 +55,7 @@ export function newXMSSFromSeed(seed, height, hashFunction, addrFormatType) {
     throw new Error(`seed should be an array of size ${COMMON.SEED_SIZE}`);
   }
 
-  const signatureType = CONSTANTS.XMSS_SIG;
+  const signatureType = COMMON.XMSS_SIG;
   if (height > CONSTANTS.MAX_HEIGHT) {
     throw new Error('Height should be <= 254');
   }
@@ -77,4 +78,15 @@ export function newXMSSFromExtendedSeed(extendedSeed) {
   seed.set(extendedSeed.subarray(COMMON.DESCRIPTOR_SIZE));
 
   return initializeTree(desc, seed);
+}
+
+/**
+ * @param {Uint8Array[number]} height
+ * @param {HashFunction} hashFunction
+ * @returns {XMSS}
+ */
+export function newXMSSFromHeight(height, hashFunction) {
+  const seed = randomBytes(COMMON.SEED_SIZE);
+
+  return newXMSSFromSeed(seed, height, hashFunction, COMMON.SHA256_2X);
 }
