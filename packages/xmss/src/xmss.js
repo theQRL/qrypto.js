@@ -1,7 +1,7 @@
 /// <reference path="typedefs.js" />
 
 import { randomBytes } from '@noble/hashes/utils';
-import { newBDSState, newQRLDescriptor, newQRLDescriptorFromExtendedSeed, newXMSSParams } from './classes.js';
+import { newBDSState, newQRLDescriptor, newQRLDescriptorFromExtendedSeed, newXMSS, newXMSSParams } from './classes.js';
 import { COMMON, CONSTANTS, WOTS_PARAM } from './constants.js';
 import { XMSSFastGenKeyPair } from './xmssFast.js';
 
@@ -32,15 +32,7 @@ export function initializeTree(desc, seed) {
   const bdsState = newBDSState(height, n, k);
   XMSSFastGenKeyPair(hashFunction, xmssParams, pk, sk, bdsState, seed);
 
-  return {
-    xmssParams,
-    hashFunction,
-    height,
-    sk,
-    seed,
-    bdsState,
-    desc,
-  };
+  return newXMSS(xmssParams, hashFunction, height, sk, seed, bdsState, desc);
 }
 
 /**
