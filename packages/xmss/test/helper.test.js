@@ -4,6 +4,7 @@ import { ENDIAN } from '../src/constants.js';
 import {
   addrToByte,
   binToMnemonic,
+  seedBinToMnemonic,
   setChainAddr,
   setHashAddr,
   setKeyAndMask,
@@ -428,6 +429,44 @@ describe('helper', () => {
       const mnemonic = binToMnemonic(input);
       const expectedMnemonic =
         'ledge dispel arrow dingus carnal eddy zipper airy cosmic layer aloof fully signal plate curse grab pony assist icon wreck rudder arcane glance cakile tace thesis quay square rhine david naples virus raid petty hound rival feat burma shrine lewis hold active price held await career meet havoc sold curl saga paste peru bovine altar module hedge poem rhyme prefer fairly fierce oracle glib pin unkind great shabby treaty rust area hammer scent venom walk alert silken hold david volley stunt mortal bull purely jest beet runway robust range clammy deduce insert hidden than sullen casual zaire hero screen parcel hoard mystic talent lose spend rave vacuum oily genius clasp duel rhexia middle nephew refer helium than layman grit picket mutton draft firm cousin limp fate pair orange herb steel namely demo ruby buyer turf rosa had static stair chart mostly past mental woods follow acre valet trot cider just roll sit sleeve deeply swear human liar tundra joy beige pack real view street glide sent tight lawn ate kernel seed feat cover tokyo topaz trauma shiver holy chilly knack pier hull brave silk fed those nimble virus root linger invade depart bust vienna spinus prefix mean hound flank tonal win tip blast earl pencil school suite victim ocean state socket geneva auntie check eerily omega cove resign relief brush motion flew take sacred exit bowl hefty picket picnic gosh grim nylon adjust actual shoe magnet super punk defy hopple energy first pump spiky scent cider cheer haiti sweep puppy auburn hasty rinse your facial mourn sharp feel left year';
+
+      expect(mnemonic).to.equal(expectedMnemonic);
+    });
+  });
+
+  describe('seedBinToMnemonic', () => {
+    it('should generate mnemonic from binary, with input[216, 6...]', () => {
+      const input = new Uint8Array([
+        216, 6, 203, 205, 184, 41, 181, 190, 26, 53, 67, 17, 186, 227, 248, 206, 244, 173, 206, 15, 16, 228, 122, 34,
+        104, 172, 200, 0, 116, 188, 137, 217, 114, 232, 107, 173, 171, 82, 207, 229, 248, 145, 224, 100, 4, 21, 72, 217,
+      ]);
+      const mnemonic = seedBinToMnemonic(input);
+      const expectedMnemonic =
+        'strap humble snug loudly resin tera curl could rotten dower solely expect social vast thug person hemp smart abode factor melt note toxin rotor proper clutch tip meant tehran dread bend mite';
+
+      expect(mnemonic).to.equal(expectedMnemonic);
+    });
+
+    it('should generate mnemonic from binary, with input[68, 138...]', () => {
+      const input = new Uint8Array([
+        68, 138, 136, 146, 133, 23, 200, 18, 219, 14, 98, 146, 98, 179, 251, 97, 15, 249, 174, 147, 60, 182, 163, 39,
+        230, 218, 162, 2, 169, 78, 175, 117, 182, 24, 52, 236, 230, 117, 157, 5, 84, 195, 131, 47, 32, 207, 109, 5,
+      ]);
+      const mnemonic = seedBinToMnemonic(input);
+      const expectedMnemonic =
+        'edit popery mutual flair sight coffee avail choose guess draft greek zigzag quilt crop revive crater tone pretty adhere nest radar gave blink ferry told gag albeit falcon lowest verbal son soul';
+
+      expect(mnemonic).to.equal(expectedMnemonic);
+    });
+
+    it('should generate mnemonic from binary, with input[10, 200...]', () => {
+      const input = new Uint8Array([
+        10, 200, 187, 235, 252, 23, 230, 48, 12, 74, 80, 36, 231, 30, 164, 75, 106, 200, 121, 20, 106, 118, 49, 49, 70,
+        23, 184, 221, 2, 224, 187, 1, 94, 246, 101, 107, 78, 82, 168, 133, 213, 115, 245, 125, 104, 68, 222, 84,
+      ]);
+      const mnemonic = seedBinToMnemonic(input);
+      const expectedMnemonic =
+        'arm midas tunic seam toast abra exempt acute tool tried eyed pump lady enamel karate bay embark leaf sword coke rough bestow warp frail fell claim male freer wait stiff effect tiger';
 
       expect(mnemonic).to.equal(expectedMnemonic);
     });

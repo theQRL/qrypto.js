@@ -213,6 +213,18 @@ export function binToMnemonic(input) {
 }
 
 /**
+ * @param {Uint8Array} input
+ * @returns {string}
+ */
+export function seedBinToMnemonic(input) {
+  if (input.length !== COMMON.SEED_SIZE) {
+    throw new Error(`input should be an array of size ${COMMON.SEED_SIZE}`);
+  }
+
+  return binToMnemonic(input);
+}
+
+/**
  * @param {Uint8Arrayany} input
  * @returns {string}
  */
