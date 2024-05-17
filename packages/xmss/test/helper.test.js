@@ -432,4 +432,45 @@ describe('helper', () => {
       expect(mnemonic).to.equal(expectedMnemonic);
     });
   });
+
+  describe('extendedSeedBinToMnemonic', () => {
+    it('should generate mnemonic from binary, with input[51, 195...]', () => {
+      const input = new Uint8Array([
+        51, 195, 194, 249, 122, 77, 150, 81, 126, 61, 6, 195, 120, 122, 92, 220, 102, 171, 77, 185, 63, 63, 123, 88,
+        133, 139, 76, 27, 107, 26, 54, 145, 143, 233, 58, 105, 186, 177, 211, 191, 27, 133, 142, 84, 54, 168, 205, 84,
+        110, 92, 203,
+      ]);
+      const mnemonic = binToMnemonic(input);
+      const expectedMnemonic =
+        'crop diary wholly pivot noisy blaze dire house koran play sweep hoard fauna near dove resent main renal bound react dallas blunt travel plump rosy brew satin ripen modify early port statue ignore smell';
+
+      expect(mnemonic).to.equal(expectedMnemonic);
+    });
+
+    it('should generate mnemonic from binary, with input[61, 200...]', () => {
+      const input = new Uint8Array([
+        61, 200, 24, 79, 224, 24, 191, 53, 140, 13, 84, 128, 181, 66, 20, 162, 205, 92, 206, 89, 216, 247, 97, 85, 62,
+        64, 52, 121, 72, 204, 87, 64, 78, 176, 12, 12, 80, 162, 154, 217, 154, 34, 13, 102, 3, 35, 134, 102, 242, 211,
+        141,
+      ]);
+      const mnemonic = binToMnemonic(input);
+      const expectedMnemonic =
+        'divine lone file ache saturn fulfil attach equip repine buy photo steel sodium pack weary bended dole aerial lake mine freeze aim rain scotch finish chrome submit person attain grass cane havoc vicar decree';
+
+      expect(mnemonic).to.equal(expectedMnemonic);
+    });
+
+    it('should generate mnemonic from binary, with input[155, 172...]', () => {
+      const input = new Uint8Array([
+        155, 172, 153, 159, 209, 11, 18, 15, 133, 152, 44, 238, 224, 226, 187, 174, 21, 25, 166, 9, 238, 29, 201, 223,
+        125, 161, 208, 243, 184, 198, 189, 89, 10, 215, 230, 235, 54, 32, 146, 204, 242, 217, 244, 206, 15, 120, 174,
+        119, 202, 127, 149,
+      ]);
+      const mnemonic = binToMnemonic(input);
+      const expectedMnemonic =
+        'orient sit pastor ballad barrel what oak sole tenant climb quebec flame plead pardon brink paid let bred viola milk safer mould strait import dad anti smite cocoa voice tend kuwait torch slab who';
+
+      expect(mnemonic).to.equal(expectedMnemonic);
+    });
+  });
 });

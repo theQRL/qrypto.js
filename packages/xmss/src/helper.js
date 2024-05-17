@@ -1,6 +1,6 @@
 import { sha256 as sha2Func256 } from '@noble/hashes/sha256';
 import jsSha3CommonJsPackage from 'js-sha3';
-import { ENDIAN } from './constants.js';
+import { COMMON, ENDIAN } from './constants.js';
 import WORD_LIST from './wordList.js';
 
 const { shake256: sha3Shake256, shake128: sha3Shake128 } = jsSha3CommonJsPackage;
@@ -210,4 +210,16 @@ export function binToMnemonic(input) {
   }
 
   return buf.join(separator);
+}
+
+/**
+ * @param {Uint8Arrayany} input
+ * @returns {string}
+ */
+export function extendedSeedBinToMnemonic(input) {
+  if (input.length !== COMMON.EXTENDED_SEED_SIZE) {
+    throw new Error(`input should be an array of size ${COMMON.EXTENDED_SEED_SIZE}`);
+  }
+
+  return binToMnemonic(input);
 }
