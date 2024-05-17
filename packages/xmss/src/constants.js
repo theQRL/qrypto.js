@@ -28,3 +28,9 @@ export const WOTS_PARAM = Object.freeze({
   W: 16,
   N: 32,
 });
+
+export const OFFSET_IDX = 0;
+export const OFFSET_SK_SEED = OFFSET_IDX + 4;
+export const OFFSET_SK_PRF = OFFSET_SK_SEED + 32;
+export const OFFSET_PUB_SEED = OFFSET_SK_PRF + 32;
+export const OFFSET_ROOT = OFFSET_PUB_SEED + 32;
