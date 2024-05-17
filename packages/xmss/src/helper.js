@@ -1,6 +1,7 @@
 import { sha256 as sha2Func256 } from '@noble/hashes/sha256';
 import jsSha3CommonJsPackage from 'js-sha3';
 import { ENDIAN } from './constants.js';
+import WORD_LIST from './wordList.js';
 
 const { shake256: sha3Shake256, shake128: sha3Shake128 } = jsSha3CommonJsPackage;
 
@@ -175,4 +176,38 @@ export function addrToByte(out, addr, getEndianFunc = getEndian) {
     default:
       throw new Error('Invalid Endian');
   }
+}
+
+/**
+ * @param {Uint8Array} input
+ * @returns {string}
+ */
+export function binToMnemonic(input) {
+  if (input.length % 3 !== 0) {
+    throw new Error('byte count needs to be a multiple of 3');
+  }
+
+  const buf = [];
+  const separator = ' ';
+  for (let nibble = 0; nibble < input.length * 2; nibble += 3) {
+    const p = nibble >> 1;
+    const [b1] = new Uint32Array([input[p]]);
+    let [b2] = new Uint32Array([0]);
+    if (p + 1 < input.length) {
+      [b2] = new Uint32Array([input[p + 1]]);
+    }
+    let [idx] = new Uint32Array([0]);
+    if (nibble % 2 === 0) {
+      idx = (b1 << 4) + (b2 >> 4);
+    } else {
+      idx = ((b1 & 0x0f) << 8) + b2;
+    }
+    try {
+      buf.push(WORD_LIST[idx]);
+    } catch (error) {
+      throw new Error(`ExtendedSeedBinToMnemonic error ${error?.message}`);
+    }
+  }
+
+  return buf.join(separator);
 }

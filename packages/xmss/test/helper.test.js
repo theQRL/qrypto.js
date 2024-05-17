@@ -3,6 +3,7 @@ import { describe, it } from 'mocha';
 import { ENDIAN } from '../src/constants.js';
 import {
   addrToByte,
+  binToMnemonic,
   setChainAddr,
   setHashAddr,
   setKeyAndMask,
@@ -372,6 +373,63 @@ describe('helper', () => {
       ]);
 
       expect(bytes).to.deep.equal(expectedUint8Array);
+    });
+  });
+
+  describe('binToMnemonic', () => {
+    it('should generate mnemonic from binary, with input length [3]', () => {
+      const input = new Uint8Array([56, 255, 0]);
+      const mnemonic = binToMnemonic(input);
+      const expectedMnemonic = 'deed utmost';
+
+      expect(mnemonic).to.equal(expectedMnemonic);
+    });
+
+    it('should generate mnemonic from binary, with input length [12]', () => {
+      const input = new Uint8Array([142, 56, 203, 87, 129, 45, 230, 178, 66, 34, 112, 255]);
+      const mnemonic = binToMnemonic(input);
+      const expectedMnemonic = 'modern mind friar bath tomb carbon calf bad';
+
+      expect(mnemonic).to.equal(expectedMnemonic);
+    });
+
+    it('should generate mnemonic from binary, with input length [30]', () => {
+      const input = new Uint8Array([
+        72, 189, 33, 255, 128, 47, 163, 212, 54, 99, 238, 67, 140, 84, 210, 3, 176, 122, 91, 200, 44, 155, 219, 60, 131,
+        17, 243, 101, 85, 196,
+      ]);
+      const mnemonic = binToMnemonic(input);
+      const expectedMnemonic =
+        'essex spin zero adopt pill early hail throng mile fast afloat amen gene louvre orphan regret lower build harry genus';
+
+      expect(mnemonic).to.equal(expectedMnemonic);
+    });
+
+    it('should generate mnemonic from binary, with input length [300]', () => {
+      const input = new Uint8Array([
+        124, 83, 216, 11, 99, 205, 36, 148, 67, 255, 192, 81, 48, 135, 179, 6, 229, 142, 200, 74, 91, 53, 117, 250, 168,
+        32, 201, 109, 207, 215, 187, 128, 163, 93, 66, 38, 221, 190, 44, 174, 13, 57, 182, 243, 120, 147, 95, 65, 175,
+        234, 39, 108, 27, 141, 77, 210, 5, 199, 87, 225, 106, 240, 33, 170, 54, 131, 14, 194, 69, 137, 150, 102, 206,
+        211, 84, 189, 121, 251, 162, 49, 185, 7, 56, 230, 103, 218, 112, 183, 42, 159, 76, 20, 248, 155, 37, 219, 164,
+        30, 228, 96, 204, 67, 233, 123, 198, 10, 134, 71, 192, 111, 27, 245, 160, 87, 200, 118, 175, 55, 143, 78, 217,
+        104, 252, 31, 138, 209, 115, 241, 66, 188, 43, 151, 176, 98, 169, 56, 231, 13, 105, 190, 32, 218, 130, 86, 255,
+        70, 149, 193, 9, 237, 106, 185, 45, 222, 88, 35, 209, 171, 20, 240, 57, 153, 91, 242, 173, 65, 203, 110, 139,
+        217, 76, 179, 54, 132, 226, 7, 180, 97, 202, 48, 146, 115, 251, 80, 195, 25, 127, 68, 214, 158, 41, 179, 104,
+        253, 92, 147, 35, 162, 187, 114, 21, 236, 59, 168, 99, 205, 83, 212, 50, 119, 144, 73, 250, 138, 63, 197, 84,
+        176, 29, 240, 110, 172, 41, 215, 96, 186, 28, 153, 203, 51, 145, 220, 38, 201, 126, 62, 188, 116, 225, 74, 157,
+        139, 30, 243, 61, 134, 93, 204, 51, 229, 87, 175, 12, 247, 109, 194, 36, 221, 49, 190, 102, 231, 78, 146, 198,
+        86, 179, 40, 215, 125, 163, 70, 200, 28, 156, 134, 77, 238, 58, 149, 207, 65, 186, 103, 249, 113, 131, 169, 32,
+        223, 50, 210, 74, 160, 137, 6, 193, 81, 174, 108, 250, 126, 95, 23, 212, 53, 161, 140, 7, 218, 111, 47, 152,
+        237, 82, 206, 37, 189, 13, 242, 124, 68, 201, 159, 49, 171, 90, 180, 33, 231, 144, 117, 38, 222, 59, 205, 74,
+        145, 188, 103, 250, 48, 163, 21, 243, 97, 137, 129, 2, 176, 35, 198, 120, 83, 219, 42, 204, 57, 134, 185, 70,
+        213, 14, 172, 141, 31, 192, 98, 157, 39, 246, 65, 220, 106, 207, 13, 150, 93, 184, 47, 242, 75, 169, 12, 197,
+        52, 226, 124, 111, 230,
+      ]);
+      const mnemonic = binToMnemonic(input);
+      const expectedMnemonic =
+        'ledge dispel arrow dingus carnal eddy zipper airy cosmic layer aloof fully signal plate curse grab pony assist icon wreck rudder arcane glance cakile tace thesis quay square rhine david naples virus raid petty hound rival feat burma shrine lewis hold active price held await career meet havoc sold curl saga paste peru bovine altar module hedge poem rhyme prefer fairly fierce oracle glib pin unkind great shabby treaty rust area hammer scent venom walk alert silken hold david volley stunt mortal bull purely jest beet runway robust range clammy deduce insert hidden than sullen casual zaire hero screen parcel hoard mystic talent lose spend rave vacuum oily genius clasp duel rhexia middle nephew refer helium than layman grit picket mutton draft firm cousin limp fate pair orange herb steel namely demo ruby buyer turf rosa had static stair chart mostly past mental woods follow acre valet trot cider just roll sit sleeve deeply swear human liar tundra joy beige pack real view street glide sent tight lawn ate kernel seed feat cover tokyo topaz trauma shiver holy chilly knack pier hull brave silk fed those nimble virus root linger invade depart bust vienna spinus prefix mean hound flank tonal win tip blast earl pencil school suite victim ocean state socket geneva auntie check eerily omega cove resign relief brush motion flew take sacred exit bowl hefty picket picnic gosh grim nylon adjust actual shoe magnet super punk defy hopple energy first pump spiky scent cider cheer haiti sweep puppy auburn hasty rinse your facial mourn sharp feel left year';
+
+      expect(mnemonic).to.equal(expectedMnemonic);
     });
   });
 });
