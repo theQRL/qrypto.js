@@ -1,10 +1,11 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
-import { ENDIAN } from '../src/constants.js';
+import { COMMON, ENDIAN } from '../src/constants.js';
 import {
   addrToByte,
   binToMnemonic,
   mnemonicToBin,
+  mnemonicToSeedBin,
   seedBinToMnemonic,
   setChainAddr,
   setHashAddr,
@@ -559,6 +560,34 @@ describe('helper', () => {
       ]);
 
       expect(binary).to.deep.equal(expectedBinary);
+    });
+  });
+
+  describe('mnemonicToSeedBin', () => {
+    it('should throw an error if the binary output length is not equal to SEED_SIZE', () => {
+      const mnemonic = 'latch supply taxi india';
+
+      expect(() => mnemonicToSeedBin(mnemonic)).to.throw('Unexpected MnemonicToSeedBin output size');
+    });
+
+    it('should generate seed binary of size SEED_SIZE from mnemonic', () => {
+      const mnemonic =
+        'reduce upon divert lean bird border smoke audio sydney form helm that amid robust famous crater saber nose shadow falcon sale flash blend candle pale crown injure creole govern brew flux mighty';
+      const seedBinary = mnemonicToSeedBin(mnemonic);
+
+      expect(seedBinary).to.have.length(COMMON.SEED_SIZE);
+    });
+
+    it('should generate seed binary from mnemonic', () => {
+      const mnemonic =
+        'decor help decade slate follow tenant june hare unruly malt order spat greed sodium mole sinful phrase tenor obey exist sugar cuff pest hybrid scute survey sail galaxy away eaten borrow aha';
+      const seedBinary = mnemonicToSeedBin(mnemonic);
+      const expectedSeedBinary = new Uint8Array([
+        56, 198, 137, 56, 124, 174, 84, 190, 14, 117, 166, 82, 238, 120, 96, 155, 141, 18, 96, 236, 229, 142, 156, 144,
+        162, 222, 20, 152, 100, 168, 218, 67, 78, 162, 70, 215, 193, 77, 187, 189, 181, 160, 15, 36, 64, 26, 192, 74,
+      ]);
+
+      expect(seedBinary).to.deep.equal(expectedSeedBinary);
     });
   });
 });

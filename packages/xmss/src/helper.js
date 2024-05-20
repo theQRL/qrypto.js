@@ -285,3 +285,26 @@ export function mnemonicToBin(mnemonic) {
 
   return result;
 }
+
+/**
+ * @param {string} mnemonic
+ * @returns {Uint8Array}
+ */
+export function mnemonicToSeedBin(mnemonic) {
+  const output = mnemonicToBin(mnemonic);
+
+  if (output.length !== COMMON.SEED_SIZE) {
+    throw new Error('Unexpected MnemonicToSeedBin output size');
+  }
+
+  const sizedOutput = new Uint8Array(COMMON.SEED_SIZE);
+  for (
+    let sizedOutputIndex = 0, outputIndex = 0;
+    sizedOutputIndex < sizedOutput.length && outputIndex < output.length;
+    sizedOutputIndex++, outputIndex++
+  ) {
+    sizedOutput.set([output[outputIndex]], sizedOutputIndex);
+  }
+
+  return sizedOutput;
+}
