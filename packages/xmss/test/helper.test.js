@@ -5,6 +5,7 @@ import {
   addrToByte,
   binToMnemonic,
   mnemonicToBin,
+  mnemonicToExtendedSeedBin,
   mnemonicToSeedBin,
   seedBinToMnemonic,
   setChainAddr,
@@ -588,6 +589,35 @@ describe('helper', () => {
       ]);
 
       expect(seedBinary).to.deep.equal(expectedSeedBinary);
+    });
+  });
+
+  describe('mnemonicToExtendedSeedBin', () => {
+    it('should throw an error if the binary output length is not equal to SEED_SIZE', () => {
+      const mnemonic = 'that amid robust famous';
+
+      expect(() => mnemonicToExtendedSeedBin(mnemonic)).to.throw('Unexpected MnemonicToExtendedSeedBin output size');
+    });
+
+    it('should generate extended seed binary of size EXTENDED_SEED_SIZE from mnemonic', () => {
+      const mnemonic =
+        'soup jolt cook fill sonar orphan orbit taurus gene japan baby sydney cease heard clash alley birth theory caesar pile ledge karl packet cuff locate spill bout dour sample roar cinema leaf role river';
+      const extendedSeedBinary = mnemonicToExtendedSeedBin(mnemonic);
+
+      expect(extendedSeedBinary).to.have.length(COMMON.EXTENDED_SEED_SIZE);
+    });
+
+    it('should generate extended seed binary from mnemonic', () => {
+      const mnemonic =
+        'law unfair domino ballot got buck sandy why melt except amiss flee prove cried herd verge fully mosaic popery super opium loan wipe rough clout gate gather cloud import clause lovely slump seed splash';
+      const extendedSeedBinary = mnemonicToExtendedSeedBin(mnemonic);
+      const expectedSeedBinary = new Uint8Array([
+        122, 222, 221, 62, 161, 13, 95, 97, 235, 190, 223, 154, 137, 212, 160, 7, 229, 33, 171, 147, 54, 105, 15, 33,
+        88, 232, 254, 168, 141, 178, 154, 232, 10, 251, 27, 176, 44, 149, 176, 91, 18, 199, 110, 178, 175, 130, 236,
+        198, 194, 45, 40,
+      ]);
+
+      expect(extendedSeedBinary).to.deep.equal(expectedSeedBinary);
     });
   });
 });

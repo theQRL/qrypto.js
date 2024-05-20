@@ -308,3 +308,26 @@ export function mnemonicToSeedBin(mnemonic) {
 
   return sizedOutput;
 }
+
+/**
+ * @param {string} mnemonic
+ * @returns {Uint8Array}
+ */
+export function mnemonicToExtendedSeedBin(mnemonic) {
+  const output = mnemonicToBin(mnemonic);
+
+  if (output.length !== COMMON.EXTENDED_SEED_SIZE) {
+    throw new Error('Unexpected MnemonicToExtendedSeedBin output size');
+  }
+
+  const sizedOutput = new Uint8Array(COMMON.EXTENDED_SEED_SIZE);
+  for (
+    let sizedOutputIndex = 0, outputIndex = 0;
+    sizedOutputIndex < sizedOutput.length && outputIndex < output.length;
+    sizedOutputIndex++, outputIndex++
+  ) {
+    sizedOutput.set([output[outputIndex]], sizedOutputIndex);
+  }
+
+  return sizedOutput;
+}
