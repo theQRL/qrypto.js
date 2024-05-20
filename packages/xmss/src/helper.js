@@ -235,3 +235,53 @@ export function extendedSeedBinToMnemonic(input) {
 
   return binToMnemonic(input);
 }
+
+/**
+ * @param {string} mnemonic
+ * @returns {Uint8Array}
+ */
+export function mnemonicToBin(mnemonic) {
+  const mnemonicWords = mnemonic.split(' ');
+  const wordCount = mnemonicWords.length;
+  if (wordCount % 2 !== 0) {
+    throw new Error(`Word count = ${wordCount} must be even`);
+  }
+
+  const wordLookup = {};
+
+  for (let i = 0; i < WORD_LIST.length; i++) {
+    wordLookup[WORD_LIST[i]] = i;
+  }
+
+  const result = new Uint8Array((wordCount * 15) / 10);
+  let current = 0;
+  let buffering = 0;
+  let resultIndex = 0;
+  for (let i = 0; i < wordCount; i++) {
+    const w = mnemonicWords[i];
+    const found = w in wordLookup;
+    if (!found) {
+      throw new Error('Invalid word in mnemonic');
+    }
+    const value = wordLookup[w];
+
+    buffering += 3;
+    current = (current << 12) + value;
+    while (buffering > 2) {
+      const shift = 4 * (buffering - 2);
+      const mask = (1 << shift) - 1;
+      const tmp = current >> shift;
+      buffering -= 2;
+      current &= mask;
+      result.set([tmp], resultIndex);
+      resultIndex++;
+    }
+  }
+
+  if (buffering > 0) {
+    result.set([current & 0xff], resultIndex);
+    resultIndex++;
+  }
+
+  return result;
+}

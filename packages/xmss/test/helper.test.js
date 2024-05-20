@@ -4,6 +4,7 @@ import { ENDIAN } from '../src/constants.js';
 import {
   addrToByte,
   binToMnemonic,
+  mnemonicToBin,
   seedBinToMnemonic,
   setChainAddr,
   setHashAddr,
@@ -510,6 +511,54 @@ describe('helper', () => {
         'orient sit pastor ballad barrel what oak sole tenant climb quebec flame plead pardon brink paid let bred viola milk safer mould strait import dad anti smite cocoa voice tend kuwait torch slab who';
 
       expect(mnemonic).to.equal(expectedMnemonic);
+    });
+  });
+
+  describe('mnemonicToBin', () => {
+    it('should throw an error if the word count is not even', () => {
+      const mnemonic = 'latch supply taxi';
+
+      expect(() => mnemonicToBin(mnemonic)).to.throw(`Word count = ${mnemonic.split(' ').length} must be even`);
+    });
+
+    it('should throw an error if the word is invalid or does not exist in word list', () => {
+      const mnemonic = 'quantum design';
+
+      expect(() => mnemonicToBin(mnemonic)).to.throw('Invalid word in mnemonic');
+    });
+
+    it('should generate binary from mnemonic, with valid 2 words', () => {
+      const mnemonic = 'italy india';
+      const binary = mnemonicToBin(mnemonic);
+      const expectedBinary = new Uint8Array([114, 182, 243]);
+
+      expect(binary).to.deep.equal(expectedBinary);
+    });
+
+    it('should generate binary from mnemonic, with valid 254 words', () => {
+      const mnemonic =
+        'easel within gallop caught severe pizza stern rear awful shame bend suez chalet ankle shock drool engage jacob guest hardly driver pit iron gong gaucho pile room carbon genius idiom eater utter grab cheat lawful koran rife lid sirius shyly otter naval magic moth proper crypt object swap caesar fabric steak monday warsaw artist group rob sonic binary her mud useful scout vase week debt rule waiter safer figure nurse india did timber viral punish shrub ripple lamp glib world mosque bulb demand friday short hazel draw slater weight twelve knit sudden barber edict cost energy mentor gothic belt dispel rarely scotch real surf let cat fiery above audio panel beat never spirit pedal export poland hour zero olive grid permit recess ever elicit amend stop cyclic denial sword haste akin ploy brink murky join would order sponge age naples cast carpet pine stot pride track sentry torch grin shawl smelly wedge maya expect via noun sudan sweat logic bush help crazy risk item stark malt libel jockey spite chunk audit simian altar spout kick camera buyer mutual flame always stiff mainly envoy stroll branch data trial soften rosy doubt bent rugby worm kiss again throw other war employ adobe andrew expose burnt spinus parish pillow retire franc spill fuzzy aloud canvas gentle tame day wine ivan tax khowar vague sorry greasy geneva before eric goose soothe stamp motive serene teeth locate solo bran obese pink moor ring gravel misty later intend vision whisky mary sinful comedy lunch seize summer plaguy wren danger campus';
+      const binary = mnemonicToBin(mnemonic);
+      const expectedBinary = new Uint8Array([
+        67, 175, 185, 90, 82, 91, 196, 26, 79, 214, 75, 34, 15, 60, 78, 21, 77, 162, 38, 176, 141, 198, 100, 17, 70,
+        231, 50, 98, 198, 81, 65, 10, 74, 114, 37, 238, 91, 42, 60, 186, 82, 66, 91, 246, 224, 68, 31, 1, 95, 162, 123,
+        122, 231, 135, 183, 199, 232, 201, 124, 124, 156, 25, 60, 133, 25, 5, 171, 83, 73, 152, 125, 191, 33, 244, 183,
+        213, 152, 237, 246, 112, 187, 98, 59, 146, 207, 161, 110, 104, 217, 22, 239, 220, 13, 240, 255, 122, 56, 91,
+        188, 245, 139, 213, 79, 217, 128, 111, 51, 197, 229, 175, 62, 172, 188, 119, 184, 103, 151, 93, 191, 203, 144,
+        17, 244, 58, 5, 121, 198, 182, 108, 64, 44, 175, 247, 222, 202, 120, 45, 160, 17, 116, 71, 48, 164, 109, 138,
+        69, 247, 21, 35, 216, 176, 188, 12, 177, 237, 185, 125, 162, 87, 79, 144, 11, 13, 169, 231, 19, 153, 80, 210,
+        106, 15, 75, 10, 118, 108, 47, 248, 153, 230, 21, 162, 27, 39, 73, 100, 91, 7, 189, 117, 53, 227, 164, 221, 6,
+        91, 5, 42, 103, 29, 201, 28, 116, 143, 210, 155, 141, 44, 4, 9, 53, 37, 66, 76, 164, 61, 122, 170, 78, 136, 195,
+        78, 119, 97, 156, 84, 204, 207, 119, 136, 148, 173, 242, 185, 119, 217, 253, 195, 129, 82, 12, 104, 147, 41,
+        184, 135, 44, 212, 248, 96, 126, 71, 70, 210, 114, 155, 13, 188, 140, 7, 61, 49, 119, 50, 46, 33, 89, 40, 81,
+        144, 117, 214, 136, 89, 71, 157, 143, 28, 83, 118, 233, 252, 232, 186, 179, 244, 21, 123, 186, 252, 199, 122, 3,
+        254, 68, 156, 15, 97, 70, 112, 46, 8, 84, 177, 32, 125, 36, 159, 26, 63, 182, 69, 109, 210, 5, 155, 6, 242, 61,
+        92, 29, 233, 55, 175, 171, 114, 237, 251, 119, 47, 4, 208, 54, 11, 91, 209, 68, 72, 69, 240, 207, 253, 72, 144,
+        140, 55, 224, 88, 14, 207, 33, 196, 152, 90, 68, 143, 107, 129, 96, 120, 216, 122, 103, 21, 244, 63, 147, 135,
+        220, 144, 46, 168, 62, 194, 109, 171, 165, 63, 216, 54, 226, 48,
+      ]);
+
+      expect(binary).to.deep.equal(expectedBinary);
     });
   });
 });
