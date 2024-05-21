@@ -152,3 +152,12 @@ export function hMsg(hashFunction, out, input, key, n) {
 export function calculateSignatureBaseSize(keySize) {
   return 4 + 32 + keySize;
 }
+
+/**
+ * @param {XMSSParams} params
+ * @returns {Uint32Array[number]}
+ */
+export function getSignatureSize(params) {
+  const signatureBaseSize = calculateSignatureBaseSize(params.wotsParams.keySize);
+  return signatureBaseSize + params.h * 32;
+}

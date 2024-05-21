@@ -1,9 +1,10 @@
 import { expect } from 'chai';
 import { describe } from 'mocha';
-import { newQRLDescriptor, newQRLDescriptorFromExtendedSeed } from '../src/classes.js';
+import { newQRLDescriptor, newQRLDescriptorFromExtendedSeed, newXMSSParams } from '../src/classes.js';
 import { COMMON, HASH_FUNCTION } from '../src/constants.js';
 import {
   calculateSignatureBaseSize,
+  getSignatureSize,
   getXMSSAddressFromPK,
   hMsg,
   initializeTree,
@@ -1106,6 +1107,44 @@ describe('xmss', function testFunction() {
       const expectedSignatureBaseSize = 1100;
 
       expect(signautreBaseSize).to.equal(expectedSignatureBaseSize);
+    });
+  });
+
+  describe('getSignatureSize', () => {
+    it('should return the signature size for the n[2] h[4] w[6] k[8]', () => {
+      const n = 2;
+      const h = 4;
+      const w = 6;
+      const k = 8;
+      const params = newXMSSParams(n, h, w, k);
+      const signatureSize = getSignatureSize(params);
+      const expectedSignatureSize = 186;
+
+      expect(signatureSize).to.equal(expectedSignatureSize);
+    });
+
+    it('should return the signature size for the n[13] h[7] w[9] k[3]', () => {
+      const n = 13;
+      const h = 7;
+      const w = 9;
+      const k = 3;
+      const params = newXMSSParams(n, h, w, k);
+      const signatureSize = getSignatureSize(params);
+      const expectedSignatureSize = 741;
+
+      expect(signatureSize).to.equal(expectedSignatureSize);
+    });
+
+    it('should return the signature size for the n[25] h[13] w[12] k[9]', () => {
+      const n = 25;
+      const h = 13;
+      const w = 12;
+      const k = 9;
+      const params = newXMSSParams(n, h, w, k);
+      const signatureSize = getSignatureSize(params);
+      const expectedSignatureSize = 2202;
+
+      expect(signatureSize).to.equal(expectedSignatureSize);
     });
   });
 });
