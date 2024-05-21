@@ -10,6 +10,7 @@ import {
   newXMSSParams,
 } from './classes.js';
 import { COMMON, CONSTANTS, WOTS_PARAM } from './constants.js';
+import { coreHash } from './hash.js';
 import { shake256 } from './helper.js';
 import { XMSSFastGenKeyPair } from './xmssFast.js';
 
@@ -126,4 +127,20 @@ export function getXMSSAddressFromPK(ePK) {
   }
 
   return address;
+}
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {Uint8Array} out
+ * @param {Uint8Array} input
+ * @param {Uint8Array} key
+ * @param {Uint32Array[number]} n
+ * @returns {{ error: string }}
+ */
+export function hMsg(hashFunction, out, input, key, n) {
+  if (key.length !== 3 * n) {
+    return { error: `H_msg takes 3n-bit keys, we got n=${n} but a keylength of ${key.length}.` };
+  }
+  coreHash(hashFunction, out, 2, key, key.length, input, input.length, n);
+  return { error: null };
 }

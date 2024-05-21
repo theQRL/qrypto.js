@@ -4,6 +4,7 @@ import { newQRLDescriptor, newQRLDescriptorFromExtendedSeed } from '../src/class
 import { COMMON, HASH_FUNCTION } from '../src/constants.js';
 import {
   getXMSSAddressFromPK,
+  hMsg,
   initializeTree,
   newXMSSFromExtendedSeed,
   newXMSSFromHeight,
@@ -1050,6 +1051,34 @@ describe('xmss', function testFunction() {
       ]);
 
       expect(address).to.deep.equal(expectedAddress);
+    });
+  });
+
+  describe('hMsg', () => {
+    it('should return an error if key length is not equal to 3 times n', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const out = new Uint8Array([34, 56, 2, 7, 8, 45]);
+      const input = new Uint8Array([32, 45, 7, 8, 23, 5, 7]);
+      const key = new Uint8Array([34, 56, 2, 7, 8, 45, 34, 56, 2, 2]);
+      const n = 3;
+      const error = hMsg(hashFunction, out, input, key, n);
+
+      expect(error).to.deep.equal({
+        error: `H_msg takes 3n-bit keys, we got n=${n} but a keylength of ${key.length}.`,
+      });
+    });
+
+    it('should return an null error if the function is executed correctly', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const out = new Uint8Array([34, 56, 2, 7, 8, 45]);
+      const input = new Uint8Array([32, 45, 7, 8, 23, 5, 7]);
+      const key = new Uint8Array([34, 56, 2, 7, 8, 45, 34, 56, 2]);
+      const n = 3;
+      const error = hMsg(hashFunction, out, input, key, n);
+
+      expect(error).to.deep.equal({
+        error: null,
+      });
     });
   });
 });
