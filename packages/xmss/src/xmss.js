@@ -144,3 +144,11 @@ export function hMsg(hashFunction, out, input, key, n) {
   coreHash(hashFunction, out, 2, key, key.length, input, input.length, n);
   return { error: null };
 }
+
+/**
+ * @param {Uint32Array[number]} keySize
+ * @returns {Uint32Array[number]}
+ */
+export function calculateSignatureBaseSize(keySize) {
+  return 4 + 32 + keySize;
+}

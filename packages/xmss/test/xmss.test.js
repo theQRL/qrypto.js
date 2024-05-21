@@ -3,6 +3,7 @@ import { describe } from 'mocha';
 import { newQRLDescriptor, newQRLDescriptorFromExtendedSeed } from '../src/classes.js';
 import { COMMON, HASH_FUNCTION } from '../src/constants.js';
 import {
+  calculateSignatureBaseSize,
   getXMSSAddressFromPK,
   hMsg,
   initializeTree,
@@ -1079,6 +1080,32 @@ describe('xmss', function testFunction() {
       expect(error).to.deep.equal({
         error: null,
       });
+    });
+  });
+
+  describe('calculateSignatureBaseSize', () => {
+    it('should return the signature base size for the keysize 65', () => {
+      const [keySize] = new Uint32Array([65]);
+      const signautreBaseSize = calculateSignatureBaseSize(keySize);
+      const expectedSignatureBaseSize = 101;
+
+      expect(signautreBaseSize).to.equal(expectedSignatureBaseSize);
+    });
+
+    it('should return the signature base size for the keysize 399', () => {
+      const [keySize] = new Uint32Array([399]);
+      const signautreBaseSize = calculateSignatureBaseSize(keySize);
+      const expectedSignatureBaseSize = 435;
+
+      expect(signautreBaseSize).to.equal(expectedSignatureBaseSize);
+    });
+
+    it('should return the signature base size for the keysize 1064', () => {
+      const [keySize] = new Uint32Array([1064]);
+      const signautreBaseSize = calculateSignatureBaseSize(keySize);
+      const expectedSignatureBaseSize = 1100;
+
+      expect(signautreBaseSize).to.equal(expectedSignatureBaseSize);
     });
   });
 });
