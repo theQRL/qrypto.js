@@ -1,8 +1,16 @@
 /// <reference path="typedefs.js" />
 
 import { randomBytes } from '@noble/hashes/utils';
-import { newBDSState, newQRLDescriptor, newQRLDescriptorFromExtendedSeed, newXMSS, newXMSSParams } from './classes.js';
+import {
+  newBDSState,
+  newQRLDescriptor,
+  newQRLDescriptorFromExtendedPk,
+  newQRLDescriptorFromExtendedSeed,
+  newXMSS,
+  newXMSSParams,
+} from './classes.js';
 import { COMMON, CONSTANTS, WOTS_PARAM } from './constants.js';
+import { shake256 } from './helper.js';
 import { XMSSFastGenKeyPair } from './xmssFast.js';
 
 /**
@@ -81,4 +89,41 @@ export function newXMSSFromHeight(height, hashFunction) {
   const seed = randomBytes(COMMON.SEED_SIZE);
 
   return newXMSSFromSeed(seed, height, hashFunction, COMMON.SHA256_2X);
+}
+
+/**
+ * @param {Uint8Array} ePK
+ * @returns {Uint8Array}
+ */
+export function getXMSSAddressFromPK(ePK) {
+  const desc = newQRLDescriptorFromExtendedPk(ePK);
+
+  if (desc.getAddrFormatType() !== COMMON.SHA256_2X) {
+    throw new Error('Address format type not supported');
+  }
+
+  const address = new Uint8Array(COMMON.ADDRESS_SIZE);
+  const descBytes = desc.getBytes();
+
+  for (
+    let addressIndex = 0, descBytesIndex = 0;
+    addressIndex < COMMON.DESCRIPTOR_SIZE && descBytesIndex < descBytes.length;
+    addressIndex++, descBytesIndex++
+  ) {
+    address.set([descBytes[descBytesIndex]], addressIndex);
+  }
+
+  const hashedKey = new Uint8Array(32);
+  shake256(hashedKey, ePK);
+
+  for (
+    let addressIndex = COMMON.DESCRIPTOR_SIZE,
+      hashedKeyIndex = hashedKey.length - COMMON.ADDRESS_SIZE + COMMON.DESCRIPTOR_SIZE;
+    addressIndex < address.length && hashedKeyIndex < hashedKey.length;
+    addressIndex++, hashedKeyIndex++
+  ) {
+    address.set([hashedKey[hashedKeyIndex]], addressIndex);
+  }
+
+  return address;
 }
