@@ -161,3 +161,27 @@ export function getSignatureSize(params) {
   const signatureBaseSize = calculateSignatureBaseSize(params.wotsParams.keySize);
   return signatureBaseSize + params.h * 32;
 }
+
+/**
+ * @param {Uint8Array} output
+ * @param {Uint32Array[number]} outputLen
+ * @param {Uint8Array} input
+ * @param {WOTSParams} params
+ */
+export function calcBaseW(output, outputLen, input, params) {
+  let inIndex = 0;
+  let outIndex = 0;
+  let [total] = new Uint32Array([0]);
+  let [bits] = new Uint32Array([0]);
+
+  for (let consumed = 0; consumed < outputLen; consumed++) {
+    if (bits === 0) {
+      [total] = new Uint32Array([input[inIndex]]);
+      inIndex++;
+      [bits] = new Uint32Array([bits + 8]);
+    }
+    [bits] = new Uint32Array([bits - params.logW]);
+    output.set([new Uint8Array([(total >> bits) & (params.w - 1)])[0]], outIndex);
+    outIndex++;
+  }
+}

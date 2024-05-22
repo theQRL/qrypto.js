@@ -1,8 +1,9 @@
 import { expect } from 'chai';
 import { describe } from 'mocha';
-import { newQRLDescriptor, newQRLDescriptorFromExtendedSeed, newXMSSParams } from '../src/classes.js';
+import { newQRLDescriptor, newQRLDescriptorFromExtendedSeed, newWOTSParams, newXMSSParams } from '../src/classes.js';
 import { COMMON, HASH_FUNCTION } from '../src/constants.js';
 import {
+  calcBaseW,
   calculateSignatureBaseSize,
   getSignatureSize,
   getXMSSAddressFromPK,
@@ -1145,6 +1146,89 @@ describe('xmss', function testFunction() {
       const expectedSignatureSize = 2202;
 
       expect(signatureSize).to.equal(expectedSignatureSize);
+    });
+  });
+
+  describe('calcBaseW', () => {
+    it('should calculate the base w, with w[6] input[74, 74, ...]', () => {
+      const n = 13;
+      const w = 6;
+      const wotsParams = newWOTSParams(n, w);
+      const outputLen = wotsParams.len1;
+      const output = new Uint8Array(wotsParams.len);
+      const input = new Uint8Array([
+        74, 74, 32, 16, 12, 189, 110, 39, 169, 21, 184, 111, 59, 158, 132, 251, 205, 225, 89, 45, 117, 81, 92, 143, 82,
+        170, 238, 156, 75,
+      ]);
+      const expectedWotsParams = newWOTSParams(n, w);
+      const expectedOutputLen = expectedWotsParams.len1;
+      const expectedOutput = new Uint8Array([
+        1, 4, 0, 0, 1, 4, 0, 0, 0, 0, 0, 0, 0, 1, 4, 0, 0, 0, 1, 4, 0, 1, 5, 5, 1, 4, 1, 4, 0, 0, 1, 5, 0, 0, 0, 1, 0,
+        1, 5, 5, 0, 1, 4, 0, 1, 4, 1, 5, 0, 1, 4, 1, 0, 0, 0, 0, 0,
+      ]);
+      const expectedInput = new Uint8Array([
+        74, 74, 32, 16, 12, 189, 110, 39, 169, 21, 184, 111, 59, 158, 132, 251, 205, 225, 89, 45, 117, 81, 92, 143, 82,
+        170, 238, 156, 75,
+      ]);
+      calcBaseW(output, outputLen, input, wotsParams);
+
+      expect(wotsParams).to.deep.equal(expectedWotsParams);
+      expect(outputLen).to.deep.equal(expectedOutputLen);
+      expect(output).to.deep.equal(expectedOutput);
+      expect(input).to.deep.equal(expectedInput);
+    });
+
+    it('should calculate the base w, with w[16] input[34, 23, ...]', () => {
+      const n = 25;
+      const w = 16;
+      const wotsParams = newWOTSParams(n, w);
+      const outputLen = wotsParams.len1;
+      const output = new Uint8Array(wotsParams.len);
+      const input = new Uint8Array([
+        34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8,
+        23, 34,
+      ]);
+      const expectedWotsParams = newWOTSParams(n, w);
+      const expectedOutputLen = expectedWotsParams.len1;
+      const expectedOutput = new Uint8Array([
+        2, 2, 1, 7, 4, 2, 1, 7, 0, 4, 0, 7, 0, 8, 1, 7, 2, 2, 1, 7, 4, 2, 1, 7, 0, 4, 0, 7, 0, 8, 1, 7, 2, 2, 1, 7, 4,
+        2, 1, 7, 0, 4, 0, 7, 0, 8, 1, 7, 2, 2, 0, 0, 0,
+      ]);
+      const expectedInput = new Uint8Array([
+        34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8,
+        23, 34,
+      ]);
+      calcBaseW(output, outputLen, input, wotsParams);
+
+      expect(wotsParams).to.deep.equal(expectedWotsParams);
+      expect(outputLen).to.deep.equal(expectedOutputLen);
+      expect(output).to.deep.equal(expectedOutput);
+      expect(input).to.deep.equal(expectedInput);
+    });
+
+    it('should calculate the base w, with w[256] input[159, 202, ...]', () => {
+      const n = 11;
+      const w = 256;
+      const wotsParams = newWOTSParams(n, w);
+      const outputLen = wotsParams.len1;
+      const output = new Uint8Array(wotsParams.len);
+      const input = new Uint8Array([
+        159, 202, 211, 84, 72, 119, 20, 240, 87, 221, 150, 241, 19, 50, 16, 16, 212, 61, 35, 204, 89, 163, 228, 212, 10,
+        173, 44, 146, 41, 95, 131, 72,
+      ]);
+      const expectedWotsParams = newWOTSParams(n, w);
+      const expectedOutputLen = expectedWotsParams.len1;
+      const expectedOutput = new Uint8Array([159, 202, 211, 84, 72, 119, 20, 240, 87, 221, 150, 0, 0]);
+      const expectedInput = new Uint8Array([
+        159, 202, 211, 84, 72, 119, 20, 240, 87, 221, 150, 241, 19, 50, 16, 16, 212, 61, 35, 204, 89, 163, 228, 212, 10,
+        173, 44, 146, 41, 95, 131, 72,
+      ]);
+      calcBaseW(output, outputLen, input, wotsParams);
+
+      expect(wotsParams).to.deep.equal(expectedWotsParams);
+      expect(outputLen).to.deep.equal(expectedOutputLen);
+      expect(output).to.deep.equal(expectedOutput);
+      expect(input).to.deep.equal(expectedInput);
     });
   });
 });
