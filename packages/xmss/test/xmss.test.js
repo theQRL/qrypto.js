@@ -1234,6 +1234,33 @@ describe('xmss', function testFunction() {
   });
 
   describe('wotsSign', () => {
+    it('should throw an error if the size of addr is invalid', () => {
+      const hashFunction = HASH_FUNCTION.SHA2_256;
+      const sig = new Uint8Array([
+        224, 201, 246, 138, 163, 4, 236, 101, 149, 141, 198, 200, 52, 152, 221, 51, 7, 165, 205, 23, 66, 130, 153, 139,
+        158, 164, 149, 241,
+      ]);
+      const msg = new Uint8Array([
+        139, 172, 150, 45, 231, 244, 232, 178, 87, 66, 68, 153, 193, 43, 143, 159, 174, 252, 98, 12, 196, 221, 107, 122,
+        97, 174,
+      ]);
+      const sk = new Uint8Array([
+        68, 172, 140, 141, 41, 40, 252, 44, 118, 197, 181, 104, 53, 95, 217, 186, 119, 36, 131, 206, 57,
+      ]);
+      const n = 2;
+      const w = 16;
+      const params = newWOTSParams(n, w);
+      const pubSeed = new Uint8Array([
+        232, 10, 209, 120, 126, 242, 118, 253, 164, 208, 15, 70, 40, 111, 142, 239, 154, 123, 96, 189, 176, 202, 3, 213,
+        148, 237, 38, 241, 149, 238, 21, 26, 10,
+      ]);
+      const addr = new Uint32Array([136, 63, 214, 113, 214, 45, 225]);
+
+      expect(() => wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr)).to.throw(
+        'addr should be an array of size 8'
+      );
+    });
+
     it('should sign wots, with SHA2_256 n[2] w[16]', () => {
       const hashFunction = HASH_FUNCTION.SHA2_256;
       const sig = new Uint8Array([
