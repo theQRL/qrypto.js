@@ -15,6 +15,119 @@ import { setChainAddr, shake256, toByteLittleEndian } from './helper.js';
 import { XMSSFastGenKeyPair, expandSeed, genChain } from './xmssFast.js';
 
 /**
+ * @param {Uint32Array[number]} keySize
+ * @returns {Uint32Array[number]}
+ */
+export function calculateSignatureBaseSize(keySize) {
+  return 4 + 32 + keySize;
+}
+
+/**
+ * @param {XMSSParams} params
+ * @returns {Uint32Array[number]}
+ */
+export function getSignatureSize(params) {
+  const signatureBaseSize = calculateSignatureBaseSize(params.wotsParams.keySize);
+  return signatureBaseSize + params.h * 32;
+}
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {Uint8Array} out
+ * @param {Uint8Array} input
+ * @param {Uint8Array} key
+ * @param {Uint32Array[number]} n
+ * @returns {{ error: string }}
+ */
+export function hMsg(hashFunction, out, input, key, n) {
+  if (key.length !== 3 * n) {
+    return { error: `H_msg takes 3n-bit keys, we got n=${n} but a keylength of ${key.length}.` };
+  }
+  coreHash(hashFunction, out, 2, key, key.length, input, input.length, n);
+  return { error: null };
+}
+
+/**
+ * @param {Uint8Array} output
+ * @param {Uint32Array[number]} outputLen
+ * @param {Uint8Array} input
+ * @param {WOTSParams} params
+ */
+export function calcBaseW(output, outputLen, input, params) {
+  let inIndex = 0;
+  let outIndex = 0;
+  let [total] = new Uint32Array([0]);
+  let [bits] = new Uint32Array([0]);
+
+  for (let consumed = 0; consumed < outputLen; consumed++) {
+    if (bits === 0) {
+      [total] = new Uint32Array([input[inIndex]]);
+      inIndex++;
+      [bits] = new Uint32Array([bits + 8]);
+    }
+    [bits] = new Uint32Array([bits - params.logW]);
+    output.set([new Uint8Array([(total >> bits) & (params.w - 1)])[0]], outIndex);
+    outIndex++;
+  }
+}
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {Uint8Array} sig
+ * @param {Uint8Array} msg
+ * @param {Uint8Array} sk
+ * @param {WOTSParams} params
+ * @param {Uint8Array} pubSeed
+ * @param {Uint8Array} addr
+ */
+export function wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr) {
+  if (addr.length !== 8) {
+    throw new Error(`addr should be an array of size 8`);
+  }
+
+  const baseW = new Uint8Array(params.len);
+  let [csum] = new Uint32Array([0]);
+
+  calcBaseW(baseW, params.len1, msg, params);
+
+  for (let i = 0; i < params.len1; i++) {
+    csum += params.w - 1 - new Uint32Array([baseW[i]])[0];
+  }
+
+  csum <<= 8 - ((params.len2 * params.logW) % 8);
+
+  const len2Bytes = (params.len2 * params.logW + 7) / 8;
+
+  const cSumBytes = new Uint8Array(len2Bytes);
+  toByteLittleEndian(cSumBytes, csum, len2Bytes);
+
+  const cSumBaseW = new Uint8Array(params.len2);
+
+  calcBaseW(cSumBaseW, params.len2, cSumBytes, params);
+
+  for (let i = 0; i < params.len2; i++) {
+    baseW.set([cSumBaseW[i]], params.len1 + i);
+  }
+
+  expandSeed(hashFunction, sig, sk, params.n, params.len);
+
+  for (let i = 0; i < params.len; i++) {
+    setChainAddr(addr, i);
+    const offset = i * params.n;
+    genChain(
+      hashFunction,
+      sig.subarray(offset, offset + params.n),
+      sig.subarray(offset, offset + params.n),
+      0,
+      new Uint32Array([baseW[i]])[0],
+      params,
+      pubSeed,
+      addr
+    );
+  }
+}
+
+/**
  * @param {QRLDescriptor} desc
  * @param {Uint8Array} seed
  * @returns {XMSS}
@@ -127,117 +240,4 @@ export function getXMSSAddressFromPK(ePK) {
   }
 
   return address;
-}
-
-/**
- * @param {HashFunction} hashFunction
- * @param {Uint8Array} out
- * @param {Uint8Array} input
- * @param {Uint8Array} key
- * @param {Uint32Array[number]} n
- * @returns {{ error: string }}
- */
-export function hMsg(hashFunction, out, input, key, n) {
-  if (key.length !== 3 * n) {
-    return { error: `H_msg takes 3n-bit keys, we got n=${n} but a keylength of ${key.length}.` };
-  }
-  coreHash(hashFunction, out, 2, key, key.length, input, input.length, n);
-  return { error: null };
-}
-
-/**
- * @param {Uint32Array[number]} keySize
- * @returns {Uint32Array[number]}
- */
-export function calculateSignatureBaseSize(keySize) {
-  return 4 + 32 + keySize;
-}
-
-/**
- * @param {XMSSParams} params
- * @returns {Uint32Array[number]}
- */
-export function getSignatureSize(params) {
-  const signatureBaseSize = calculateSignatureBaseSize(params.wotsParams.keySize);
-  return signatureBaseSize + params.h * 32;
-}
-
-/**
- * @param {Uint8Array} output
- * @param {Uint32Array[number]} outputLen
- * @param {Uint8Array} input
- * @param {WOTSParams} params
- */
-export function calcBaseW(output, outputLen, input, params) {
-  let inIndex = 0;
-  let outIndex = 0;
-  let [total] = new Uint32Array([0]);
-  let [bits] = new Uint32Array([0]);
-
-  for (let consumed = 0; consumed < outputLen; consumed++) {
-    if (bits === 0) {
-      [total] = new Uint32Array([input[inIndex]]);
-      inIndex++;
-      [bits] = new Uint32Array([bits + 8]);
-    }
-    [bits] = new Uint32Array([bits - params.logW]);
-    output.set([new Uint8Array([(total >> bits) & (params.w - 1)])[0]], outIndex);
-    outIndex++;
-  }
-}
-
-/**
- * @param {HashFunction} hashFunction
- * @param {Uint8Array} sig
- * @param {Uint8Array} msg
- * @param {Uint8Array} sk
- * @param {WOTSParams} params
- * @param {Uint8Array} pubSeed
- * @param {Uint8Array} addr
- */
-export function wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr) {
-  if (addr.length !== 8) {
-    throw new Error(`addr should be an array of size 8`);
-  }
-
-  const baseW = new Uint8Array(params.len);
-  let [csum] = new Uint32Array([0]);
-
-  calcBaseW(baseW, params.len1, msg, params);
-
-  for (let i = 0; i < params.len1; i++) {
-    csum += params.w - 1 - new Uint32Array([baseW[i]])[0];
-  }
-
-  csum <<= 8 - ((params.len2 * params.logW) % 8);
-
-  const len2Bytes = (params.len2 * params.logW + 7) / 8;
-
-  const cSumBytes = new Uint8Array(len2Bytes);
-  toByteLittleEndian(cSumBytes, csum, len2Bytes);
-
-  const cSumBaseW = new Uint8Array(params.len2);
-
-  calcBaseW(cSumBaseW, params.len2, cSumBytes, params);
-
-  for (let i = 0; i < params.len2; i++) {
-    baseW.set([cSumBaseW[i]], params.len1 + i);
-  }
-
-  expandSeed(hashFunction, sig, sk, params.n, params.len);
-
-  for (let i = 0; i < params.len; i++) {
-    setChainAddr(addr, i);
-    const offset = i * params.n;
-    genChain(
-      hashFunction,
-      sig.subarray(offset, offset + params.n),
-      sig.subarray(offset, offset + params.n),
-      0,
-      new Uint32Array([baseW[i]])[0],
-      params,
-      pubSeed,
-      addr
-    );
-  }
 }

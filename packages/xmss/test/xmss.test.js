@@ -18,6 +18,352 @@ import {
 describe('xmss', function testFunction() {
   this.timeout(0);
 
+  describe('calculateSignatureBaseSize', () => {
+    it('should return the signature base size for the keysize 65', () => {
+      const [keySize] = new Uint32Array([65]);
+      const signautreBaseSize = calculateSignatureBaseSize(keySize);
+      const expectedSignatureBaseSize = 101;
+
+      expect(signautreBaseSize).to.equal(expectedSignatureBaseSize);
+    });
+
+    it('should return the signature base size for the keysize 399', () => {
+      const [keySize] = new Uint32Array([399]);
+      const signautreBaseSize = calculateSignatureBaseSize(keySize);
+      const expectedSignatureBaseSize = 435;
+
+      expect(signautreBaseSize).to.equal(expectedSignatureBaseSize);
+    });
+
+    it('should return the signature base size for the keysize 1064', () => {
+      const [keySize] = new Uint32Array([1064]);
+      const signautreBaseSize = calculateSignatureBaseSize(keySize);
+      const expectedSignatureBaseSize = 1100;
+
+      expect(signautreBaseSize).to.equal(expectedSignatureBaseSize);
+    });
+  });
+
+  describe('getSignatureSize', () => {
+    it('should return the signature size for the n[2] h[4] w[6] k[8]', () => {
+      const n = 2;
+      const h = 4;
+      const w = 6;
+      const k = 8;
+      const params = newXMSSParams(n, h, w, k);
+      const signatureSize = getSignatureSize(params);
+      const expectedSignatureSize = 186;
+
+      expect(signatureSize).to.equal(expectedSignatureSize);
+    });
+
+    it('should return the signature size for the n[13] h[7] w[9] k[3]', () => {
+      const n = 13;
+      const h = 7;
+      const w = 9;
+      const k = 3;
+      const params = newXMSSParams(n, h, w, k);
+      const signatureSize = getSignatureSize(params);
+      const expectedSignatureSize = 741;
+
+      expect(signatureSize).to.equal(expectedSignatureSize);
+    });
+
+    it('should return the signature size for the n[25] h[13] w[12] k[9]', () => {
+      const n = 25;
+      const h = 13;
+      const w = 12;
+      const k = 9;
+      const params = newXMSSParams(n, h, w, k);
+      const signatureSize = getSignatureSize(params);
+      const expectedSignatureSize = 2202;
+
+      expect(signatureSize).to.equal(expectedSignatureSize);
+    });
+  });
+
+  describe('hMsg', () => {
+    it('should return an error if key length is not equal to 3 times n', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const out = new Uint8Array([34, 56, 2, 7, 8, 45]);
+      const input = new Uint8Array([32, 45, 7, 8, 23, 5, 7]);
+      const key = new Uint8Array([34, 56, 2, 7, 8, 45, 34, 56, 2, 2]);
+      const n = 3;
+      const error = hMsg(hashFunction, out, input, key, n);
+
+      expect(error).to.deep.equal({
+        error: `H_msg takes 3n-bit keys, we got n=${n} but a keylength of ${key.length}.`,
+      });
+    });
+
+    it('should return an null error if the function is executed correctly', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const out = new Uint8Array([34, 56, 2, 7, 8, 45]);
+      const input = new Uint8Array([32, 45, 7, 8, 23, 5, 7]);
+      const key = new Uint8Array([34, 56, 2, 7, 8, 45, 34, 56, 2]);
+      const n = 3;
+      const error = hMsg(hashFunction, out, input, key, n);
+
+      expect(error).to.deep.equal({
+        error: null,
+      });
+    });
+  });
+
+  describe('calcBaseW', () => {
+    it('should calculate the base w, with w[6] input[74, 74, ...]', () => {
+      const n = 13;
+      const w = 6;
+      const wotsParams = newWOTSParams(n, w);
+      const outputLen = wotsParams.len1;
+      const output = new Uint8Array(wotsParams.len);
+      const input = new Uint8Array([
+        74, 74, 32, 16, 12, 189, 110, 39, 169, 21, 184, 111, 59, 158, 132, 251, 205, 225, 89, 45, 117, 81, 92, 143, 82,
+        170, 238, 156, 75,
+      ]);
+      const expectedWotsParams = newWOTSParams(n, w);
+      const expectedOutputLen = expectedWotsParams.len1;
+      const expectedOutput = new Uint8Array([
+        1, 4, 0, 0, 1, 4, 0, 0, 0, 0, 0, 0, 0, 1, 4, 0, 0, 0, 1, 4, 0, 1, 5, 5, 1, 4, 1, 4, 0, 0, 1, 5, 0, 0, 0, 1, 0,
+        1, 5, 5, 0, 1, 4, 0, 1, 4, 1, 5, 0, 1, 4, 1, 0, 0, 0, 0, 0,
+      ]);
+      const expectedInput = new Uint8Array([
+        74, 74, 32, 16, 12, 189, 110, 39, 169, 21, 184, 111, 59, 158, 132, 251, 205, 225, 89, 45, 117, 81, 92, 143, 82,
+        170, 238, 156, 75,
+      ]);
+      calcBaseW(output, outputLen, input, wotsParams);
+
+      expect(wotsParams).to.deep.equal(expectedWotsParams);
+      expect(outputLen).to.deep.equal(expectedOutputLen);
+      expect(output).to.deep.equal(expectedOutput);
+      expect(input).to.deep.equal(expectedInput);
+    });
+
+    it('should calculate the base w, with w[16] input[34, 23, ...]', () => {
+      const n = 25;
+      const w = 16;
+      const wotsParams = newWOTSParams(n, w);
+      const outputLen = wotsParams.len1;
+      const output = new Uint8Array(wotsParams.len);
+      const input = new Uint8Array([
+        34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8,
+        23, 34,
+      ]);
+      const expectedWotsParams = newWOTSParams(n, w);
+      const expectedOutputLen = expectedWotsParams.len1;
+      const expectedOutput = new Uint8Array([
+        2, 2, 1, 7, 4, 2, 1, 7, 0, 4, 0, 7, 0, 8, 1, 7, 2, 2, 1, 7, 4, 2, 1, 7, 0, 4, 0, 7, 0, 8, 1, 7, 2, 2, 1, 7, 4,
+        2, 1, 7, 0, 4, 0, 7, 0, 8, 1, 7, 2, 2, 0, 0, 0,
+      ]);
+      const expectedInput = new Uint8Array([
+        34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8,
+        23, 34,
+      ]);
+      calcBaseW(output, outputLen, input, wotsParams);
+
+      expect(wotsParams).to.deep.equal(expectedWotsParams);
+      expect(outputLen).to.deep.equal(expectedOutputLen);
+      expect(output).to.deep.equal(expectedOutput);
+      expect(input).to.deep.equal(expectedInput);
+    });
+
+    it('should calculate the base w, with w[256] input[159, 202, ...]', () => {
+      const n = 11;
+      const w = 256;
+      const wotsParams = newWOTSParams(n, w);
+      const outputLen = wotsParams.len1;
+      const output = new Uint8Array(wotsParams.len);
+      const input = new Uint8Array([
+        159, 202, 211, 84, 72, 119, 20, 240, 87, 221, 150, 241, 19, 50, 16, 16, 212, 61, 35, 204, 89, 163, 228, 212, 10,
+        173, 44, 146, 41, 95, 131, 72,
+      ]);
+      const expectedWotsParams = newWOTSParams(n, w);
+      const expectedOutputLen = expectedWotsParams.len1;
+      const expectedOutput = new Uint8Array([159, 202, 211, 84, 72, 119, 20, 240, 87, 221, 150, 0, 0]);
+      const expectedInput = new Uint8Array([
+        159, 202, 211, 84, 72, 119, 20, 240, 87, 221, 150, 241, 19, 50, 16, 16, 212, 61, 35, 204, 89, 163, 228, 212, 10,
+        173, 44, 146, 41, 95, 131, 72,
+      ]);
+      calcBaseW(output, outputLen, input, wotsParams);
+
+      expect(wotsParams).to.deep.equal(expectedWotsParams);
+      expect(outputLen).to.deep.equal(expectedOutputLen);
+      expect(output).to.deep.equal(expectedOutput);
+      expect(input).to.deep.equal(expectedInput);
+    });
+  });
+
+  describe('wotsSign', () => {
+    it('should throw an error if the size of addr is invalid', () => {
+      const hashFunction = HASH_FUNCTION.SHA2_256;
+      const sig = new Uint8Array([
+        224, 201, 246, 138, 163, 4, 236, 101, 149, 141, 198, 200, 52, 152, 221, 51, 7, 165, 205, 23, 66, 130, 153, 139,
+        158, 164, 149, 241,
+      ]);
+      const msg = new Uint8Array([
+        139, 172, 150, 45, 231, 244, 232, 178, 87, 66, 68, 153, 193, 43, 143, 159, 174, 252, 98, 12, 196, 221, 107, 122,
+        97, 174,
+      ]);
+      const sk = new Uint8Array([
+        68, 172, 140, 141, 41, 40, 252, 44, 118, 197, 181, 104, 53, 95, 217, 186, 119, 36, 131, 206, 57,
+      ]);
+      const n = 2;
+      const w = 16;
+      const params = newWOTSParams(n, w);
+      const pubSeed = new Uint8Array([
+        232, 10, 209, 120, 126, 242, 118, 253, 164, 208, 15, 70, 40, 111, 142, 239, 154, 123, 96, 189, 176, 202, 3, 213,
+        148, 237, 38, 241, 149, 238, 21, 26, 10,
+      ]);
+      const addr = new Uint32Array([136, 63, 214, 113, 214, 45, 225]);
+
+      expect(() => wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr)).to.throw(
+        'addr should be an array of size 8'
+      );
+    });
+
+    it('should sign wots, with SHA2_256 n[2] w[16]', () => {
+      const hashFunction = HASH_FUNCTION.SHA2_256;
+      const sig = new Uint8Array([
+        224, 201, 246, 138, 163, 4, 236, 101, 149, 141, 198, 200, 52, 152, 221, 51, 7, 165, 205, 23, 66, 130, 153, 139,
+        158, 164, 149, 241,
+      ]);
+      const msg = new Uint8Array([
+        139, 172, 150, 45, 231, 244, 232, 178, 87, 66, 68, 153, 193, 43, 143, 159, 174, 252, 98, 12, 196, 221, 107, 122,
+        97, 174,
+      ]);
+      const sk = new Uint8Array([
+        68, 172, 140, 141, 41, 40, 252, 44, 118, 197, 181, 104, 53, 95, 217, 186, 119, 36, 131, 206, 57,
+      ]);
+      const n = 2;
+      const w = 16;
+      const params = newWOTSParams(n, w);
+      const pubSeed = new Uint8Array([
+        232, 10, 209, 120, 126, 242, 118, 253, 164, 208, 15, 70, 40, 111, 142, 239, 154, 123, 96, 189, 176, 202, 3, 213,
+        148, 237, 38, 241, 149, 238, 21, 26, 10,
+      ]);
+      const addr = new Uint32Array([136, 243, 63, 214, 113, 214, 45, 225]);
+      const expectedSig = new Uint8Array([
+        66, 143, 173, 51, 39, 251, 23, 249, 135, 223, 37, 136, 52, 152, 221, 51, 7, 165, 205, 23, 66, 130, 153, 139,
+        158, 164, 149, 241,
+      ]);
+      const expectedMsg = new Uint8Array([
+        139, 172, 150, 45, 231, 244, 232, 178, 87, 66, 68, 153, 193, 43, 143, 159, 174, 252, 98, 12, 196, 221, 107, 122,
+        97, 174,
+      ]);
+      const expectedSk = new Uint8Array([
+        68, 172, 140, 141, 41, 40, 252, 44, 118, 197, 181, 104, 53, 95, 217, 186, 119, 36, 131, 206, 57,
+      ]);
+      const expectedParams = newWOTSParams(n, w);
+      const expectedPubSeed = new Uint8Array([
+        232, 10, 209, 120, 126, 242, 118, 253, 164, 208, 15, 70, 40, 111, 142, 239, 154, 123, 96, 189, 176, 202, 3, 213,
+        148, 237, 38, 241, 149, 238, 21, 26, 10,
+      ]);
+      const expectedAddr = new Uint32Array([136, 243, 63, 214, 113, 5, 11, 1]);
+      wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr);
+
+      expect(sig).to.deep.equal(expectedSig);
+      expect(msg).to.deep.equal(expectedMsg);
+      expect(sk).to.deep.equal(expectedSk);
+      expect(params).to.deep.equal(expectedParams);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+
+    it('should sign wots, with SHAKE_128 n[2] w[6]', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const sig = new Uint8Array([
+        8, 8, 2, 13, 4, 14, 0, 5, 5, 7, 11, 12, 2, 11, 10, 11, 14, 0, 4, 11, 13, 2, 8, 7, 12, 9, 122, 26, 49, 178, 15,
+        72, 228,
+      ]);
+      const msg = new Uint8Array([
+        178, 104, 176, 20, 253, 235, 214, 9, 122, 26, 49, 178, 15, 72, 228, 226, 9, 56, 105, 40, 93, 189, 155, 23, 2,
+      ]);
+      const sk = new Uint8Array([
+        114, 54, 69, 150, 127, 24, 154, 74, 203, 198, 101, 138, 26, 233, 160, 137, 224, 2, 108, 75, 141, 166, 239, 172,
+      ]);
+      const n = 2;
+      const w = 6;
+      const params = newWOTSParams(n, w);
+      const pubSeed = new Uint8Array([
+        217, 43, 195, 228, 235, 132, 239, 100, 186, 210, 252, 23, 0, 47, 179, 206, 150, 115, 99, 49, 26, 187, 128, 134,
+        101, 110, 246, 77, 32, 69, 224, 166, 171, 130,
+      ]);
+      const addr = new Uint32Array([253, 215, 207, 144, 64, 155, 102, 31]);
+      const expectedSig = new Uint8Array([
+        230, 213, 215, 44, 58, 144, 232, 247, 57, 34, 134, 197, 101, 141, 171, 217, 43, 14, 100, 242, 118, 92, 8, 7, 12,
+        9, 122, 26, 49, 178, 15, 72, 228,
+      ]);
+      const expectedMsg = new Uint8Array([
+        178, 104, 176, 20, 253, 235, 214, 9, 122, 26, 49, 178, 15, 72, 228, 226, 9, 56, 105, 40, 93, 189, 155, 23, 2,
+      ]);
+      const expectedSk = new Uint8Array([
+        114, 54, 69, 150, 127, 24, 154, 74, 203, 198, 101, 138, 26, 233, 160, 137, 224, 2, 108, 75, 141, 166, 239, 172,
+      ]);
+      const expectedParams = newWOTSParams(n, w);
+      const expectedPubSeed = new Uint8Array([
+        217, 43, 195, 228, 235, 132, 239, 100, 186, 210, 252, 23, 0, 47, 179, 206, 150, 115, 99, 49, 26, 187, 128, 134,
+        101, 110, 246, 77, 32, 69, 224, 166, 171, 130,
+      ]);
+      const expectedAddr = new Uint32Array([253, 215, 207, 144, 64, 10, 3, 1]);
+      wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr);
+
+      expect(sig).to.deep.equal(expectedSig);
+      expect(msg).to.deep.equal(expectedMsg);
+      expect(sk).to.deep.equal(expectedSk);
+      expect(params).to.deep.equal(expectedParams);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+
+    it('should sign wots, with SHAKE_256 n[3] w[256]', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_256;
+      const sig = new Uint8Array([
+        94, 41, 14, 122, 27, 26, 103, 13, 225, 153, 164, 236, 149, 75, 253, 59, 114, 172, 163, 230, 161, 149, 76, 9,
+        231, 240, 141,
+      ]);
+      const msg = new Uint8Array([
+        34, 122, 83, 18, 112, 92, 216, 101, 49, 184, 37, 119, 62, 113, 223, 50, 162, 74, 67, 23, 245, 103, 184, 130, 27,
+        156, 153, 196, 32, 48, 65, 130, 207, 64, 226,
+      ]);
+      const sk = new Uint8Array([
+        11, 198, 107, 59, 33, 178, 149, 21, 29, 158, 31, 154, 251, 220, 67, 213, 31, 29, 140, 184, 122, 89, 240, 132,
+        129, 182, 118, 140, 155, 59,
+      ]);
+      const n = 3;
+      const w = 256;
+      const params = newWOTSParams(n, w);
+      const pubSeed = new Uint8Array([
+        240, 169, 165, 69, 9, 20, 6, 63, 132, 84, 168, 26, 76, 63, 61, 220, 204, 240, 41, 252, 197, 225, 7, 246, 185,
+      ]);
+      const addr = new Uint32Array([13, 215, 66, 106, 98, 55, 105, 183]);
+      const expectedSig = new Uint8Array([
+        163, 210, 143, 216, 97, 38, 11, 67, 245, 99, 82, 239, 15, 209, 230, 59, 114, 172, 163, 230, 161, 149, 76, 9,
+        231, 240, 141,
+      ]);
+      const expectedMsg = new Uint8Array([
+        34, 122, 83, 18, 112, 92, 216, 101, 49, 184, 37, 119, 62, 113, 223, 50, 162, 74, 67, 23, 245, 103, 184, 130, 27,
+        156, 153, 196, 32, 48, 65, 130, 207, 64, 226,
+      ]);
+      const expectedSk = new Uint8Array([
+        11, 198, 107, 59, 33, 178, 149, 21, 29, 158, 31, 154, 251, 220, 67, 213, 31, 29, 140, 184, 122, 89, 240, 132,
+        129, 182, 118, 140, 155, 59,
+      ]);
+      const expectedParams = newWOTSParams(n, w);
+      const expectedPubSeed = new Uint8Array([
+        240, 169, 165, 69, 9, 20, 6, 63, 132, 84, 168, 26, 76, 63, 61, 220, 204, 240, 41, 252, 197, 225, 7, 246, 185,
+      ]);
+      const expectedAddr = new Uint32Array([13, 215, 66, 106, 98, 4, 13, 1]);
+      wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr);
+
+      expect(sig).to.deep.equal(expectedSig);
+      expect(msg).to.deep.equal(expectedMsg);
+      expect(sk).to.deep.equal(expectedSk);
+      expect(params).to.deep.equal(expectedParams);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+  });
+
   describe('initializeTree', () => {
     it('should generate xmss tree for extendedSeed[5, 146 ...] and seed[0, 0 ...]', () => {
       const extendedSeed = new Uint8Array([
@@ -1055,352 +1401,6 @@ describe('xmss', function testFunction() {
       ]);
 
       expect(address).to.deep.equal(expectedAddress);
-    });
-  });
-
-  describe('hMsg', () => {
-    it('should return an error if key length is not equal to 3 times n', () => {
-      const hashFunction = HASH_FUNCTION.SHAKE_128;
-      const out = new Uint8Array([34, 56, 2, 7, 8, 45]);
-      const input = new Uint8Array([32, 45, 7, 8, 23, 5, 7]);
-      const key = new Uint8Array([34, 56, 2, 7, 8, 45, 34, 56, 2, 2]);
-      const n = 3;
-      const error = hMsg(hashFunction, out, input, key, n);
-
-      expect(error).to.deep.equal({
-        error: `H_msg takes 3n-bit keys, we got n=${n} but a keylength of ${key.length}.`,
-      });
-    });
-
-    it('should return an null error if the function is executed correctly', () => {
-      const hashFunction = HASH_FUNCTION.SHAKE_128;
-      const out = new Uint8Array([34, 56, 2, 7, 8, 45]);
-      const input = new Uint8Array([32, 45, 7, 8, 23, 5, 7]);
-      const key = new Uint8Array([34, 56, 2, 7, 8, 45, 34, 56, 2]);
-      const n = 3;
-      const error = hMsg(hashFunction, out, input, key, n);
-
-      expect(error).to.deep.equal({
-        error: null,
-      });
-    });
-  });
-
-  describe('calculateSignatureBaseSize', () => {
-    it('should return the signature base size for the keysize 65', () => {
-      const [keySize] = new Uint32Array([65]);
-      const signautreBaseSize = calculateSignatureBaseSize(keySize);
-      const expectedSignatureBaseSize = 101;
-
-      expect(signautreBaseSize).to.equal(expectedSignatureBaseSize);
-    });
-
-    it('should return the signature base size for the keysize 399', () => {
-      const [keySize] = new Uint32Array([399]);
-      const signautreBaseSize = calculateSignatureBaseSize(keySize);
-      const expectedSignatureBaseSize = 435;
-
-      expect(signautreBaseSize).to.equal(expectedSignatureBaseSize);
-    });
-
-    it('should return the signature base size for the keysize 1064', () => {
-      const [keySize] = new Uint32Array([1064]);
-      const signautreBaseSize = calculateSignatureBaseSize(keySize);
-      const expectedSignatureBaseSize = 1100;
-
-      expect(signautreBaseSize).to.equal(expectedSignatureBaseSize);
-    });
-  });
-
-  describe('getSignatureSize', () => {
-    it('should return the signature size for the n[2] h[4] w[6] k[8]', () => {
-      const n = 2;
-      const h = 4;
-      const w = 6;
-      const k = 8;
-      const params = newXMSSParams(n, h, w, k);
-      const signatureSize = getSignatureSize(params);
-      const expectedSignatureSize = 186;
-
-      expect(signatureSize).to.equal(expectedSignatureSize);
-    });
-
-    it('should return the signature size for the n[13] h[7] w[9] k[3]', () => {
-      const n = 13;
-      const h = 7;
-      const w = 9;
-      const k = 3;
-      const params = newXMSSParams(n, h, w, k);
-      const signatureSize = getSignatureSize(params);
-      const expectedSignatureSize = 741;
-
-      expect(signatureSize).to.equal(expectedSignatureSize);
-    });
-
-    it('should return the signature size for the n[25] h[13] w[12] k[9]', () => {
-      const n = 25;
-      const h = 13;
-      const w = 12;
-      const k = 9;
-      const params = newXMSSParams(n, h, w, k);
-      const signatureSize = getSignatureSize(params);
-      const expectedSignatureSize = 2202;
-
-      expect(signatureSize).to.equal(expectedSignatureSize);
-    });
-  });
-
-  describe('calcBaseW', () => {
-    it('should calculate the base w, with w[6] input[74, 74, ...]', () => {
-      const n = 13;
-      const w = 6;
-      const wotsParams = newWOTSParams(n, w);
-      const outputLen = wotsParams.len1;
-      const output = new Uint8Array(wotsParams.len);
-      const input = new Uint8Array([
-        74, 74, 32, 16, 12, 189, 110, 39, 169, 21, 184, 111, 59, 158, 132, 251, 205, 225, 89, 45, 117, 81, 92, 143, 82,
-        170, 238, 156, 75,
-      ]);
-      const expectedWotsParams = newWOTSParams(n, w);
-      const expectedOutputLen = expectedWotsParams.len1;
-      const expectedOutput = new Uint8Array([
-        1, 4, 0, 0, 1, 4, 0, 0, 0, 0, 0, 0, 0, 1, 4, 0, 0, 0, 1, 4, 0, 1, 5, 5, 1, 4, 1, 4, 0, 0, 1, 5, 0, 0, 0, 1, 0,
-        1, 5, 5, 0, 1, 4, 0, 1, 4, 1, 5, 0, 1, 4, 1, 0, 0, 0, 0, 0,
-      ]);
-      const expectedInput = new Uint8Array([
-        74, 74, 32, 16, 12, 189, 110, 39, 169, 21, 184, 111, 59, 158, 132, 251, 205, 225, 89, 45, 117, 81, 92, 143, 82,
-        170, 238, 156, 75,
-      ]);
-      calcBaseW(output, outputLen, input, wotsParams);
-
-      expect(wotsParams).to.deep.equal(expectedWotsParams);
-      expect(outputLen).to.deep.equal(expectedOutputLen);
-      expect(output).to.deep.equal(expectedOutput);
-      expect(input).to.deep.equal(expectedInput);
-    });
-
-    it('should calculate the base w, with w[16] input[34, 23, ...]', () => {
-      const n = 25;
-      const w = 16;
-      const wotsParams = newWOTSParams(n, w);
-      const outputLen = wotsParams.len1;
-      const output = new Uint8Array(wotsParams.len);
-      const input = new Uint8Array([
-        34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8,
-        23, 34,
-      ]);
-      const expectedWotsParams = newWOTSParams(n, w);
-      const expectedOutputLen = expectedWotsParams.len1;
-      const expectedOutput = new Uint8Array([
-        2, 2, 1, 7, 4, 2, 1, 7, 0, 4, 0, 7, 0, 8, 1, 7, 2, 2, 1, 7, 4, 2, 1, 7, 0, 4, 0, 7, 0, 8, 1, 7, 2, 2, 1, 7, 4,
-        2, 1, 7, 0, 4, 0, 7, 0, 8, 1, 7, 2, 2, 0, 0, 0,
-      ]);
-      const expectedInput = new Uint8Array([
-        34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8,
-        23, 34,
-      ]);
-      calcBaseW(output, outputLen, input, wotsParams);
-
-      expect(wotsParams).to.deep.equal(expectedWotsParams);
-      expect(outputLen).to.deep.equal(expectedOutputLen);
-      expect(output).to.deep.equal(expectedOutput);
-      expect(input).to.deep.equal(expectedInput);
-    });
-
-    it('should calculate the base w, with w[256] input[159, 202, ...]', () => {
-      const n = 11;
-      const w = 256;
-      const wotsParams = newWOTSParams(n, w);
-      const outputLen = wotsParams.len1;
-      const output = new Uint8Array(wotsParams.len);
-      const input = new Uint8Array([
-        159, 202, 211, 84, 72, 119, 20, 240, 87, 221, 150, 241, 19, 50, 16, 16, 212, 61, 35, 204, 89, 163, 228, 212, 10,
-        173, 44, 146, 41, 95, 131, 72,
-      ]);
-      const expectedWotsParams = newWOTSParams(n, w);
-      const expectedOutputLen = expectedWotsParams.len1;
-      const expectedOutput = new Uint8Array([159, 202, 211, 84, 72, 119, 20, 240, 87, 221, 150, 0, 0]);
-      const expectedInput = new Uint8Array([
-        159, 202, 211, 84, 72, 119, 20, 240, 87, 221, 150, 241, 19, 50, 16, 16, 212, 61, 35, 204, 89, 163, 228, 212, 10,
-        173, 44, 146, 41, 95, 131, 72,
-      ]);
-      calcBaseW(output, outputLen, input, wotsParams);
-
-      expect(wotsParams).to.deep.equal(expectedWotsParams);
-      expect(outputLen).to.deep.equal(expectedOutputLen);
-      expect(output).to.deep.equal(expectedOutput);
-      expect(input).to.deep.equal(expectedInput);
-    });
-  });
-
-  describe('wotsSign', () => {
-    it('should throw an error if the size of addr is invalid', () => {
-      const hashFunction = HASH_FUNCTION.SHA2_256;
-      const sig = new Uint8Array([
-        224, 201, 246, 138, 163, 4, 236, 101, 149, 141, 198, 200, 52, 152, 221, 51, 7, 165, 205, 23, 66, 130, 153, 139,
-        158, 164, 149, 241,
-      ]);
-      const msg = new Uint8Array([
-        139, 172, 150, 45, 231, 244, 232, 178, 87, 66, 68, 153, 193, 43, 143, 159, 174, 252, 98, 12, 196, 221, 107, 122,
-        97, 174,
-      ]);
-      const sk = new Uint8Array([
-        68, 172, 140, 141, 41, 40, 252, 44, 118, 197, 181, 104, 53, 95, 217, 186, 119, 36, 131, 206, 57,
-      ]);
-      const n = 2;
-      const w = 16;
-      const params = newWOTSParams(n, w);
-      const pubSeed = new Uint8Array([
-        232, 10, 209, 120, 126, 242, 118, 253, 164, 208, 15, 70, 40, 111, 142, 239, 154, 123, 96, 189, 176, 202, 3, 213,
-        148, 237, 38, 241, 149, 238, 21, 26, 10,
-      ]);
-      const addr = new Uint32Array([136, 63, 214, 113, 214, 45, 225]);
-
-      expect(() => wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr)).to.throw(
-        'addr should be an array of size 8'
-      );
-    });
-
-    it('should sign wots, with SHA2_256 n[2] w[16]', () => {
-      const hashFunction = HASH_FUNCTION.SHA2_256;
-      const sig = new Uint8Array([
-        224, 201, 246, 138, 163, 4, 236, 101, 149, 141, 198, 200, 52, 152, 221, 51, 7, 165, 205, 23, 66, 130, 153, 139,
-        158, 164, 149, 241,
-      ]);
-      const msg = new Uint8Array([
-        139, 172, 150, 45, 231, 244, 232, 178, 87, 66, 68, 153, 193, 43, 143, 159, 174, 252, 98, 12, 196, 221, 107, 122,
-        97, 174,
-      ]);
-      const sk = new Uint8Array([
-        68, 172, 140, 141, 41, 40, 252, 44, 118, 197, 181, 104, 53, 95, 217, 186, 119, 36, 131, 206, 57,
-      ]);
-      const n = 2;
-      const w = 16;
-      const params = newWOTSParams(n, w);
-      const pubSeed = new Uint8Array([
-        232, 10, 209, 120, 126, 242, 118, 253, 164, 208, 15, 70, 40, 111, 142, 239, 154, 123, 96, 189, 176, 202, 3, 213,
-        148, 237, 38, 241, 149, 238, 21, 26, 10,
-      ]);
-      const addr = new Uint32Array([136, 243, 63, 214, 113, 214, 45, 225]);
-      const expectedSig = new Uint8Array([
-        66, 143, 173, 51, 39, 251, 23, 249, 135, 223, 37, 136, 52, 152, 221, 51, 7, 165, 205, 23, 66, 130, 153, 139,
-        158, 164, 149, 241,
-      ]);
-      const expectedMsg = new Uint8Array([
-        139, 172, 150, 45, 231, 244, 232, 178, 87, 66, 68, 153, 193, 43, 143, 159, 174, 252, 98, 12, 196, 221, 107, 122,
-        97, 174,
-      ]);
-      const expectedSk = new Uint8Array([
-        68, 172, 140, 141, 41, 40, 252, 44, 118, 197, 181, 104, 53, 95, 217, 186, 119, 36, 131, 206, 57,
-      ]);
-      const expectedParams = newWOTSParams(n, w);
-      const expectedPubSeed = new Uint8Array([
-        232, 10, 209, 120, 126, 242, 118, 253, 164, 208, 15, 70, 40, 111, 142, 239, 154, 123, 96, 189, 176, 202, 3, 213,
-        148, 237, 38, 241, 149, 238, 21, 26, 10,
-      ]);
-      const expectedAddr = new Uint32Array([136, 243, 63, 214, 113, 5, 11, 1]);
-      wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr);
-
-      expect(sig).to.deep.equal(expectedSig);
-      expect(msg).to.deep.equal(expectedMsg);
-      expect(sk).to.deep.equal(expectedSk);
-      expect(params).to.deep.equal(expectedParams);
-      expect(pubSeed).to.deep.equal(expectedPubSeed);
-      expect(addr).to.deep.equal(expectedAddr);
-    });
-
-    it('should sign wots, with SHAKE_128 n[2] w[6]', () => {
-      const hashFunction = HASH_FUNCTION.SHAKE_128;
-      const sig = new Uint8Array([
-        8, 8, 2, 13, 4, 14, 0, 5, 5, 7, 11, 12, 2, 11, 10, 11, 14, 0, 4, 11, 13, 2, 8, 7, 12, 9, 122, 26, 49, 178, 15,
-        72, 228,
-      ]);
-      const msg = new Uint8Array([
-        178, 104, 176, 20, 253, 235, 214, 9, 122, 26, 49, 178, 15, 72, 228, 226, 9, 56, 105, 40, 93, 189, 155, 23, 2,
-      ]);
-      const sk = new Uint8Array([
-        114, 54, 69, 150, 127, 24, 154, 74, 203, 198, 101, 138, 26, 233, 160, 137, 224, 2, 108, 75, 141, 166, 239, 172,
-      ]);
-      const n = 2;
-      const w = 6;
-      const params = newWOTSParams(n, w);
-      const pubSeed = new Uint8Array([
-        217, 43, 195, 228, 235, 132, 239, 100, 186, 210, 252, 23, 0, 47, 179, 206, 150, 115, 99, 49, 26, 187, 128, 134,
-        101, 110, 246, 77, 32, 69, 224, 166, 171, 130,
-      ]);
-      const addr = new Uint32Array([253, 215, 207, 144, 64, 155, 102, 31]);
-      const expectedSig = new Uint8Array([
-        230, 213, 215, 44, 58, 144, 232, 247, 57, 34, 134, 197, 101, 141, 171, 217, 43, 14, 100, 242, 118, 92, 8, 7, 12,
-        9, 122, 26, 49, 178, 15, 72, 228,
-      ]);
-      const expectedMsg = new Uint8Array([
-        178, 104, 176, 20, 253, 235, 214, 9, 122, 26, 49, 178, 15, 72, 228, 226, 9, 56, 105, 40, 93, 189, 155, 23, 2,
-      ]);
-      const expectedSk = new Uint8Array([
-        114, 54, 69, 150, 127, 24, 154, 74, 203, 198, 101, 138, 26, 233, 160, 137, 224, 2, 108, 75, 141, 166, 239, 172,
-      ]);
-      const expectedParams = newWOTSParams(n, w);
-      const expectedPubSeed = new Uint8Array([
-        217, 43, 195, 228, 235, 132, 239, 100, 186, 210, 252, 23, 0, 47, 179, 206, 150, 115, 99, 49, 26, 187, 128, 134,
-        101, 110, 246, 77, 32, 69, 224, 166, 171, 130,
-      ]);
-      const expectedAddr = new Uint32Array([253, 215, 207, 144, 64, 10, 3, 1]);
-      wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr);
-
-      expect(sig).to.deep.equal(expectedSig);
-      expect(msg).to.deep.equal(expectedMsg);
-      expect(sk).to.deep.equal(expectedSk);
-      expect(params).to.deep.equal(expectedParams);
-      expect(pubSeed).to.deep.equal(expectedPubSeed);
-      expect(addr).to.deep.equal(expectedAddr);
-    });
-
-    it('should sign wots, with SHAKE_256 n[3] w[256]', () => {
-      const hashFunction = HASH_FUNCTION.SHAKE_256;
-      const sig = new Uint8Array([
-        94, 41, 14, 122, 27, 26, 103, 13, 225, 153, 164, 236, 149, 75, 253, 59, 114, 172, 163, 230, 161, 149, 76, 9,
-        231, 240, 141,
-      ]);
-      const msg = new Uint8Array([
-        34, 122, 83, 18, 112, 92, 216, 101, 49, 184, 37, 119, 62, 113, 223, 50, 162, 74, 67, 23, 245, 103, 184, 130, 27,
-        156, 153, 196, 32, 48, 65, 130, 207, 64, 226,
-      ]);
-      const sk = new Uint8Array([
-        11, 198, 107, 59, 33, 178, 149, 21, 29, 158, 31, 154, 251, 220, 67, 213, 31, 29, 140, 184, 122, 89, 240, 132,
-        129, 182, 118, 140, 155, 59,
-      ]);
-      const n = 3;
-      const w = 256;
-      const params = newWOTSParams(n, w);
-      const pubSeed = new Uint8Array([
-        240, 169, 165, 69, 9, 20, 6, 63, 132, 84, 168, 26, 76, 63, 61, 220, 204, 240, 41, 252, 197, 225, 7, 246, 185,
-      ]);
-      const addr = new Uint32Array([13, 215, 66, 106, 98, 55, 105, 183]);
-      const expectedSig = new Uint8Array([
-        163, 210, 143, 216, 97, 38, 11, 67, 245, 99, 82, 239, 15, 209, 230, 59, 114, 172, 163, 230, 161, 149, 76, 9,
-        231, 240, 141,
-      ]);
-      const expectedMsg = new Uint8Array([
-        34, 122, 83, 18, 112, 92, 216, 101, 49, 184, 37, 119, 62, 113, 223, 50, 162, 74, 67, 23, 245, 103, 184, 130, 27,
-        156, 153, 196, 32, 48, 65, 130, 207, 64, 226,
-      ]);
-      const expectedSk = new Uint8Array([
-        11, 198, 107, 59, 33, 178, 149, 21, 29, 158, 31, 154, 251, 220, 67, 213, 31, 29, 140, 184, 122, 89, 240, 132,
-        129, 182, 118, 140, 155, 59,
-      ]);
-      const expectedParams = newWOTSParams(n, w);
-      const expectedPubSeed = new Uint8Array([
-        240, 169, 165, 69, 9, 20, 6, 63, 132, 84, 168, 26, 76, 63, 61, 220, 204, 240, 41, 252, 197, 225, 7, 246, 185,
-      ]);
-      const expectedAddr = new Uint32Array([13, 215, 66, 106, 98, 4, 13, 1]);
-      wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr);
-
-      expect(sig).to.deep.equal(expectedSig);
-      expect(msg).to.deep.equal(expectedMsg);
-      expect(sk).to.deep.equal(expectedSk);
-      expect(params).to.deep.equal(expectedParams);
-      expect(pubSeed).to.deep.equal(expectedPubSeed);
-      expect(addr).to.deep.equal(expectedAddr);
     });
   });
 });
