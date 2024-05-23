@@ -1,6 +1,12 @@
 import { expect } from 'chai';
 import { describe } from 'mocha';
-import { newQRLDescriptor, newQRLDescriptorFromExtendedSeed, newWOTSParams, newXMSSParams } from '../src/classes.js';
+import {
+  newBDSState,
+  newQRLDescriptor,
+  newQRLDescriptorFromExtendedSeed,
+  newWOTSParams,
+  newXMSSParams,
+} from '../src/classes.js';
 import { COMMON, HASH_FUNCTION } from '../src/constants.js';
 import {
   calcBaseW,
@@ -9,6 +15,7 @@ import {
   getXMSSAddressFromPK,
   hMsg,
   initializeTree,
+  newXMSS,
   newXMSSFromExtendedSeed,
   newXMSSFromHeight,
   newXMSSFromSeed,
@@ -1402,5 +1409,39 @@ describe('xmss', function testFunction() {
 
       expect(address).to.deep.equal(expectedAddress);
     });
+  });
+
+  describe('newXMSS', () => {
+    it('should create a XMSS instance', () => {
+      const n = 2;
+      const h = 4;
+      const w = 6;
+      const k = 8;
+      const xmssParams = newXMSSParams(n, h, w, k);
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const height = 10;
+      const sk = new Uint8Array([32, 43, 44, 13, 4, 23]);
+      const seed = new Uint8Array([
+        188, 38, 37, 243, 247, 59, 68, 36, 53, 11, 207, 33, 178, 161, 10, 250, 95, 200, 204, 40, 110, 14, 88, 221, 212,
+        183, 109, 91, 139, 242, 140, 80, 67, 219, 47, 111, 131, 171, 29, 159, 98, 252, 171, 152, 245, 229, 78, 69,
+      ]);
+      const bdsState = newBDSState(height, n, k);
+      const signatureType = 3;
+      const addrFormatType = 7;
+      const desc = newQRLDescriptor(height, hashFunction, signatureType, addrFormatType);
+      const qrlDescriptor = newXMSS(xmssParams, hashFunction, height, sk, seed, bdsState, desc);
+
+      expect(Object.getOwnPropertyNames(qrlDescriptor)).to.deep.equal([
+        'xmssParams',
+        'hashFunction',
+        'height',
+        'sk',
+        'seed',
+        'bdsState',
+        'desc',
+      ]);
+    });
+
+    it('TODO: should ensure the class methods are working correctly', () => {});
   });
 });

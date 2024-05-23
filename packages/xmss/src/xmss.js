@@ -6,13 +6,12 @@ import {
   newQRLDescriptor,
   newQRLDescriptorFromExtendedPk,
   newQRLDescriptorFromExtendedSeed,
-  newXMSS,
   newXMSSParams,
 } from './classes.js';
-import { COMMON, CONSTANTS, WOTS_PARAM } from './constants.js';
+import { COMMON, CONSTANTS, OFFSET_PUB_SEED, OFFSET_ROOT, WOTS_PARAM } from './constants.js';
 import { coreHash } from './hash.js';
-import { setChainAddr, shake256, toByteLittleEndian } from './helper.js';
-import { XMSSFastGenKeyPair, expandSeed, genChain } from './xmssFast.js';
+import { extendedSeedBinToMnemonic, setChainAddr, shake256, toByteLittleEndian } from './helper.js';
+import { XMSSFastGenKeyPair, expandSeed, genChain, xmssFastUpdate } from './xmssFast.js';
 
 /**
  * @param {Uint32Array[number]} keySize
@@ -240,4 +239,162 @@ export function getXMSSAddressFromPK(ePK) {
   }
 
   return address;
+}
+
+class XMSSClass {
+  /**
+   * @param {Uint32Array[number]} newIndex
+   * @returns {void}
+   */
+  setIndex(newIndex) {
+    xmssFastUpdate(this.hashFunction, this.xmssParams, this.sk, this.bdsState, newIndex);
+  }
+
+  /** @returns {Uint8Array[number]} */
+  getHeight() {
+    return this.height;
+  }
+
+  /** @returns {Uint8Array} */
+  getPKSeed() {
+    return this.sk.subarray(OFFSET_PUB_SEED, OFFSET_PUB_SEED + 32);
+  }
+
+  /** @returns {Uint8Array} */
+  getSeed() {
+    return this.seed;
+  }
+
+  /** @returns {Uint8Array} */
+  getExtendedSeed() {
+    const extendedSeed = new Uint8Array(COMMON.EXTENDED_SEED_SIZE);
+    const descBytes = this.desc.getBytes();
+    const seed = this.getSeed();
+    for (
+      let extSeedIndex = 0, bytesIndex = 0;
+      extSeedIndex < 3 && bytesIndex < descBytes.length;
+      extSeedIndex++, bytesIndex++
+    ) {
+      extendedSeed.set([descBytes[bytesIndex]], extSeedIndex);
+    }
+    for (
+      let extSeedIndex = 3, seedIndex = 0;
+      extSeedIndex < extendedSeed.length && seedIndex < seed.length;
+      extSeedIndex++, seedIndex++
+    ) {
+      extendedSeed.set([seed[seedIndex]], extSeedIndex);
+    }
+
+    return extendedSeed;
+  }
+
+  /** @returns {string} */
+  getHexSeed() {
+    const eSeed = this.getExtendedSeed();
+
+    return `0x${Array.from(eSeed)
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join('')}`;
+  }
+
+  /** @returns {string} */
+  getMnemonic() {
+    return extendedSeedBinToMnemonic(this.getExtendedSeed());
+  }
+
+  /** @returns {Uint8Array} */
+  getRoot() {
+    return this.sk.subarray(OFFSET_ROOT, OFFSET_ROOT + 32);
+  }
+
+  /** @returns {Uint8Array} */
+  getPK() {
+    const desc = this.desc.getBytes();
+    const root = this.getRoot();
+    const pubSeed = this.getPKSeed();
+
+    const output = new Uint8Array(CONSTANTS.EXTENDED_PK_SIZE);
+    let offset = 0;
+    for (let i = 0; i < desc.length; i++) {
+      output.set([desc[i]], i);
+    }
+    offset += desc.length;
+    for (let i = 0; i < root.length; i++) {
+      output.set([root[i]], offset + i);
+    }
+    offset += root.length;
+    for (let i = 0; i < pubSeed.length; i++) {
+      output.set([pubSeed[i]], offset + i);
+    }
+
+    return output;
+  }
+
+  /** @returns {Uint8Array} */
+  getSK() {
+    return this.sk;
+  }
+
+  /** @returns {Uint8Array} */
+  getAddress() {
+    return getXMSSAddressFromPK(this.getPK());
+  }
+
+  /** @returns {Uint32Array[number]} */
+  getIndex() {
+    return (
+      (new Uint32Array([this.sk[0]])[0] << 24) +
+      (new Uint32Array([this.sk[1]])[0] << 16) +
+      (new Uint32Array([this.sk[2]])[0] << 8) +
+      new Uint32Array([this.sk[3]])[0]
+    );
+  }
+
+  /**
+   * @param {Uint8Array} message
+   * @returns {Uint8Array}
+   */
+  sign(message) {
+    const index = this.getIndex();
+    this.setIndex(index);
+
+    return xmssFastSignMessage(this.hashFunction, this.xmssParams, this.sk, this.bdsState, message);
+  }
+
+  /**
+   * @param {XMSSParams} xmssParams
+   * @param {HashFunction} hashFunction
+   * @param {Uint8Array[number]} height
+   * @param {Uint8Array} sk
+   * @param {Uint8Array} seed
+   * @param {BDSState} bdsState
+   * @param {QRLDescriptor} desc
+   */
+  constructor(xmssParams, hashFunction, height, sk, seed, bdsState, desc) {
+    if (seed.length !== COMMON.SEED_SIZE) {
+      throw new Error(`seed should be an array of size ${COMMON.SEED_SIZE}`);
+    }
+
+    this.xmssParams = xmssParams;
+    this.hashFunction = hashFunction;
+    this.height = height;
+    this.sk = sk;
+    this.seed = seed;
+    this.bdsState = bdsState;
+    this.desc = desc;
+  }
+}
+
+/**
+ * @param {XMSSParams} xmssParams
+ * @param {HashFunction} hashFunction
+ * @param {Uint8Array[number]} height
+ * @param {Uint8Array} sk
+ * @param {Uint8Array} seed
+ * @param {BDSState} bdsState
+ * @param {QRLDescriptor} desc
+ * @returns {XMSS}
+ */
+export function newXMSS(xmssParams, hashFunction, height, sk, seed, bdsState, desc) {
+  return new XMSSClass(xmssParams, hashFunction, height, sk, seed, bdsState, desc);
 }
