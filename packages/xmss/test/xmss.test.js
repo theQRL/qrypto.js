@@ -12,6 +12,7 @@ import {
   newXMSSFromExtendedSeed,
   newXMSSFromHeight,
   newXMSSFromSeed,
+  wotsSign,
 } from '../src/xmss.js';
 
 describe('xmss', function testFunction() {
@@ -1229,6 +1230,150 @@ describe('xmss', function testFunction() {
       expect(outputLen).to.deep.equal(expectedOutputLen);
       expect(output).to.deep.equal(expectedOutput);
       expect(input).to.deep.equal(expectedInput);
+    });
+  });
+
+  describe('wotsSign', () => {
+    it('should sign wots, with SHA2_256 n[2] w[16]', () => {
+      const hashFunction = HASH_FUNCTION.SHA2_256;
+      const sig = new Uint8Array([
+        224, 201, 246, 138, 163, 4, 236, 101, 149, 141, 198, 200, 52, 152, 221, 51, 7, 165, 205, 23, 66, 130, 153, 139,
+        158, 164, 149, 241,
+      ]);
+      const msg = new Uint8Array([
+        139, 172, 150, 45, 231, 244, 232, 178, 87, 66, 68, 153, 193, 43, 143, 159, 174, 252, 98, 12, 196, 221, 107, 122,
+        97, 174,
+      ]);
+      const sk = new Uint8Array([
+        68, 172, 140, 141, 41, 40, 252, 44, 118, 197, 181, 104, 53, 95, 217, 186, 119, 36, 131, 206, 57,
+      ]);
+      const n = 2;
+      const w = 16;
+      const params = newWOTSParams(n, w);
+      const pubSeed = new Uint8Array([
+        232, 10, 209, 120, 126, 242, 118, 253, 164, 208, 15, 70, 40, 111, 142, 239, 154, 123, 96, 189, 176, 202, 3, 213,
+        148, 237, 38, 241, 149, 238, 21, 26, 10,
+      ]);
+      const addr = new Uint32Array([136, 243, 63, 214, 113, 214, 45, 225]);
+      const expectedSig = new Uint8Array([
+        66, 143, 173, 51, 39, 251, 23, 249, 135, 223, 37, 136, 52, 152, 221, 51, 7, 165, 205, 23, 66, 130, 153, 139,
+        158, 164, 149, 241,
+      ]);
+      const expectedMsg = new Uint8Array([
+        139, 172, 150, 45, 231, 244, 232, 178, 87, 66, 68, 153, 193, 43, 143, 159, 174, 252, 98, 12, 196, 221, 107, 122,
+        97, 174,
+      ]);
+      const expectedSk = new Uint8Array([
+        68, 172, 140, 141, 41, 40, 252, 44, 118, 197, 181, 104, 53, 95, 217, 186, 119, 36, 131, 206, 57,
+      ]);
+      const expectedParams = newWOTSParams(n, w);
+      const expectedPubSeed = new Uint8Array([
+        232, 10, 209, 120, 126, 242, 118, 253, 164, 208, 15, 70, 40, 111, 142, 239, 154, 123, 96, 189, 176, 202, 3, 213,
+        148, 237, 38, 241, 149, 238, 21, 26, 10,
+      ]);
+      const expectedAddr = new Uint32Array([136, 243, 63, 214, 113, 5, 11, 1]);
+      wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr);
+
+      expect(sig).to.deep.equal(expectedSig);
+      expect(msg).to.deep.equal(expectedMsg);
+      expect(sk).to.deep.equal(expectedSk);
+      expect(params).to.deep.equal(expectedParams);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+
+    it('should sign wots, with SHAKE_128 n[2] w[6]', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const sig = new Uint8Array([
+        8, 8, 2, 13, 4, 14, 0, 5, 5, 7, 11, 12, 2, 11, 10, 11, 14, 0, 4, 11, 13, 2, 8, 7, 12, 9, 122, 26, 49, 178, 15,
+        72, 228,
+      ]);
+      const msg = new Uint8Array([
+        178, 104, 176, 20, 253, 235, 214, 9, 122, 26, 49, 178, 15, 72, 228, 226, 9, 56, 105, 40, 93, 189, 155, 23, 2,
+      ]);
+      const sk = new Uint8Array([
+        114, 54, 69, 150, 127, 24, 154, 74, 203, 198, 101, 138, 26, 233, 160, 137, 224, 2, 108, 75, 141, 166, 239, 172,
+      ]);
+      const n = 2;
+      const w = 6;
+      const params = newWOTSParams(n, w);
+      const pubSeed = new Uint8Array([
+        217, 43, 195, 228, 235, 132, 239, 100, 186, 210, 252, 23, 0, 47, 179, 206, 150, 115, 99, 49, 26, 187, 128, 134,
+        101, 110, 246, 77, 32, 69, 224, 166, 171, 130,
+      ]);
+      const addr = new Uint32Array([253, 215, 207, 144, 64, 155, 102, 31]);
+      const expectedSig = new Uint8Array([
+        230, 213, 215, 44, 58, 144, 232, 247, 57, 34, 134, 197, 101, 141, 171, 217, 43, 14, 100, 242, 118, 92, 8, 7, 12,
+        9, 122, 26, 49, 178, 15, 72, 228,
+      ]);
+      const expectedMsg = new Uint8Array([
+        178, 104, 176, 20, 253, 235, 214, 9, 122, 26, 49, 178, 15, 72, 228, 226, 9, 56, 105, 40, 93, 189, 155, 23, 2,
+      ]);
+      const expectedSk = new Uint8Array([
+        114, 54, 69, 150, 127, 24, 154, 74, 203, 198, 101, 138, 26, 233, 160, 137, 224, 2, 108, 75, 141, 166, 239, 172,
+      ]);
+      const expectedParams = newWOTSParams(n, w);
+      const expectedPubSeed = new Uint8Array([
+        217, 43, 195, 228, 235, 132, 239, 100, 186, 210, 252, 23, 0, 47, 179, 206, 150, 115, 99, 49, 26, 187, 128, 134,
+        101, 110, 246, 77, 32, 69, 224, 166, 171, 130,
+      ]);
+      const expectedAddr = new Uint32Array([253, 215, 207, 144, 64, 10, 3, 1]);
+      wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr);
+
+      expect(sig).to.deep.equal(expectedSig);
+      expect(msg).to.deep.equal(expectedMsg);
+      expect(sk).to.deep.equal(expectedSk);
+      expect(params).to.deep.equal(expectedParams);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+
+    it('should sign wots, with SHAKE_256 n[3] w[256]', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_256;
+      const sig = new Uint8Array([
+        94, 41, 14, 122, 27, 26, 103, 13, 225, 153, 164, 236, 149, 75, 253, 59, 114, 172, 163, 230, 161, 149, 76, 9,
+        231, 240, 141,
+      ]);
+      const msg = new Uint8Array([
+        34, 122, 83, 18, 112, 92, 216, 101, 49, 184, 37, 119, 62, 113, 223, 50, 162, 74, 67, 23, 245, 103, 184, 130, 27,
+        156, 153, 196, 32, 48, 65, 130, 207, 64, 226,
+      ]);
+      const sk = new Uint8Array([
+        11, 198, 107, 59, 33, 178, 149, 21, 29, 158, 31, 154, 251, 220, 67, 213, 31, 29, 140, 184, 122, 89, 240, 132,
+        129, 182, 118, 140, 155, 59,
+      ]);
+      const n = 3;
+      const w = 256;
+      const params = newWOTSParams(n, w);
+      const pubSeed = new Uint8Array([
+        240, 169, 165, 69, 9, 20, 6, 63, 132, 84, 168, 26, 76, 63, 61, 220, 204, 240, 41, 252, 197, 225, 7, 246, 185,
+      ]);
+      const addr = new Uint32Array([13, 215, 66, 106, 98, 55, 105, 183]);
+      const expectedSig = new Uint8Array([
+        163, 210, 143, 216, 97, 38, 11, 67, 245, 99, 82, 239, 15, 209, 230, 59, 114, 172, 163, 230, 161, 149, 76, 9,
+        231, 240, 141,
+      ]);
+      const expectedMsg = new Uint8Array([
+        34, 122, 83, 18, 112, 92, 216, 101, 49, 184, 37, 119, 62, 113, 223, 50, 162, 74, 67, 23, 245, 103, 184, 130, 27,
+        156, 153, 196, 32, 48, 65, 130, 207, 64, 226,
+      ]);
+      const expectedSk = new Uint8Array([
+        11, 198, 107, 59, 33, 178, 149, 21, 29, 158, 31, 154, 251, 220, 67, 213, 31, 29, 140, 184, 122, 89, 240, 132,
+        129, 182, 118, 140, 155, 59,
+      ]);
+      const expectedParams = newWOTSParams(n, w);
+      const expectedPubSeed = new Uint8Array([
+        240, 169, 165, 69, 9, 20, 6, 63, 132, 84, 168, 26, 76, 63, 61, 220, 204, 240, 41, 252, 197, 225, 7, 246, 185,
+      ]);
+      const expectedAddr = new Uint32Array([13, 215, 66, 106, 98, 4, 13, 1]);
+      wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr);
+
+      expect(sig).to.deep.equal(expectedSig);
+      expect(msg).to.deep.equal(expectedMsg);
+      expect(sk).to.deep.equal(expectedSk);
+      expect(params).to.deep.equal(expectedParams);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
     });
   });
 });

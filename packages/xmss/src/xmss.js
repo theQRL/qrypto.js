@@ -11,8 +11,8 @@ import {
 } from './classes.js';
 import { COMMON, CONSTANTS, WOTS_PARAM } from './constants.js';
 import { coreHash } from './hash.js';
-import { shake256 } from './helper.js';
-import { XMSSFastGenKeyPair } from './xmssFast.js';
+import { setChainAddr, shake256, toByteLittleEndian } from './helper.js';
+import { XMSSFastGenKeyPair, expandSeed, genChain } from './xmssFast.js';
 
 /**
  * @param {QRLDescriptor} desc
@@ -183,5 +183,61 @@ export function calcBaseW(output, outputLen, input, params) {
     [bits] = new Uint32Array([bits - params.logW]);
     output.set([new Uint8Array([(total >> bits) & (params.w - 1)])[0]], outIndex);
     outIndex++;
+  }
+}
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {Uint8Array} sig
+ * @param {Uint8Array} msg
+ * @param {Uint8Array} sk
+ * @param {WOTSParams} params
+ * @param {Uint8Array} pubSeed
+ * @param {Uint8Array} addr
+ */
+export function wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr) {
+  if (addr.length !== 8) {
+    throw new Error(`addr should be an array of size 8`);
+  }
+
+  const baseW = new Uint8Array(params.len);
+  let [csum] = new Uint32Array([0]);
+
+  calcBaseW(baseW, params.len1, msg, params);
+
+  for (let i = 0; i < params.len1; i++) {
+    csum += params.w - 1 - new Uint32Array([baseW[i]])[0];
+  }
+
+  csum <<= 8 - ((params.len2 * params.logW) % 8);
+
+  const len2Bytes = (params.len2 * params.logW + 7) / 8;
+
+  const cSumBytes = new Uint8Array(len2Bytes);
+  toByteLittleEndian(cSumBytes, csum, len2Bytes);
+
+  const cSumBaseW = new Uint8Array(params.len2);
+
+  calcBaseW(cSumBaseW, params.len2, cSumBytes, params);
+
+  for (let i = 0; i < params.len2; i++) {
+    baseW.set([cSumBaseW[i]], params.len1 + i);
+  }
+
+  expandSeed(hashFunction, sig, sk, params.n, params.len);
+
+  for (let i = 0; i < params.len; i++) {
+    setChainAddr(addr, i);
+    const offset = i * params.n;
+    genChain(
+      hashFunction,
+      sig.subarray(offset, offset + params.n),
+      sig.subarray(offset, offset + params.n),
+      0,
+      new Uint32Array([baseW[i]])[0],
+      params,
+      pubSeed,
+      addr
+    );
   }
 }
