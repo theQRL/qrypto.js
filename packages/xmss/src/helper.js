@@ -135,7 +135,7 @@ export function toByteLittleEndian(out, input, bytes) {
   let inValue = input;
   for (let i = bytes - 1; i >= 0; i--) {
     out.set([new Uint8Array([inValue & 0xff])[0]], i);
-    inValue >>= 8;
+    inValue >>>= 8;
   }
 }
 
@@ -148,7 +148,7 @@ function toByteBigEndian(out, input, bytes) {
   let inValue = input;
   for (let i = 0; i < bytes; i++) {
     out.set([new Uint8Array([inValue & 0xff])[0]], i);
-    inValue >>= 8;
+    inValue >>>= 8;
   }
 }
 
@@ -190,7 +190,7 @@ export function binToMnemonic(input) {
   const buf = [];
   const separator = ' ';
   for (let nibble = 0; nibble < input.length * 2; nibble += 3) {
-    const p = nibble >> 1;
+    const p = nibble >>> 1;
     const [b1] = new Uint32Array([input[p]]);
     let [b2] = new Uint32Array([0]);
     if (p + 1 < input.length) {
@@ -198,7 +198,7 @@ export function binToMnemonic(input) {
     }
     let [idx] = new Uint32Array([0]);
     if (nibble % 2 === 0) {
-      idx = (b1 << 4) + (b2 >> 4);
+      idx = (b1 << 4) + (b2 >>> 4);
     } else {
       idx = ((b1 & 0x0f) << 8) + b2;
     }
@@ -270,7 +270,7 @@ export function mnemonicToBin(mnemonic) {
     while (buffering > 2) {
       const shift = 4 * (buffering - 2);
       const mask = (1 << shift) - 1;
-      const tmp = current >> shift;
+      const tmp = current >>> shift;
       buffering -= 2;
       current &= mask;
       result.set([tmp], resultIndex);
