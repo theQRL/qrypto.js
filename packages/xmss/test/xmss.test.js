@@ -65,26 +65,26 @@ describe('xmss', function testFunction() {
       expect(signatureSize).to.equal(expectedSignatureSize);
     });
 
-    it('should return the signature size for the n[13] h[7] w[9] k[3]', () => {
+    it('should return the signature size for the n[13] h[7] w[16] k[3]', () => {
       const n = 13;
       const h = 7;
-      const w = 9;
-      const k = 3;
+      const w = 16;
+      const k = 9;
       const params = newXMSSParams(n, h, w, k);
       const signatureSize = getSignatureSize(params);
-      const expectedSignatureSize = 741;
+      const expectedSignatureSize = 637;
 
       expect(signatureSize).to.equal(expectedSignatureSize);
     });
 
-    it('should return the signature size for the n[25] h[13] w[12] k[9]', () => {
+    it('should return the signature size for the n[25] h[13] w[256] k[9]', () => {
       const n = 25;
       const h = 13;
-      const w = 12;
+      const w = 256;
       const k = 9;
       const params = newXMSSParams(n, h, w, k);
       const signatureSize = getSignatureSize(params);
-      const expectedSignatureSize = 2202;
+      const expectedSignatureSize = 1127;
 
       expect(signatureSize).to.equal(expectedSignatureSize);
     });
