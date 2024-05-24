@@ -51,6 +51,9 @@ class WOTSParamsClass {
     this.n = n;
     this.w = w;
     [this.logW] = new Uint32Array([Math.log2(w)]);
+    if (this.logW !== 2 && this.logW !== 4 && this.logW !== 8) {
+      throw new Error('logW should be either 2, 4 or 8');
+    }
     // an integer value is passed to the ceil function for now w.r.t. golang code. update this as and when required.
     [this.len1] = new Uint32Array([Math.ceil(parseInt(((8 * n) / this.logW).toString(), 10))]);
     [this.len2] = new Uint32Array([Math.floor(Math.log2(this.len1 * (w - 1)) / this.logW) + 1]);
