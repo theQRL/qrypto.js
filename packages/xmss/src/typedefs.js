@@ -66,4 +66,17 @@
  * @property {Uint8Array} seed
  * @property {BDSState} bdsState
  * @property {QRLDescriptor} desc
+ * @property {(newIndex: Uint32Array[number]) => void} setIndex
+ * @property {() => Uint8Array[number]} getHeight
+ * @property {() => Uint8Array} getPKSeed
+ * @property {() => Uint8Array} getSeed
+ * @property {() => Uint8Array} getExtendedSeed
+ * @property {() => string} getHexSeed
+ * @property {() => string} getMnemonic
+ * @property {() => Uint8Array} getRoot
+ * @property {() => Uint8Array} getPK
+ * @property {() => Uint8Array} getSK
+ * @property {() => Uint8Array} getAddress
+ * @property {() => Uint32Array[number]} getIndex
+ * @property {(message: Uint8Array) => Uint8Array} sign
  */
