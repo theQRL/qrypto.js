@@ -994,7 +994,7 @@ describe('xmss', function testFunction() {
       ]);
     });
 
-    it('TODO: should ensure the class methods are working correctly', () => {});
+    it('TODO: should ensure the XMSS class methods are working correctly', () => {});
   });
 
   describe('initializeTree', () => {
