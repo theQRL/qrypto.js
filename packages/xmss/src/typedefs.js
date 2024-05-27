@@ -58,6 +58,12 @@
  */
 
 /**
+ * @typedef {Object} SignatureReturnType
+ * @property {Uint8Array | null} sigMsg
+ * @property {string | null} error
+ */
+
+/**
  * @typedef {Object} XMSS
  * @property {XMSSParams} xmssParams
  * @property {HashFunction} hashFunction
@@ -78,5 +84,5 @@
  * @property {() => Uint8Array} getSK
  * @property {() => Uint8Array} getAddress
  * @property {() => Uint32Array[number]} getIndex
- * @property {(message: Uint8Array) => { sigMsg: Uint8Array | null; error: string | null }} sign
+ * @property {(message: Uint8Array) => SignatureReturnType} sign
  */

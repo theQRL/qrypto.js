@@ -147,7 +147,7 @@ export function wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr) {
  * @param {Uint8Array} sk
  * @param {BDSState} bdsState
  * @param {Uint8Array} message
- * @returns {{ sigMsg: Uint8Array | null; error: string | null }}
+ * @returns {SignatureReturnType}
  */
 export function xmssFastSignMessage(hashFunction, params, sk, bdsState, message) {
   const { n } = params;
@@ -398,7 +398,7 @@ class XMSSClass {
 
   /**
    * @param {Uint8Array} message
-   * @returns {{ sigMsg: Uint8Array | null; error: string | null }}
+   * @returns {SignatureReturnType}
    */
   sign(message) {
     const index = this.getIndex();
