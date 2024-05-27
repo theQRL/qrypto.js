@@ -878,7 +878,7 @@ describe('xmssFast', function testFunction() {
     it('should update r with stackOffset[0] and modified values', () => {
       const height = 9;
       const k = 5;
-      const w = 3;
+      const w = 6;
       const n = 5;
       const state = newBDSState(height, n, k);
       const params = newXMSSParams(n, height, w, k);
@@ -890,7 +890,7 @@ describe('xmssFast', function testFunction() {
     it('should update r with stackOffset[6] and modified values', () => {
       const height = 11;
       const k = 4;
-      const w = 2;
+      const w = 16;
       const n = 3;
       const params = newXMSSParams(n, height, w, k);
       const state = newBDSState(height, n, k);
@@ -905,7 +905,7 @@ describe('xmssFast', function testFunction() {
     it('should update r with stackOffset[17] and modified values', () => {
       const height = 5;
       const k = 1;
-      const w = 9;
+      const w = 256;
       const n = 2;
       const params = newXMSSParams(n, height, w, k);
       const state = newBDSState(height, n, k);
