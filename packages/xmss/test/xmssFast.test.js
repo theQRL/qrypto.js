@@ -924,7 +924,7 @@ describe('xmssFast', function testFunction() {
     it('should update the tree hash, with SHA2_256 hashing', () => {
       const height = 5;
       const k = 1;
-      const w = 9;
+      const w = 16;
       const n = 1;
       const bdsState = newBDSState(height, n, k);
       const updates = 7;
@@ -990,7 +990,7 @@ describe('xmssFast', function testFunction() {
     it('should update the tree hash, with SHAKE_256 hashing', () => {
       const height = 17;
       const k = 13;
-      const w = 3;
+      const w = 256;
       const n = 7;
       const bdsState = newBDSState(height, n, k);
       const updates = 17;
