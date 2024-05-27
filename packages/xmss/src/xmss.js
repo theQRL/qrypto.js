@@ -80,7 +80,7 @@ export function calcBaseW(output, outputLen, input, params) {
       [bits] = new Uint32Array([bits + 8]);
     }
     [bits] = new Uint32Array([bits - params.logW]);
-    output.set([new Uint8Array([(total >> bits) & (params.w - 1)])[0]], outIndex);
+    output.set([new Uint8Array([(total >>> bits) & (params.w - 1)])[0]], outIndex);
     outIndex++;
   }
 }
@@ -182,9 +182,9 @@ export function xmssFastSignMessage(hashFunction, params, sk, bdsState, message)
   const hashKey = new Uint8Array(3 * n);
 
   sk.set([
-    new Uint8Array([((idx + 1) >> 24) & 0xff])[0],
-    new Uint8Array([((idx + 1) >> 16) & 0xff])[0],
-    new Uint8Array([((idx + 1) >> 8) & 0xff])[0],
+    new Uint8Array([((idx + 1) >>> 24) & 0xff])[0],
+    new Uint8Array([((idx + 1) >>> 16) & 0xff])[0],
+    new Uint8Array([((idx + 1) >>> 8) & 0xff])[0],
     new Uint8Array([(idx + 1) & 0xff])[0],
   ]);
 
@@ -211,9 +211,9 @@ export function xmssFastSignMessage(hashFunction, params, sk, bdsState, message)
   let [sigMsgLen] = new Uint32Array([0]);
   const sigMsg = new Uint8Array(getSignatureSize(params));
   sigMsg.set([
-    new Uint8Array([(idx >> 24) & 0xff])[0],
-    new Uint8Array([(idx >> 16) & 0xff])[0],
-    new Uint8Array([(idx >> 8) & 0xff])[0],
+    new Uint8Array([(idx >>> 24) & 0xff])[0],
+    new Uint8Array([(idx >>> 16) & 0xff])[0],
+    new Uint8Array([(idx >>> 8) & 0xff])[0],
     new Uint8Array([idx & 0xff])[0],
   ]);
 
@@ -244,7 +244,7 @@ export function xmssFastSignMessage(hashFunction, params, sk, bdsState, message)
 
   if (idx < (new Uint32Array([1])[0] << params.h) - 1) {
     bdsRound(hashFunction, bdsState, idx, skSeed, params, pubSeed, otsAddr);
-    bdsTreeHashUpdate(hashFunction, bdsState, (params.h - params.k) >> 1, skSeed, params, pubSeed, otsAddr);
+    bdsTreeHashUpdate(hashFunction, bdsState, (params.h - params.k) >>> 1, skSeed, params, pubSeed, otsAddr);
   }
 
   return { sigMsg, error: null };
