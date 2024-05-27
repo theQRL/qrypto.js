@@ -373,7 +373,7 @@ describe('xmssFast', () => {
   describe('lTree', () => {
     it('should generate lTree, with SHA2_256 hashing', () => {
       const n = 2;
-      const w = 3;
+      const w = 256;
       const params = newWOTSParams(n, w);
       const leaf = new Uint8Array([
         33, 68, 9, 2, 45, 77, 5, 3, 7, 9, 2, 7, 9, 2, 8, 2, 5, 7, 33, 68, 9, 2, 45, 77, 23, 56, 24, 78, 99,
@@ -385,16 +385,16 @@ describe('xmssFast', () => {
       const pubSeed = new Uint8Array([5, 3, 7, 9, 2, 7, 9, 2, 8, 2, 5, 7, 33, 68, 9, 2, 45, 77, 23, 56, 24, 78, 99]);
       const addr = new Uint8Array([4, 3, 2, 2, 7, 3, 9, 9]);
       const expectedLeaf = new Uint8Array([
-        154, 218, 9, 2, 45, 77, 5, 3, 7, 9, 2, 7, 9, 2, 8, 2, 5, 7, 33, 68, 9, 2, 45, 77, 23, 56, 24, 78, 99,
+        105, 115, 9, 2, 45, 77, 5, 3, 7, 9, 2, 7, 9, 2, 8, 2, 5, 7, 33, 68, 9, 2, 45, 77, 23, 56, 24, 78, 99,
       ]);
       const expectedWotsPk = new Uint8Array([
-        154, 218, 25, 64, 25, 64, 33, 169, 24, 247, 224, 242, 93, 40, 172, 222, 46, 234, 200, 229, 224, 242, 33, 68, 9,
-        2, 45, 77, 23, 56, 24, 78, 99, 33, 68, 9, 2, 45, 77, 23, 56, 24, 78, 99, 5, 3, 7,
+        105, 115, 36, 94, 33, 68, 56, 24, 78, 99, 9, 2, 45, 77, 23, 56, 24, 78, 99, 5, 3, 7, 33, 68, 9, 2, 45, 77, 23,
+        56, 24, 78, 99, 33, 68, 9, 2, 45, 77, 23, 56, 24, 78, 99, 5, 3, 7,
       ]);
       const expectedPubSeed = new Uint8Array([
         5, 3, 7, 9, 2, 7, 9, 2, 8, 2, 5, 7, 33, 68, 9, 2, 45, 77, 23, 56, 24, 78, 99,
       ]);
-      const expectedAddr = new Uint8Array([4, 3, 2, 2, 7, 5, 0, 2]);
+      const expectedAddr = new Uint8Array([4, 3, 2, 2, 7, 2, 0, 2]);
       lTree(HASH_FUNCTION.SHA2_256, params, leaf, wotsPk, pubSeed, addr);
 
       expect(leaf).to.deep.equal(expectedLeaf);
