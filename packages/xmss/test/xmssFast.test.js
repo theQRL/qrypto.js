@@ -1024,7 +1024,7 @@ describe('xmssFast', function testFunction() {
     it('should run bdsRound, with SHA2_256 hashing', () => {
       const height = 19;
       const k = 7;
-      const w = 13;
+      const w = 16;
       const n = 17;
       const bdsState = newBDSState(height, n, k);
       const leadIdx = 5;
