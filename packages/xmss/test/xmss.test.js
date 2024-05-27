@@ -923,6 +923,80 @@ describe('xmss', function testFunction() {
     });
   });
 
+  describe('getXMSSAddressFromPK', () => {
+    it('should throw an error if QRL descriptor address format type is not SHA_256', () => {
+      const ePK = new Uint8Array([
+        240, 128, 131, 4, 135, 135, 133, 223, 122, 68, 32, 197, 228, 178, 18, 135, 32, 136, 162, 246, 150, 15, 233, 102,
+        45, 199, 126, 40, 75, 204, 85, 209, 127, 50, 81, 8, 248, 48, 90, 124, 46, 157, 183, 28, 90, 137, 75, 93, 89, 29,
+        44, 113, 173, 190, 146, 102, 4, 89, 139, 253, 157, 197, 232, 37, 24, 102, 164,
+      ]);
+
+      expect(() => getXMSSAddressFromPK(ePK)).to.throw('Address format type not supported');
+    });
+
+    it('should generate an address for ePK[222, 0, ...]', () => {
+      const ePK = new Uint8Array([
+        222, 0, 123, 124, 112, 218, 61, 237, 137, 199, 97, 99, 20, 29, 57, 212, 69, 210, 127, 234, 120, 116, 54, 165, 4,
+        214, 159, 56, 7, 55, 69, 133, 80, 162, 9, 175, 17, 70, 178, 160, 181, 183, 33, 131, 161, 243, 191, 126, 28, 199,
+        159, 138, 103, 215, 227, 22, 164, 233, 196, 23, 139, 213, 127, 155, 96, 241, 35,
+      ]);
+      const address = getXMSSAddressFromPK(ePK);
+      const expectedAddress = new Uint8Array([
+        222, 0, 0, 154, 168, 199, 132, 10, 231, 152, 7, 212, 3, 165, 140, 55, 38, 78, 178, 232,
+      ]);
+
+      expect(address).to.deep.equal(expectedAddress);
+    });
+
+    it('should generate an address for ePK[186, 0, ...]', () => {
+      const ePK = new Uint8Array([
+        186, 0, 63, 100, 24, 159, 52, 132, 38, 6, 108, 37, 39, 71, 247, 52, 195, 100, 17, 238, 106, 210, 74, 19, 104,
+        10, 174, 129, 14, 103, 175, 39, 169, 50, 149, 10, 118, 176, 22, 44, 48, 128, 160, 185, 3, 25, 149, 182, 222,
+        137, 136, 191, 152, 247, 158, 83, 8, 172, 192, 142, 47, 202, 137, 234, 207, 251, 203,
+      ]);
+      const address = getXMSSAddressFromPK(ePK);
+      const expectedAddress = new Uint8Array([
+        186, 0, 0, 159, 128, 46, 176, 187, 231, 134, 36, 252, 141, 177, 138, 118, 97, 126, 114, 73,
+      ]);
+
+      expect(address).to.deep.equal(expectedAddress);
+    });
+  });
+
+  describe('newXMSS', () => {
+    it('should create a XMSS instance', () => {
+      const n = 2;
+      const h = 4;
+      const w = 6;
+      const k = 8;
+      const xmssParams = newXMSSParams(n, h, w, k);
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const height = 10;
+      const sk = new Uint8Array([32, 43, 44, 13, 4, 23]);
+      const seed = new Uint8Array([
+        188, 38, 37, 243, 247, 59, 68, 36, 53, 11, 207, 33, 178, 161, 10, 250, 95, 200, 204, 40, 110, 14, 88, 221, 212,
+        183, 109, 91, 139, 242, 140, 80, 67, 219, 47, 111, 131, 171, 29, 159, 98, 252, 171, 152, 245, 229, 78, 69,
+      ]);
+      const bdsState = newBDSState(height, n, k);
+      const signatureType = 3;
+      const addrFormatType = 7;
+      const desc = newQRLDescriptor(height, hashFunction, signatureType, addrFormatType);
+      const qrlDescriptor = newXMSS(xmssParams, hashFunction, height, sk, seed, bdsState, desc);
+
+      expect(Object.getOwnPropertyNames(qrlDescriptor)).to.deep.equal([
+        'xmssParams',
+        'hashFunction',
+        'height',
+        'sk',
+        'seed',
+        'bdsState',
+        'desc',
+      ]);
+    });
+
+    it('TODO: should ensure the class methods are working correctly', () => {});
+  });
+
   describe('initializeTree', () => {
     it('should generate xmss tree for extendedSeed[5, 146 ...] and seed[0, 0 ...]', () => {
       const extendedSeed = new Uint8Array([
@@ -1743,79 +1817,5 @@ describe('xmss', function testFunction() {
 
       expect(randomSeed1).not.to.deep.equal(randomSeed2);
     });
-  });
-
-  describe('getXMSSAddressFromPK', () => {
-    it('should throw an error if QRL descriptor address format type is not SHA_256', () => {
-      const ePK = new Uint8Array([
-        240, 128, 131, 4, 135, 135, 133, 223, 122, 68, 32, 197, 228, 178, 18, 135, 32, 136, 162, 246, 150, 15, 233, 102,
-        45, 199, 126, 40, 75, 204, 85, 209, 127, 50, 81, 8, 248, 48, 90, 124, 46, 157, 183, 28, 90, 137, 75, 93, 89, 29,
-        44, 113, 173, 190, 146, 102, 4, 89, 139, 253, 157, 197, 232, 37, 24, 102, 164,
-      ]);
-
-      expect(() => getXMSSAddressFromPK(ePK)).to.throw('Address format type not supported');
-    });
-
-    it('should generate an address for ePK[222, 0, ...]', () => {
-      const ePK = new Uint8Array([
-        222, 0, 123, 124, 112, 218, 61, 237, 137, 199, 97, 99, 20, 29, 57, 212, 69, 210, 127, 234, 120, 116, 54, 165, 4,
-        214, 159, 56, 7, 55, 69, 133, 80, 162, 9, 175, 17, 70, 178, 160, 181, 183, 33, 131, 161, 243, 191, 126, 28, 199,
-        159, 138, 103, 215, 227, 22, 164, 233, 196, 23, 139, 213, 127, 155, 96, 241, 35,
-      ]);
-      const address = getXMSSAddressFromPK(ePK);
-      const expectedAddress = new Uint8Array([
-        222, 0, 0, 154, 168, 199, 132, 10, 231, 152, 7, 212, 3, 165, 140, 55, 38, 78, 178, 232,
-      ]);
-
-      expect(address).to.deep.equal(expectedAddress);
-    });
-
-    it('should generate an address for ePK[186, 0, ...]', () => {
-      const ePK = new Uint8Array([
-        186, 0, 63, 100, 24, 159, 52, 132, 38, 6, 108, 37, 39, 71, 247, 52, 195, 100, 17, 238, 106, 210, 74, 19, 104,
-        10, 174, 129, 14, 103, 175, 39, 169, 50, 149, 10, 118, 176, 22, 44, 48, 128, 160, 185, 3, 25, 149, 182, 222,
-        137, 136, 191, 152, 247, 158, 83, 8, 172, 192, 142, 47, 202, 137, 234, 207, 251, 203,
-      ]);
-      const address = getXMSSAddressFromPK(ePK);
-      const expectedAddress = new Uint8Array([
-        186, 0, 0, 159, 128, 46, 176, 187, 231, 134, 36, 252, 141, 177, 138, 118, 97, 126, 114, 73,
-      ]);
-
-      expect(address).to.deep.equal(expectedAddress);
-    });
-  });
-
-  describe('newXMSS', () => {
-    it('should create a XMSS instance', () => {
-      const n = 2;
-      const h = 4;
-      const w = 6;
-      const k = 8;
-      const xmssParams = newXMSSParams(n, h, w, k);
-      const hashFunction = HASH_FUNCTION.SHAKE_128;
-      const height = 10;
-      const sk = new Uint8Array([32, 43, 44, 13, 4, 23]);
-      const seed = new Uint8Array([
-        188, 38, 37, 243, 247, 59, 68, 36, 53, 11, 207, 33, 178, 161, 10, 250, 95, 200, 204, 40, 110, 14, 88, 221, 212,
-        183, 109, 91, 139, 242, 140, 80, 67, 219, 47, 111, 131, 171, 29, 159, 98, 252, 171, 152, 245, 229, 78, 69,
-      ]);
-      const bdsState = newBDSState(height, n, k);
-      const signatureType = 3;
-      const addrFormatType = 7;
-      const desc = newQRLDescriptor(height, hashFunction, signatureType, addrFormatType);
-      const qrlDescriptor = newXMSS(xmssParams, hashFunction, height, sk, seed, bdsState, desc);
-
-      expect(Object.getOwnPropertyNames(qrlDescriptor)).to.deep.equal([
-        'xmssParams',
-        'hashFunction',
-        'height',
-        'sk',
-        'seed',
-        'bdsState',
-        'desc',
-      ]);
-    });
-
-    it('TODO: should ensure the class methods are working correctly', () => {});
   });
 });
