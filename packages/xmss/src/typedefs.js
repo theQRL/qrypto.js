@@ -78,5 +78,5 @@
  * @property {() => Uint8Array} getSK
  * @property {() => Uint8Array} getAddress
  * @property {() => Uint32Array[number]} getIndex
- * @property {(message: Uint8Array) => Uint8Array} sign
+ * @property {(message: Uint8Array) => { sigMsg: Uint8Array | null; error: string | null }} sign
  */

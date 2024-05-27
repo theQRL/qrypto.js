@@ -398,7 +398,7 @@ class XMSSClass {
 
   /**
    * @param {Uint8Array} message
-   * @returns {Uint8Array}
+   * @returns {{ sigMsg: Uint8Array | null; error: string | null }}
    */
   sign(message) {
     const index = this.getIndex();
