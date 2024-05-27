@@ -159,7 +159,7 @@ export function lTree(hashFunction, params, leaf, wotsPK, pubSeed, addr) {
 
   setTreeHeight(addr, height);
   while (l > 1) {
-    bound = l >> 1;
+    bound = l >>> 1;
     for (let i = 0; i < bound; i++) {
       setTreeIndex(addr, i);
       const outStartOffset = i * n;
@@ -174,7 +174,7 @@ export function lTree(hashFunction, params, leaf, wotsPK, pubSeed, addr) {
       );
     }
     if (l % 2 === 1) {
-      const destStartOffset = (l >> 1) * n;
+      const destStartOffset = (l >>> 1) * n;
       const srcStartOffset = (l - 1) * n;
       for (
         let destIndex = destStartOffset, srcIndex = srcStartOffset;
@@ -183,9 +183,9 @@ export function lTree(hashFunction, params, leaf, wotsPK, pubSeed, addr) {
       ) {
         wotsPK.set([wotsPK[srcIndex]], destIndex);
       }
-      l = (l >> 1) + 1;
+      l = (l >>> 1) + 1;
     } else {
-      l >>= 1;
+      l >>>= 1;
     }
     height++;
     setTreeHeight(addr, height);
@@ -273,7 +273,7 @@ export function treeHashSetup(hashFunction, node, index, bdsState, skSeed, xmssP
     }
     while (stackOffset > 1 && stackLevels[stackOffset - 1] === stackLevels[stackOffset - 2]) {
       nodeH = stackLevels[stackOffset - 1];
-      if (i >> nodeH === 1) {
+      if (i >>> nodeH === 1) {
         const authStart = nodeH * n;
         const stackStart = (stackOffset - 1) * n;
         for (
@@ -283,11 +283,11 @@ export function treeHashSetup(hashFunction, node, index, bdsState, skSeed, xmssP
         ) {
           bdsState1.auth.set([stack[stackIndex]], authIndex);
         }
-      } else if (nodeH < h - k && i >> nodeH === 3) {
+      } else if (nodeH < h - k && i >>> nodeH === 3) {
         const stackStart = (stackOffset - 1) * n;
         bdsState1.treeHash[nodeH].node.set(stack.subarray(stackStart, stackStart + n));
       } else if (nodeH >= h - k) {
-        const retainStart = ((1 << (h - 1 - nodeH)) + nodeH - h + (((i >> nodeH) - 3) >> 1)) * n;
+        const retainStart = ((1 << (h - 1 - nodeH)) + nodeH - h + (((i >>> nodeH) - 3) >>> 1)) * n;
         const stackStart = (stackOffset - 1) * n;
         for (
           let retainIndex = retainStart, stackIndex = stackStart;
@@ -298,7 +298,7 @@ export function treeHashSetup(hashFunction, node, index, bdsState, skSeed, xmssP
         }
       }
       setTreeHeight(nodeAddr, stackLevels[stackOffset - 1]);
-      setTreeIndex(nodeAddr, index1 >> (stackLevels[stackOffset - 1] + 1));
+      setTreeIndex(nodeAddr, index1 >>> (stackLevels[stackOffset - 1] + 1));
       const stackStart = (stackOffset - 2) * n;
 
       hashH(
@@ -415,7 +415,7 @@ export function treeHashUpdate(hashFunction, treeHash, bdsState, skSeed, params,
       nodeBuffer.set([bdsState1.stack[stackIndex]], nodeIndex);
     }
     setTreeHeight(nodeAddr, nodeHeight);
-    setTreeIndex(nodeAddr, treeHash1.nextIdx >> (nodeHeight + 1));
+    setTreeIndex(nodeAddr, treeHash1.nextIdx >>> (nodeHeight + 1));
     hashH(hashFunction, nodeBuffer.subarray(0, n), nodeBuffer, pubSeed, nodeAddr, n);
     nodeHeight++;
     treeHash1.stackUsage--;
@@ -539,7 +539,7 @@ export function bdsRound(hashFunction, bdsState, leafIdx, skSeed, params, pubSee
   setType(nodeAddr, 2);
 
   for (let i = 0; i < h; i++) {
-    if ((leafIdx >> i) % 2 === 0) {
+    if ((leafIdx >>> i) % 2 === 0) {
       tau = i;
       break;
     }
@@ -551,7 +551,7 @@ export function bdsRound(hashFunction, bdsState, leafIdx, skSeed, params, pubSee
       buf.set([bdsState1.auth[authIndex]], bufIndex);
     }
 
-    srcOffset = ((tau - 1) >> 1) * n;
+    srcOffset = ((tau - 1) >>> 1) * n;
     for (
       let bufIndex = n, keepIndex = srcOffset;
       bufIndex < 2 * n && keepIndex < srcOffset + n;
@@ -561,8 +561,8 @@ export function bdsRound(hashFunction, bdsState, leafIdx, skSeed, params, pubSee
     }
   }
 
-  if (((leafIdx >> (tau + 1)) & 1) === 0 && tau < h - 1) {
-    const destOffset = (tau >> 1) * n;
+  if (((leafIdx >>> (tau + 1)) & 1) === 0 && tau < h - 1) {
+    const destOffset = (tau >>> 1) * n;
     const srcOffset = tau * n;
     for (
       let keepIndex = destOffset, authIndex = srcOffset;
@@ -579,7 +579,7 @@ export function bdsRound(hashFunction, bdsState, leafIdx, skSeed, params, pubSee
     genLeafWOTS(hashFunction, bdsState1.auth.subarray(0, n), skSeed, params, pubSeed, lTreeAddr, otsAddr);
   } else {
     setTreeHeight(nodeAddr, tau - 1);
-    setTreeIndex(nodeAddr, leafIdx >> tau);
+    setTreeIndex(nodeAddr, leafIdx >>> tau);
     hashH(hashFunction, bdsState1.auth.subarray(tau * n, tau * n + n), buf, pubSeed, nodeAddr, n);
     for (let i = 0; i < tau; i++) {
       if (i < h - k) {
@@ -588,7 +588,7 @@ export function bdsRound(hashFunction, bdsState, leafIdx, skSeed, params, pubSee
         }
       } else {
         const offset = (1 << (h - 1 - i)) + i - h;
-        const rowIdx = ((leafIdx >> i) - 1) >> 1;
+        const rowIdx = ((leafIdx >>> i) - 1) >>> 1;
         const srcOffset = (offset + rowIdx) * n;
         for (
           let authIndex = i * n, retainIndex = srcOffset;
@@ -659,10 +659,10 @@ export function xmssFastUpdate(hashFunction, params, sk, bdsState, newIdx) {
       return -1;
     }
     bdsRound(hashFunction, bdsState, i, skSeed, params, pubSeed, otsAddr);
-    bdsTreeHashUpdate(hashFunction, bdsState, (params.h - params.k) >> 1, skSeed, params, pubSeed, otsAddr);
+    bdsTreeHashUpdate(hashFunction, bdsState, (params.h - params.k) >>> 1, skSeed, params, pubSeed, otsAddr);
   }
 
-  sk.set(new Uint8Array([(newIdx >> 24) & 0xff, (newIdx >> 16) & 0xff, (newIdx >> 8) & 0xff, newIdx & 0xff]));
+  sk.set(new Uint8Array([(newIdx >>> 24) & 0xff, (newIdx >>> 16) & 0xff, (newIdx >>> 8) & 0xff, newIdx & 0xff]));
 
   return 0;
 }
