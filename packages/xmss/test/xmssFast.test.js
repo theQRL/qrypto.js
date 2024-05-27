@@ -768,7 +768,7 @@ describe('xmssFast', function testFunction() {
     it('should update tree hash, with SHA2_256 hashing', () => {
       const height = 5;
       const k = 3;
-      const w = 9;
+      const w = 256;
       const n = 4;
       const bdsState = newBDSState(height, n, k);
       const skSeed = new Uint8Array([12, 7, 16, 12, 1, 16, 12, 5, 3, 15, 14, 20, 13, 7, 21, 3, 0, 13, 7, 12, 3, 21, 4]);
@@ -781,7 +781,7 @@ describe('xmssFast', function testFunction() {
       expectedTreeHash.h = 0;
       expectedTreeHash.nextIdx = 0;
       expectedTreeHash.completed = 1;
-      expectedTreeHash.node = new Uint8Array([74, 176, 65, 181]);
+      expectedTreeHash.node = new Uint8Array([153, 11, 151, 19]);
       const expectedSkSeed = new Uint8Array([
         12, 7, 16, 12, 1, 16, 12, 5, 3, 15, 14, 20, 13, 7, 21, 3, 0, 13, 7, 12, 3, 21, 4,
       ]);
@@ -836,7 +836,7 @@ describe('xmssFast', function testFunction() {
     it('should update tree hash, with SHAKE_256 hashing', () => {
       const height = 9;
       const k = 5;
-      const w = 3;
+      const w = 16;
       const n = 5;
       const bdsState = newBDSState(height, n, k);
       const skSeed = new Uint8Array([
@@ -854,7 +854,7 @@ describe('xmssFast', function testFunction() {
       expectedTreeHash.h = 0;
       expectedTreeHash.nextIdx = 0;
       expectedTreeHash.completed = 1;
-      expectedTreeHash.node = new Uint8Array([200, 169, 62, 57, 227]);
+      expectedTreeHash.node = new Uint8Array([224, 4, 189, 56, 234]);
       const expectedSkSeed = new Uint8Array([
         29, 82, 58, 111, 23, 19, 72, 43, 0, 30, 123, 110, 79, 57, 84, 58, 88, 27, 10, 119, 100, 3, 100, 123, 48, 72, 15,
         112, 17, 78, 39, 85, 4, 17, 40, 22,
