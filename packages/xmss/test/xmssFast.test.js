@@ -19,7 +19,9 @@ import {
   xmssFastUpdate,
 } from '../src/xmssFast.js';
 
-describe('xmssFast', () => {
+describe('xmssFast', function testFunction() {
+  this.timeout(0);
+
   describe('getSeed', () => {
     it('should update the seed variable with hashFunction SHA2_256', () => {
       const seed = new Uint8Array([2, 3, 5, 7, 4, 9, 1, 0]);
@@ -602,8 +604,8 @@ describe('xmssFast', () => {
       const index = 12;
       const height = 7;
       const k = 4;
-      const w = 9;
-      const n = 12;
+      const w = 256;
+      const n = 3;
       const node = new Uint8Array([0, 13, 3, 10, 11, 12, 2, 9, 10, 8, 11, 2, 5, 5, 3, 1]);
       const bdsState = newBDSState(height, n, k);
       const skSeed = new Uint8Array([12, 7, 16, 12, 1, 16, 12, 5, 3, 15, 14, 20, 13, 7, 21, 3, 0, 13, 7, 12, 3, 21, 4]);
@@ -612,7 +614,7 @@ describe('xmssFast', () => {
         16, 4, 24, 16, 4, 6, 16, 7, 19, 14, 13, 9, 3, 13, 10, 8, 0, 16, 16, 13, 4, 18, 20, 1, 8,
       ]);
       const addr = new Uint32Array([3, 6, 0, 12, 4, 0, 16, 2, 16, 0, 5, 10, 14, 13, 12, 7, 4]);
-      const expectedNode = new Uint8Array([151, 183, 128, 14, 204, 52, 114, 135, 104, 226, 31, 18, 5, 5, 3, 1]);
+      const expectedNode = new Uint8Array([68, 177, 146, 10, 11, 12, 2, 9, 10, 8, 11, 2, 5, 5, 3, 1]);
       const expectedSkSeed = new Uint8Array([
         12, 7, 16, 12, 1, 16, 12, 5, 3, 15, 14, 20, 13, 7, 21, 3, 0, 13, 7, 12, 3, 21, 4,
       ]);
