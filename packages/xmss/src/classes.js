@@ -26,7 +26,7 @@ class BDSStateClass {
     this.stack = new Uint8Array((height + 1) * n);
     this.stackLevels = new Uint8Array(height + 1);
     this.auth = new Uint8Array(height * n);
-    this.keep = new Uint8Array((height >> 1) * n);
+    this.keep = new Uint8Array((height >>> 1) * n);
     this.treeHash = new Array(0);
     for (let i = 0; i < height - k; i++) {
       this.treeHash.push(newTreeHashInst(n));
@@ -116,7 +116,7 @@ class QRLDescriptorClass {
   getBytes() {
     const output = new Uint8Array(COMMON.DESCRIPTOR_SIZE);
     output.set([(this.signatureType << 4) | (this.hashFunction & 0x0f)], 0);
-    output.set([(this.addrFormatType << 4) | ((this.height >> 1) & 0x0f)], 1);
+    output.set([(this.addrFormatType << 4) | ((this.height >>> 1) & 0x0f)], 1);
     return output;
   }
 
@@ -150,9 +150,9 @@ export function newQRLDescriptorFromBytes(descriptorBytes) {
 
   return new QRLDescriptorClass(
     descriptorBytes[0] & 0x0f,
-    (descriptorBytes[0] >> 4) & 0x0f,
+    (descriptorBytes[0] >>> 4) & 0x0f,
     (descriptorBytes[1] & 0x0f) << 1,
-    (descriptorBytes[1] & 0xf0) >> 4
+    (descriptorBytes[1] & 0xf0) >>> 4
   );
 }
 
