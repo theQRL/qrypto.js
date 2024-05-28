@@ -98,7 +98,7 @@ export function calcBaseW(output, outputLen, input, params) {
  */
 export function wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr) {
   if (addr.length !== 8) {
-    throw new Error(`addr should be an array of size 8`);
+    throw new Error('addr should be an array of size 8');
   }
 
   const baseW = new Uint8Array(params.len);
@@ -562,4 +562,62 @@ export function isValidXMSSAddress(address) {
   }
 
   return true;
+}
+
+/**
+ * @param {HashFunction} hashfunction
+ * @param {Uint8Array} pk
+ * @param {Uint8Array} sig
+ * @param {Uint8Array} msg
+ * @param {WOTSParams} wotsParams
+ * @param {Uint8Array} pubSeed
+ * @param {Uint32Array} addr
+ */
+export function wotsPKFromSig(hashfunction, pk, sig, msg, wotsParams, pubSeed, addr) {
+  if (addr.length !== 8) {
+    throw new Error('addr should be an array of size 8');
+  }
+
+  const {
+    len: XMSSWOTSLEN,
+    len1: XMSSWOTSLEN1,
+    len2: XMSSWOTSLEN2,
+    logW: XMSSWOTSLOGW,
+    w: XMSSWOTSW,
+    n: XMSSN,
+  } = wotsParams;
+
+  const baseW = new Uint8Array(XMSSWOTSLEN);
+  let cSum = new Uint32Array([0])[0];
+  const cSumBytes = new Uint8Array((XMSSWOTSLEN2 * XMSSWOTSLOGW + 7) / 8);
+  const cSumBaseW = new Uint8Array(XMSSWOTSLEN2);
+
+  calcBaseW(baseW, XMSSWOTSLEN1, msg, wotsParams);
+
+  for (let i = 0; i < XMSSWOTSLEN1; i++) {
+    cSum += XMSSWOTSW - 1 - new Uint32Array([baseW[i]])[0];
+  }
+
+  cSum <<= 8 - ((XMSSWOTSLEN2 * XMSSWOTSLOGW) % 8);
+
+  toByteLittleEndian(cSumBytes, cSum, (XMSSWOTSLEN2 * XMSSWOTSLOGW + 7) / 8);
+  calcBaseW(cSumBaseW, XMSSWOTSLEN2, cSumBytes, wotsParams);
+
+  for (let i = 0; i < XMSSWOTSLEN2; i++) {
+    baseW.set([cSumBaseW[i]], XMSSWOTSLEN1 + i);
+  }
+  for (let i = 0; i < XMSSWOTSLEN; i++) {
+    setChainAddr(addr, i);
+    const offset = i * XMSSN;
+    genChain(
+      hashfunction,
+      pk.subarray(offset, offset + XMSSN),
+      sig.subarray(offset, offset + XMSSN),
+      new Uint32Array([baseW[i]])[0],
+      XMSSWOTSW - 1 - new Uint32Array([baseW[i]])[0],
+      wotsParams,
+      pubSeed,
+      addr
+    );
+  }
 }

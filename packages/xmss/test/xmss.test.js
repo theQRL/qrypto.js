@@ -21,6 +21,7 @@ import {
   newXMSSFromExtendedSeed,
   newXMSSFromHeight,
   newXMSSFromSeed,
+  wotsPKFromSig,
   wotsSign,
   xmssFastSignMessage,
 } from '../src/xmss.js';
@@ -2091,6 +2092,57 @@ describe('xmss', function testFunction() {
       const isValid = isValidXMSSAddress(address);
 
       expect(isValid).to.equal(false);
+    });
+  });
+
+  describe('wotsPKFromSig', () => {
+    it('should throw an error if the size of addr is not ADDRESS_SIZE', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const pk = new Uint8Array([
+        165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25, 118, 250, 164, 49, 97, 80, 110, 136, 69, 247, 3, 146, 207,
+        36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25,
+      ]);
+      const sig = new Uint8Array([72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111]);
+      const msg = new Uint8Array([
+        61, 243, 176, 203, 127, 133, 233, 25, 109, 1, 201, 235, 81, 249, 23, 178, 182, 57, 38, 172,
+      ]);
+      const w = 256;
+      const n = 2;
+      const wotsParams = newWOTSParams(n, w);
+      const pubSeed = new Uint8Array([
+        153, 10, 199, 15, 28, 116, 160, 242, 215, 94, 157, 222, 142, 6, 176, 48, 62, 34, 61, 177, 77, 32, 194, 135, 193,
+      ]);
+      const addr = new Uint32Array([55, 244, 142, 154, 21, 253]);
+
+      expect(() => wotsPKFromSig(hashFunction, pk, sig, msg, wotsParams, pubSeed, addr)).to.throw(
+        'addr should be an array of size 8'
+      );
+    });
+
+    it('should generate wotsPK from Sig', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const pk = new Uint8Array([
+        110, 136, 69, 247, 3, 146, 207, 36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25, 118,
+        250, 164, 49, 97, 80, 110, 136, 69, 247, 3, 146, 207, 36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194,
+        252, 6, 213, 25, 118, 250, 164, 49, 97, 80,
+      ]);
+      const sig = new Uint8Array([
+        178, 113, 68, 72, 196, 35, 248, 36, 107, 111, 249, 170, 72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72,
+        196, 35, 248, 36, 107, 111, 249, 170, 72, 11, 122, 2, 194, 134, 66, 80, 83,
+      ]);
+      const msg = new Uint8Array([
+        66, 43, 184, 26, 80, 97, 191, 144, 187, 154, 78, 61, 243, 176, 203, 127, 133, 233, 25, 109, 1, 201, 235, 81,
+        249, 23, 178, 182, 57, 38, 172, 11, 211, 49, 249, 57,
+      ]);
+      const w = 6;
+      const n = 2;
+      const wotsParams = newWOTSParams(n, w);
+      const pubSeed = new Uint8Array([
+        115, 226, 128, 227, 18, 58, 118, 34, 86, 153, 10, 199, 15, 28, 116, 160, 242, 215, 94, 157, 222, 142, 6, 176,
+        48, 62, 34, 61, 177, 77, 32, 194, 135, 193, 1, 241, 133, 87, 127, 230, 61, 71, 221, 100, 186, 48, 195,
+      ]);
+      const addr = new Uint32Array([55, 244, 142, 154, 34, 201, 21, 253]);
+      wotsPKFromSig(hashFunction, pk, sig, msg, wotsParams, pubSeed, addr);
     });
   });
 });
