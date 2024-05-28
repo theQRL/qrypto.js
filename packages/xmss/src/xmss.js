@@ -4,6 +4,7 @@ import { randomBytes } from '@noble/hashes/utils';
 import {
   newBDSState,
   newQRLDescriptor,
+  newQRLDescriptorFromBytes,
   newQRLDescriptorFromExtendedPk,
   newQRLDescriptorFromExtendedSeed,
   newWOTSParams,
@@ -541,4 +542,24 @@ export function getHeightFromSigSize(sigSize, wotsParamW) {
   }
 
   return new Uint32Array([(sigSize - signatureBaseSize) / 32])[0];
+}
+
+/**
+ * @param {Uint8Array} address
+ * @returns {boolean}
+ */
+export function isValidXMSSAddress(address) {
+  if (address.length !== COMMON.ADDRESS_SIZE) {
+    throw new Error(`address should be an array of size ${COMMON.ADDRESS_SIZE}`);
+  }
+
+  const d = newQRLDescriptorFromBytes(address.subarray(0, COMMON.DESCRIPTOR_SIZE));
+  if (d.getSignatureType() !== COMMON.XMSS_SIG) {
+    return false;
+  }
+  if (d.getAddrFormatType() !== COMMON.SHA256_2X) {
+    return false;
+  }
+
+  return true;
 }

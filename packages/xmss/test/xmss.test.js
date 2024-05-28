@@ -16,6 +16,7 @@ import {
   getXMSSAddressFromPK,
   hMsg,
   initializeTree,
+  isValidXMSSAddress,
   newXMSS,
   newXMSSFromExtendedSeed,
   newXMSSFromHeight,
@@ -2064,6 +2065,32 @@ describe('xmss', function testFunction() {
       const expectedHeight = 18;
 
       expect(height).to.equal(expectedHeight);
+    });
+  });
+
+  describe('isValidXMSSAddress', () => {
+    it('should throw an error if the size of address is not ADDRESS_SIZE', () => {
+      const address = new Uint8Array([]);
+
+      expect(() => isValidXMSSAddress(address)).to.throw(`address should be an array of size ${COMMON.ADDRESS_SIZE}`);
+    });
+
+    it('should return false if the XMSS address is not valid', () => {
+      const address = new Uint8Array([
+        15, 9, 188, 38, 176, 247, 18, 10, 157, 30, 40, 170, 223, 143, 111, 82, 114, 69, 36, 223,
+      ]);
+      const isValid = isValidXMSSAddress(address);
+
+      expect(isValid).to.equal(false);
+    });
+
+    it('should return true if the XMSS address is valid', () => {
+      const address = new Uint8Array([
+        19, 9, 188, 38, 176, 247, 18, 10, 157, 30, 40, 170, 223, 143, 111, 82, 114, 69, 36, 223,
+      ]);
+      const isValid = isValidXMSSAddress(address);
+
+      expect(isValid).to.equal(false);
     });
   });
 });
