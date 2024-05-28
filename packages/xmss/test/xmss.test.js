@@ -2143,9 +2143,33 @@ describe('xmss', function testFunction() {
         48, 62, 34, 61, 177, 77, 32, 194, 135, 193, 1, 241, 133, 87, 127, 230, 61, 71, 221, 100, 186, 48, 195,
       ]);
       const addr = new Uint32Array([55, 244, 142, 154, 34, 201, 21, 253]);
+      const expectedPk = new Uint8Array([
+        60, 70, 4, 131, 19, 190, 73, 103, 145, 148, 92, 224, 143, 176, 5, 93, 115, 176, 9, 231, 133, 102, 25, 118, 250,
+        164, 49, 97, 80, 110, 136, 69, 247, 3, 146, 207, 36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194, 252,
+        6, 213, 25, 118, 250, 164, 49, 97, 80,
+      ]);
+      const expectedSig = new Uint8Array([
+        178, 113, 68, 72, 196, 35, 248, 36, 107, 111, 249, 170, 72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72,
+        196, 35, 248, 36, 107, 111, 249, 170, 72, 11, 122, 2, 194, 134, 66, 80, 83,
+      ]);
+      const expectedMsg = new Uint8Array([
+        66, 43, 184, 26, 80, 97, 191, 144, 187, 154, 78, 61, 243, 176, 203, 127, 133, 233, 25, 109, 1, 201, 235, 81,
+        249, 23, 178, 182, 57, 38, 172, 11, 211, 49, 249, 57,
+      ]);
+      const expectedWotsParams = newWOTSParams(n, w);
+      const expectedPubSeed = new Uint8Array([
+        115, 226, 128, 227, 18, 58, 118, 34, 86, 153, 10, 199, 15, 28, 116, 160, 242, 215, 94, 157, 222, 142, 6, 176,
+        48, 62, 34, 61, 177, 77, 32, 194, 135, 193, 1, 241, 133, 87, 127, 230, 61, 71, 221, 100, 186, 48, 195,
+      ]);
+      const expectedAddr = new Uint32Array([55, 244, 142, 154, 34, 10, 4, 1]);
       wotsPKFromSig(hashFunction, pk, sig, msg, wotsParams, pubSeed, addr);
 
-      // TODO: write assertions
+      expect(pk).to.deep.equal(expectedPk);
+      expect(sig).to.deep.equal(expectedSig);
+      expect(msg).to.deep.equal(expectedMsg);
+      expect(wotsParams).to.deep.equal(expectedWotsParams);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
     });
   });
 
