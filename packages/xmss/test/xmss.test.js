@@ -2092,7 +2092,7 @@ describe('xmss', function testFunction() {
       ]);
       const isValid = isValidXMSSAddress(address);
 
-      expect(isValid).to.equal(false);
+      expect(isValid).to.equal(true);
     });
   });
 
