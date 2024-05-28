@@ -6,6 +6,7 @@ import {
   newQRLDescriptor,
   newQRLDescriptorFromExtendedPk,
   newQRLDescriptorFromExtendedSeed,
+  newWOTSParams,
   newXMSSParams,
 } from './classes.js';
 import { COMMON, CONSTANTS, OFFSET_PUB_SEED, OFFSET_ROOT, WOTS_PARAM } from './constants.js';
@@ -521,4 +522,23 @@ export function newXMSSFromHeight(height, hashFunction) {
   const seed = randomBytes(COMMON.SEED_SIZE);
 
   return newXMSSFromSeed(seed, height, hashFunction, COMMON.SHA256_2X);
+}
+
+/**
+ * @param {Uint32Array[number]} sigSize
+ * @param {Uint32Array[number]} wotsParamW
+ * @returns {Uint32Array[number]}
+ */
+export function getHeightFromSigSize(sigSize, wotsParamW) {
+  const wotsParam = newWOTSParams(WOTS_PARAM.N, wotsParamW);
+  const signatureBaseSize = calculateSignatureBaseSize(wotsParam.keySize);
+  if (sigSize < signatureBaseSize) {
+    throw new Error('Invalid signature size');
+  }
+
+  if ((sigSize - 4) % 32 !== 0) {
+    throw new Error('Invalid signature size');
+  }
+
+  return new Uint32Array([(sigSize - signatureBaseSize) / 32])[0];
 }

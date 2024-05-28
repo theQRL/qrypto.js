@@ -11,6 +11,7 @@ import { COMMON, HASH_FUNCTION } from '../src/constants.js';
 import {
   calcBaseW,
   calculateSignatureBaseSize,
+  getHeightFromSigSize,
   getSignatureSize,
   getXMSSAddressFromPK,
   hMsg,
@@ -2020,6 +2021,49 @@ describe('xmss', function testFunction() {
       const { seed: randomSeed2 } = newXMSSFromHeight(height, hashFunction);
 
       expect(randomSeed1).not.to.deep.equal(randomSeed2);
+    });
+  });
+
+  describe('getHeightFromSigSize', () => {
+    it('should throw an error if the sigSize is less than the signature base size', () => {
+      const sigSize = 7;
+      const wotsParamW = 16;
+
+      expect(() => getHeightFromSigSize(sigSize, wotsParamW)).to.throw('Invalid signature size');
+    });
+
+    it('should throw an error if the sigSize is invalid', () => {
+      const sigSize = 2200;
+      const wotsParamW = 256;
+
+      expect(() => getHeightFromSigSize(sigSize, wotsParamW)).to.throw('Invalid signature size');
+    });
+
+    it('should generate height with sigSize[4292] wotsParamW[6]', () => {
+      const sigSize = 4292;
+      const wotsParamW = 6;
+      const height = getHeightFromSigSize(sigSize, wotsParamW);
+      const expectedHeight = 0;
+
+      expect(height).to.equal(expectedHeight);
+    });
+
+    it('should generate height with sigSize[2212] wotsParamW[16]', () => {
+      const sigSize = 2212;
+      const wotsParamW = 16;
+      const height = getHeightFromSigSize(sigSize, wotsParamW);
+      const expectedHeight = 1;
+
+      expect(height).to.equal(expectedHeight);
+    });
+
+    it('should generate height with sigSize[1700] wotsParamW[256]', () => {
+      const sigSize = 1700;
+      const wotsParamW = 256;
+      const height = getHeightFromSigSize(sigSize, wotsParamW);
+      const expectedHeight = 18;
+
+      expect(height).to.equal(expectedHeight);
     });
   });
 });
