@@ -11,11 +11,13 @@ import {
   newXMSSParams,
 } from './classes.js';
 import { COMMON, CONSTANTS, OFFSET_PUB_SEED, OFFSET_ROOT, WOTS_PARAM } from './constants.js';
-import { coreHash, prf } from './hash.js';
+import { coreHash, hashH, prf } from './hash.js';
 import {
   extendedSeedBinToMnemonic,
   setChainAddr,
   setOTSAddr,
+  setTreeHeight,
+  setTreeIndex,
   setType,
   shake256,
   toByteLittleEndian,
@@ -620,4 +622,63 @@ export function wotsPKFromSig(hashfunction, pk, sig, msg, wotsParams, pubSeed, a
       addr
     );
   }
+}
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {Uint8Array} root
+ * @param {Uint8Array} leaf
+ * @param {Uint32Array[number]} leafIdx
+ * @param {Uint8Array} authpath
+ * @param {Uint32Array[number]} n
+ * @param {Uint32Array[number]} h
+ * @param {Uint8Array} pubSeed
+ * @param {Uint32Array} addr
+ */
+export function validateAuthPath(hashFunction, root, leaf, leafIdx, authpath, n, h, pubSeed, addr) {
+  if (addr.length !== 8) {
+    throw new Error('addr should be an array of size 8');
+  }
+
+  const buffer = new Uint8Array(2 * n);
+
+  let leafIdx1 = leafIdx;
+  if (leafIdx1 % 2 !== 0) {
+    for (let j = 0; j < n; j++) {
+      buffer.set([leaf[j]], n + j);
+    }
+    for (let j = 0; j < n; j++) {
+      buffer.set([authpath[j]], j);
+    }
+  } else {
+    for (let j = 0; j < n; j++) {
+      buffer.set([leaf[j]], j);
+    }
+    for (let j = 0; j < n; j++) {
+      buffer.set([authpath[j]], n + j);
+    }
+  }
+  let authPathOffset = n;
+
+  for (let i = 0; i < h - 1; i++) {
+    setTreeHeight(addr, i);
+    leafIdx1 >>= 1;
+    setTreeIndex(addr, leafIdx1);
+    if (leafIdx1 % 2 !== 0) {
+      hashH(hashFunction, buffer.subarray(n, n + n), buffer, pubSeed, addr, n);
+      for (let j = 0; j < n; j++) {
+        buffer.set([authpath[authPathOffset + j]], j);
+      }
+    } else {
+      hashH(hashFunction, buffer.subarray(0, n), buffer, pubSeed, addr, n);
+      for (let j = 0; j < n; j++) {
+        buffer.set([authpath[authPathOffset + j]], j + n);
+      }
+    }
+    authPathOffset += n;
+  }
+  setTreeHeight(addr, h - 1);
+  leafIdx1 >>= 1;
+  setTreeIndex(addr, leafIdx1);
+  hashH(hashFunction, root.subarray(0, n), buffer, pubSeed, addr, n);
 }

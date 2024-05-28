@@ -21,6 +21,7 @@ import {
   newXMSSFromExtendedSeed,
   newXMSSFromHeight,
   newXMSSFromSeed,
+  validateAuthPath,
   wotsPKFromSig,
   wotsSign,
   xmssFastSignMessage,
@@ -2143,6 +2144,171 @@ describe('xmss', function testFunction() {
       ]);
       const addr = new Uint32Array([55, 244, 142, 154, 34, 201, 21, 253]);
       wotsPKFromSig(hashFunction, pk, sig, msg, wotsParams, pubSeed, addr);
+
+      // TODO: write assertions
+    });
+  });
+
+  describe('validateAuthPath', () => {
+    it('should throw an error if the size of addr is invalid', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const root = new Uint8Array([
+        165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25, 118, 250, 164, 49, 97, 80, 110, 136, 69, 247, 3, 146, 207,
+        36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25,
+      ]);
+      const leaf = new Uint8Array([72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111]);
+      const leafIdx = 8;
+      const authPath = new Uint8Array([
+        153, 10, 199, 15, 28, 116, 160, 242, 215, 94, 157, 222, 142, 6, 176, 48, 62, 34, 61, 177, 77, 32, 194, 135, 193,
+      ]);
+      const n = 4;
+      const h = 3;
+      const pubSeed = new Uint8Array([
+        72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111,
+      ]);
+      const addr = new Uint32Array([55, 244, 142, 154, 21, 253]);
+
+      expect(() => validateAuthPath(hashFunction, root, leaf, leafIdx, authPath, n, h, pubSeed, addr)).to.throw(
+        'addr should be an array of size 8'
+      );
+    });
+
+    it('should validate the auth path, with root[78, 250, ...]', () => {
+      const hashFunction = HASH_FUNCTION.SHA2_256;
+      const root = new Uint8Array([
+        78, 250, 70, 63, 99, 141, 132, 172, 208, 156, 21, 75, 217, 195, 115, 14, 114, 217, 104, 7, 54, 234, 192, 56,
+        235, 218, 108, 32, 78, 6, 44, 176, 138, 71, 143,
+      ]);
+      const leaf = new Uint8Array([
+        115, 17, 209, 47, 163, 128, 150, 242, 28, 95, 243, 241, 198, 243, 46, 234, 70, 160, 58, 190, 28, 219, 73,
+      ]);
+      const leafIdx = 3;
+      const authPath = new Uint8Array([
+        19, 216, 144, 186, 1, 160, 31, 215, 167, 253, 179, 88, 155, 153, 172, 136, 12, 140, 130, 124, 214, 223, 203, 60,
+        134, 143, 92, 30, 115, 107, 180,
+      ]);
+      const n = 1;
+      const h = 3;
+      const pubSeed = new Uint8Array([
+        0, 220, 223, 17, 5, 222, 0, 168, 105, 111, 226, 113, 221, 14, 147, 9, 154, 145, 199, 93, 0, 238,
+      ]);
+      const addr = new Uint32Array([49, 51, 40, 62, 133, 88, 250, 135]);
+      const expectedRoot = new Uint8Array([
+        48, 250, 70, 63, 99, 141, 132, 172, 208, 156, 21, 75, 217, 195, 115, 14, 114, 217, 104, 7, 54, 234, 192, 56,
+        235, 218, 108, 32, 78, 6, 44, 176, 138, 71, 143,
+      ]);
+      const expectedLeaf = new Uint8Array([
+        115, 17, 209, 47, 163, 128, 150, 242, 28, 95, 243, 241, 198, 243, 46, 234, 70, 160, 58, 190, 28, 219, 73,
+      ]);
+      const expectedLeafIdx = 3;
+      const expectedAuthPath = new Uint8Array([
+        19, 216, 144, 186, 1, 160, 31, 215, 167, 253, 179, 88, 155, 153, 172, 136, 12, 140, 130, 124, 214, 223, 203, 60,
+        134, 143, 92, 30, 115, 107, 180,
+      ]);
+      const expectedPubSeed = new Uint8Array([
+        0, 220, 223, 17, 5, 222, 0, 168, 105, 111, 226, 113, 221, 14, 147, 9, 154, 145, 199, 93, 0, 238,
+      ]);
+      const expectedAddr = new Uint32Array([49, 51, 40, 62, 133, 2, 0, 2]);
+      validateAuthPath(hashFunction, root, leaf, leafIdx, authPath, n, h, pubSeed, addr);
+
+      expect(root).to.deep.equal(expectedRoot);
+      expect(leaf).to.deep.equal(expectedLeaf);
+      expect(leafIdx).to.deep.equal(expectedLeafIdx);
+      expect(authPath).to.deep.equal(expectedAuthPath);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+
+    it('should validate the auth path, with root[165, 158, ...]', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const root = new Uint8Array([
+        165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25, 118, 250, 164, 49, 97, 80, 110, 136, 69, 247, 3, 146, 207,
+        36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25,
+      ]);
+      const leaf = new Uint8Array([72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111]);
+      const leafIdx = 8;
+      const authPath = new Uint8Array([
+        153, 10, 199, 15, 28, 116, 160, 242, 215, 94, 157, 222, 142, 6, 176, 48, 62, 34, 61, 177, 77, 32, 194, 135, 193,
+      ]);
+      const n = 4;
+      const h = 3;
+      const pubSeed = new Uint8Array([
+        72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111,
+      ]);
+      const addr = new Uint32Array([55, 244, 142, 154, 21, 253, 23, 22]);
+      const expectedRoot = new Uint8Array([
+        187, 204, 89, 173, 242, 253, 194, 252, 6, 213, 25, 118, 250, 164, 49, 97, 80, 110, 136, 69, 247, 3, 146, 207,
+        36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25,
+      ]);
+      const expectedLeaf = new Uint8Array([
+        72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111,
+      ]);
+      const expectedLeafIdx = 8;
+      const expectedAuthPath = new Uint8Array([
+        153, 10, 199, 15, 28, 116, 160, 242, 215, 94, 157, 222, 142, 6, 176, 48, 62, 34, 61, 177, 77, 32, 194, 135, 193,
+      ]);
+      const expectedPubSeed = new Uint8Array([
+        72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111,
+      ]);
+      const expectedAddr = new Uint32Array([55, 244, 142, 154, 21, 2, 1, 2]);
+      validateAuthPath(hashFunction, root, leaf, leafIdx, authPath, n, h, pubSeed, addr);
+
+      expect(root).to.deep.equal(expectedRoot);
+      expect(leaf).to.deep.equal(expectedLeaf);
+      expect(leafIdx).to.deep.equal(expectedLeafIdx);
+      expect(authPath).to.deep.equal(expectedAuthPath);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
+    });
+
+    it('should validate the auth path, with root[242, 253, ...]', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_256;
+      const root = new Uint8Array([
+        242, 253, 161, 141, 113, 22, 58, 125, 155, 246, 204, 198, 75, 157, 156, 107, 14, 87, 136, 41, 230, 61, 23, 3,
+        41, 131, 14, 143, 21, 112, 20, 244, 76, 232, 4, 22, 233, 252, 181, 185, 249, 33, 7, 135, 170,
+      ]);
+      const leaf = new Uint8Array([
+        57, 23, 101, 48, 12, 35, 35, 61, 177, 21, 247, 211, 3, 77, 236, 64, 74, 153, 162, 170, 239, 13, 212, 75, 213,
+        145, 232, 226, 45, 129, 43, 121, 62,
+      ]);
+      const leafIdx = 3;
+      const authPath = new Uint8Array([
+        161, 5, 16, 51, 32, 114, 18, 253, 222, 190, 225, 78, 51, 177, 162, 230, 52, 228, 179, 182, 112, 226, 204, 147,
+        105, 31, 171, 199, 190, 57,
+      ]);
+      const n = 3;
+      const h = 8;
+      const pubSeed = new Uint8Array([
+        113, 155, 25, 235, 205, 167, 182, 173, 215, 103, 149, 83, 213, 40, 112, 138, 191, 137, 147, 214, 233, 49, 78,
+        24, 83, 161,
+      ]);
+      const addr = new Uint32Array([97, 244, 34, 40, 55, 242, 120, 189]);
+      const expectedRoot = new Uint8Array([
+        248, 67, 152, 141, 113, 22, 58, 125, 155, 246, 204, 198, 75, 157, 156, 107, 14, 87, 136, 41, 230, 61, 23, 3, 41,
+        131, 14, 143, 21, 112, 20, 244, 76, 232, 4, 22, 233, 252, 181, 185, 249, 33, 7, 135, 170,
+      ]);
+      const expectedLeaf = new Uint8Array([
+        57, 23, 101, 48, 12, 35, 35, 61, 177, 21, 247, 211, 3, 77, 236, 64, 74, 153, 162, 170, 239, 13, 212, 75, 213,
+        145, 232, 226, 45, 129, 43, 121, 62,
+      ]);
+      const expectedLeafIdx = 3;
+      const expectedAuthPath = new Uint8Array([
+        161, 5, 16, 51, 32, 114, 18, 253, 222, 190, 225, 78, 51, 177, 162, 230, 52, 228, 179, 182, 112, 226, 204, 147,
+        105, 31, 171, 199, 190, 57,
+      ]);
+      const expectedPubSeed = new Uint8Array([
+        113, 155, 25, 235, 205, 167, 182, 173, 215, 103, 149, 83, 213, 40, 112, 138, 191, 137, 147, 214, 233, 49, 78,
+        24, 83, 161,
+      ]);
+      const expectedAddr = new Uint32Array([97, 244, 34, 40, 55, 7, 0, 2]);
+      validateAuthPath(hashFunction, root, leaf, leafIdx, authPath, n, h, pubSeed, addr);
+
+      expect(root).to.deep.equal(expectedRoot);
+      expect(leaf).to.deep.equal(expectedLeaf);
+      expect(leafIdx).to.deep.equal(expectedLeafIdx);
+      expect(authPath).to.deep.equal(expectedAuthPath);
+      expect(pubSeed).to.deep.equal(expectedPubSeed);
+      expect(addr).to.deep.equal(expectedAddr);
     });
   });
 });
