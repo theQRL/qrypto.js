@@ -662,7 +662,7 @@ export function validateAuthPath(hashFunction, root, leaf, leafIdx, authpath, n,
 
   for (let i = 0; i < h - 1; i++) {
     setTreeHeight(addr, i);
-    leafIdx1 >>= 1;
+    leafIdx1 >>>= 1;
     setTreeIndex(addr, leafIdx1);
     if (leafIdx1 % 2 !== 0) {
       hashH(hashFunction, buffer.subarray(n, n + n), buffer, pubSeed, addr, n);
@@ -678,7 +678,7 @@ export function validateAuthPath(hashFunction, root, leaf, leafIdx, authpath, n,
     authPathOffset += n;
   }
   setTreeHeight(addr, h - 1);
-  leafIdx1 >>= 1;
+  leafIdx1 >>>= 1;
   setTreeIndex(addr, leafIdx1);
   hashH(hashFunction, root.subarray(0, n), buffer, pubSeed, addr, n);
 }
