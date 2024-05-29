@@ -818,3 +818,17 @@ export function verifyWithCustomWOTSParamW(message, signature, extendedPK, wotsP
     height
   );
 }
+
+/**
+ * @param {Uint8Array} message
+ * @param {Uint8Array} signature
+ * @param {Uint8Array} extendedPK
+ * @returns {boolean}
+ */
+export function verify(message, signature, extendedPK) {
+  if (extendedPK.length !== CONSTANTS.EXTENDED_PK_SIZE) {
+    throw new Error(`extendedPK should be an array of size ${CONSTANTS.EXTENDED_PK_SIZE}`);
+  }
+
+  return verifyWithCustomWOTSParamW(message, signature, extendedPK, WOTS_PARAM.W);
+}
