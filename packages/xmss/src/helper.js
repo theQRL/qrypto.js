@@ -225,7 +225,7 @@ export function seedBinToMnemonic(input) {
 }
 
 /**
- * @param {Uint8Arrayany} input
+ * @param {Uint8Array} input
  * @returns {string}
  */
 export function extendedSeedBinToMnemonic(input) {
