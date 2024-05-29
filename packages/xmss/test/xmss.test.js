@@ -25,6 +25,7 @@ import {
   wotsPKFromSig,
   wotsSign,
   xmssFastSignMessage,
+  xmssVerifySig,
 } from '../src/xmss.js';
 
 describe('xmss', function testFunction() {
@@ -2333,6 +2334,125 @@ describe('xmss', function testFunction() {
       expect(authPath).to.deep.equal(expectedAuthPath);
       expect(pubSeed).to.deep.equal(expectedPubSeed);
       expect(addr).to.deep.equal(expectedAddr);
+    });
+  });
+
+  describe('xmssVerifySig', () => {
+    it('should verify the signature, with msg[243, 69, ...]', () => {
+      const hashFunction = HASH_FUNCTION.SHA2_256;
+      const w = 6;
+      const n = 2;
+      const wotsParams = newWOTSParams(n, w);
+      const msg = new Uint8Array([
+        243, 69, 76, 252, 128, 221, 3, 39, 216, 83, 71, 93, 134, 189, 249, 171, 240, 48, 74, 172, 227, 154, 139, 188,
+        246, 64, 246, 164, 105, 197, 8,
+      ]);
+      const sigMsg = new Uint8Array([
+        141, 120, 101, 151, 185, 141, 48, 164, 38, 179, 167, 132, 167, 69, 159, 89, 141, 251, 168, 227, 55, 148, 190,
+        149, 22, 74, 153, 229, 140, 42, 65, 75, 152, 29, 68, 64, 32, 187, 116,
+      ]);
+      const pk = new Uint8Array([
+        253, 118, 163, 90, 246, 15, 92, 4, 5, 126, 88, 118, 94, 30, 85, 37, 204, 137, 200, 149, 165, 143, 15, 10,
+      ]);
+      const h = 5;
+      const expectedWotsParams = newWOTSParams(n, w);
+      const expectedMsg = new Uint8Array([
+        243, 69, 76, 252, 128, 221, 3, 39, 216, 83, 71, 93, 134, 189, 249, 171, 240, 48, 74, 172, 227, 154, 139, 188,
+        246, 64, 246, 164, 105, 197, 8,
+      ]);
+      const expectedSigMsg = new Uint8Array([
+        141, 120, 101, 151, 185, 141, 48, 164, 38, 179, 167, 132, 167, 69, 159, 89, 141, 251, 168, 227, 55, 148, 190,
+        149, 22, 74, 153, 229, 140, 42, 65, 75, 152, 29, 68, 64, 32, 187, 116,
+      ]);
+      const expectedPk = new Uint8Array([
+        253, 118, 163, 90, 246, 15, 92, 4, 5, 126, 88, 118, 94, 30, 85, 37, 204, 137, 200, 149, 165, 143, 15, 10,
+      ]);
+      xmssVerifySig(hashFunction, wotsParams, msg, sigMsg, pk, h);
+
+      expect(wotsParams).to.deep.equal(expectedWotsParams);
+      expect(msg).to.deep.equal(expectedMsg);
+      expect(sigMsg).to.deep.equal(expectedSigMsg);
+      expect(pk).to.deep.equal(expectedPk);
+    });
+
+    it('should verify the signature, with msg[84, 81, ...]', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_128;
+      const w = 16;
+      const n = 2;
+      const wotsParams = newWOTSParams(n, w);
+      const msg = new Uint8Array([
+        84, 81, 198, 44, 76, 75, 138, 203, 107, 82, 30, 172, 179, 69, 170, 231, 226, 245, 20, 18, 37, 244, 229, 199, 37,
+        196, 139, 7, 128, 54, 209, 214, 57, 231, 229, 209, 27, 198, 160, 208, 121, 215, 234, 176, 111, 3, 124, 247, 86,
+        76, 81,
+      ]);
+      const sigMsg = new Uint8Array([
+        80, 144, 150, 104, 156, 148, 165, 237, 145, 51, 23, 143, 33, 141, 80, 193, 102, 88, 45, 163, 156, 105, 113, 2,
+        166, 102, 69, 94, 165, 96, 48, 169, 95, 208, 182, 119, 1, 108, 234, 40, 192, 225, 39, 121, 165, 81, 146,
+      ]);
+      const pk = new Uint8Array([
+        57, 183, 46, 211, 8, 149, 91, 133, 136, 215, 102, 124, 139, 249, 46, 230, 1, 209, 94, 116, 47, 233, 88, 239,
+        204, 104,
+      ]);
+      const h = 3;
+      const expectedWotsParams = newWOTSParams(n, w);
+      const expectedMsg = new Uint8Array([
+        84, 81, 198, 44, 76, 75, 138, 203, 107, 82, 30, 172, 179, 69, 170, 231, 226, 245, 20, 18, 37, 244, 229, 199, 37,
+        196, 139, 7, 128, 54, 209, 214, 57, 231, 229, 209, 27, 198, 160, 208, 121, 215, 234, 176, 111, 3, 124, 247, 86,
+        76, 81,
+      ]);
+      const expectedSigMsg = new Uint8Array([
+        80, 144, 150, 104, 156, 148, 165, 237, 145, 51, 23, 143, 33, 141, 80, 193, 102, 88, 45, 163, 156, 105, 113, 2,
+        166, 102, 69, 94, 165, 96, 48, 169, 95, 208, 182, 119, 1, 108, 234, 40, 192, 225, 39, 121, 165, 81, 146,
+      ]);
+      const expectedPk = new Uint8Array([
+        57, 183, 46, 211, 8, 149, 91, 133, 136, 215, 102, 124, 139, 249, 46, 230, 1, 209, 94, 116, 47, 233, 88, 239,
+        204, 104,
+      ]);
+      xmssVerifySig(hashFunction, wotsParams, msg, sigMsg, pk, h);
+
+      expect(wotsParams).to.deep.equal(expectedWotsParams);
+      expect(msg).to.deep.equal(expectedMsg);
+      expect(sigMsg).to.deep.equal(expectedSigMsg);
+      expect(pk).to.deep.equal(expectedPk);
+    });
+
+    it('should verify the signature, with msg[60, 57, ...]', () => {
+      const hashFunction = HASH_FUNCTION.SHAKE_256;
+      const w = 16;
+      const n = 2;
+      const wotsParams = newWOTSParams(n, w);
+      const msg = new Uint8Array([
+        60, 57, 30, 80, 61, 1, 12, 97, 127, 15, 137, 81, 68, 130, 231, 7, 108, 181, 112, 148, 220, 229, 83, 154, 228,
+        126, 144, 59, 225, 42, 187, 130, 204, 128, 169, 45, 61, 191, 179,
+      ]);
+      const sigMsg = new Uint8Array([
+        0, 69, 1, 245, 176, 211, 160, 179, 181, 146, 70, 21, 63, 226, 235, 118, 190, 43, 90, 91, 177, 105, 211, 59, 36,
+        119, 138, 58, 220, 51, 129, 139, 153, 194, 86, 213, 178, 247, 26, 157, 182, 14, 81, 45, 146, 91, 159, 122, 236,
+      ]);
+      const pk = new Uint8Array([
+        175, 196, 4, 252, 210, 104, 178, 156, 200, 40, 214, 233, 253, 83, 95, 250, 229, 76, 219, 109, 1, 0, 6, 70, 106,
+        140, 244, 204, 73, 173, 248, 103, 70, 58, 170,
+      ]);
+      const h = 7;
+      const expectedWotsParams = newWOTSParams(n, w);
+      const expectedMsg = new Uint8Array([
+        60, 57, 30, 80, 61, 1, 12, 97, 127, 15, 137, 81, 68, 130, 231, 7, 108, 181, 112, 148, 220, 229, 83, 154, 228,
+        126, 144, 59, 225, 42, 187, 130, 204, 128, 169, 45, 61, 191, 179,
+      ]);
+      const expectedSigMsg = new Uint8Array([
+        0, 69, 1, 245, 176, 211, 160, 179, 181, 146, 70, 21, 63, 226, 235, 118, 190, 43, 90, 91, 177, 105, 211, 59, 36,
+        119, 138, 58, 220, 51, 129, 139, 153, 194, 86, 213, 178, 247, 26, 157, 182, 14, 81, 45, 146, 91, 159, 122, 236,
+      ]);
+      const expectedPk = new Uint8Array([
+        175, 196, 4, 252, 210, 104, 178, 156, 200, 40, 214, 233, 253, 83, 95, 250, 229, 76, 219, 109, 1, 0, 6, 70, 106,
+        140, 244, 204, 73, 173, 248, 103, 70, 58, 170,
+      ]);
+      xmssVerifySig(hashFunction, wotsParams, msg, sigMsg, pk, h);
+
+      expect(wotsParams).to.deep.equal(expectedWotsParams);
+      expect(msg).to.deep.equal(expectedMsg);
+      expect(sigMsg).to.deep.equal(expectedSigMsg);
+      expect(pk).to.deep.equal(expectedPk);
     });
   });
 });

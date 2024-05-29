@@ -15,6 +15,7 @@ import { coreHash, hashH, prf } from './hash.js';
 import {
   extendedSeedBinToMnemonic,
   setChainAddr,
+  setLTreeAddr,
   setOTSAddr,
   setTreeHeight,
   setTreeIndex,
@@ -29,6 +30,7 @@ import {
   expandSeed,
   genChain,
   getSeed,
+  lTree,
   xmssFastUpdate,
 } from './xmssFast.js';
 
@@ -681,4 +683,85 @@ export function validateAuthPath(hashFunction, root, leaf, leafIdx, authpath, n,
   leafIdx1 >>>= 1;
   setTreeIndex(addr, leafIdx1);
   hashH(hashFunction, root.subarray(0, n), buffer, pubSeed, addr, n);
+}
+
+/**
+ * @param {HashFunction} hashFunction
+ * @param {WOTSParams} wotsParams
+ * @param {Uint8Array} msg
+ * @param {Uint8Array} sigMsg
+ * @param {Uint8Array} pk
+ * @param {Uint32Array[number]} h
+ * @returns {boolean}
+ */
+export function xmssVerifySig(hashFunction, wotsParams, msg, sigMsg, pk, h) {
+  let [sigMsgOffset] = new Uint32Array([0]);
+
+  const { n } = wotsParams;
+
+  const wotsPK = new Uint8Array(wotsParams.keySize);
+  const pkHash = new Uint8Array(n);
+  const root = new Uint8Array(n);
+  const hashKey = new Uint8Array(3 * n);
+
+  const pubSeed = new Uint8Array(n);
+  for (let pubSeedIndex = 0, pkIndex = n; pubSeedIndex < pubSeed.length && pkIndex < n + n; pubSeedIndex++, pkIndex++) {
+    pubSeed.set([pk[pkIndex]], pubSeedIndex);
+  }
+
+  // Init addresses
+  const otsAddr = new Uint32Array(8);
+  const lTreeAddr = new Uint32Array(8);
+  const nodeAddr = new Uint32Array(8);
+
+  setType(otsAddr, 0);
+  setType(lTreeAddr, 1);
+  setType(nodeAddr, 2);
+
+  // Extract index
+  const idx =
+    (new Uint32Array([sigMsg[0]])[0] << 24) |
+    (new Uint32Array([sigMsg[1]])[0] << 16) |
+    (new Uint32Array([sigMsg[2]])[0] << 8) |
+    new Uint32Array([sigMsg[3]])[0];
+
+  // Generate hash key (R || root || idx)
+  for (let hashKeyIndex = 0, sigMsgIndex = 4; hashKeyIndex < n && sigMsgIndex < 4 + n; hashKeyIndex++, sigMsgIndex++) {
+    hashKey.set([sigMsg[sigMsgIndex]], hashKeyIndex);
+  }
+  for (let hashKeyIndex = n, pkIndex = 0; hashKeyIndex < n + n && pkIndex < n; hashKeyIndex++, pkIndex++) {
+    hashKey.set([pk[pkIndex]], hashKeyIndex);
+  }
+  toByteLittleEndian(hashKey.subarray(2 * n, 2 * n + n), idx, n);
+
+  sigMsgOffset += n + 4;
+
+  // hash message
+  const msgHash = new Uint8Array(n);
+  const { error } = hMsg(hashFunction, msgHash, msg, hashKey, n);
+  if (error !== null) {
+    return false;
+  }
+
+  // Prepare Address
+  setOTSAddr(otsAddr, idx);
+  // Check WOTS signature
+  wotsPKFromSig(hashFunction, wotsPK, sigMsg.subarray(sigMsgOffset), msgHash, wotsParams, pubSeed, otsAddr);
+
+  sigMsgOffset += wotsParams.keySize;
+
+  // Compute Ltree
+  setLTreeAddr(lTreeAddr, idx);
+  lTree(hashFunction, wotsParams, pkHash, wotsPK, pubSeed, lTreeAddr);
+
+  // Compute root
+  validateAuthPath(hashFunction, root, pkHash, idx, sigMsg.subarray(sigMsgOffset), n, h, pubSeed, nodeAddr);
+
+  for (let i = 0; i < n; i++) {
+    if (root[i] !== pk[i]) {
+      return false;
+    }
+  }
+
+  return true;
 }
