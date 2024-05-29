@@ -765,3 +765,56 @@ export function xmssVerifySig(hashFunction, wotsParams, msg, sigMsg, pk, h) {
 
   return true;
 }
+
+/**
+ * @param {Uint8Array} message
+ * @param {Uint8Array} signature
+ * @param {Uint8Array} extendedPK
+ * @param {Uint32Array[number]} wotsParamW
+ * @returns {boolean}
+ */
+export function verifyWithCustomWOTSParamW(message, signature, extendedPK, wotsParamW) {
+  if (extendedPK.length !== CONSTANTS.EXTENDED_PK_SIZE) {
+    throw new Error(`extendedPK should be an array of size ${CONSTANTS.EXTENDED_PK_SIZE}`);
+  }
+
+  const wotsParam = newWOTSParams(WOTS_PARAM.N, wotsParamW);
+
+  const signatureBaseSize = calculateSignatureBaseSize(wotsParam.keySize);
+  if (new Uint32Array([signature.length])[0] > signatureBaseSize + new Uint32Array([CONSTANTS.MAX_HEIGHT])[0] * 32) {
+    throw new Error('Invalid signature size. Height<=254');
+  }
+
+  const desc = newQRLDescriptorFromExtendedPk(extendedPK);
+
+  if (desc.getSignatureType() !== COMMON.XMSS_SIG) {
+    throw new Error('Invalid signature type');
+  }
+
+  const height = getHeightFromSigSize(new Uint32Array([signature.length])[0], wotsParamW);
+
+  if (height === 0 || new Uint32Array([desc.getHeight()])[0] !== height) {
+    return false;
+  }
+
+  const hashFunction = desc.getHashFunction();
+
+  const k = WOTS_PARAM.K;
+  const w = WOTS_PARAM.W;
+  const n = WOTS_PARAM.N;
+
+  if (k >= height || (height - k) % 2 === 1) {
+    throw new Error('For BDS traversal, H - K must be even, with H > K >= 2!');
+  }
+
+  const params = newXMSSParams(n, height, w, k);
+  const tmp = signature;
+  return xmssVerifySig(
+    hashFunction,
+    params.wotsParams,
+    message,
+    tmp,
+    extendedPK.subarray(COMMON.DESCRIPTOR_SIZE),
+    height
+  );
+}
