@@ -4,6 +4,7 @@ import { COMMON, ENDIAN } from '../src/constants.js';
 import {
   addrToByte,
   binToMnemonic,
+  extendedSeedBinToMnemonic,
   mnemonicToBin,
   mnemonicToExtendedSeedBin,
   mnemonicToSeedBin,
@@ -618,6 +619,45 @@ describe('Test cases for [helper]', () => {
       ]);
 
       expect(extendedSeedBinary).to.deep.equal(expectedSeedBinary);
+    });
+  });
+});
+
+describe('Additional test cases for [helper]', () => {
+  const extendedSeed = {
+    '0105005ece2c787198e40d843e9696d0cf67373a0c7e110c475651928ae49e6764368ecce53914f8dbc62fa2571d3bf93aeff6':
+      'absorb filled golf thesis koran body thrive streak dome heroic spain warsaw darken peak lewis ballet enter hardly mutual quest panama karl dale twice tier mucky which rust cool cat brew saxon depth zebra',
+    '010200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000':
+      'absorb bunny aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback',
+    '0104005969b326db865bb694a878e95b627e4a79d844891a2e0790d8011ea59ee47a119e1bc0a734593911d35515eeb2c46cc6':
+      'absorb drank fusion orange chalky ripple gender hernia pope mole gave cheeky exile pack edit mummy coke laden strap barn plant unkind last bond bowl are crush native barley curlew bestow truly shady slump',
+    '020600f429397626f9130f959cda184fa240b263a3699d481ce91141b718c733b53a8ba1a1f5a70972aa09cf5b0d100e27da5c':
+      'action grape visa native kansas infant battle who owe pencil fifth cape recent demure heyday stamp break mrs due invade shrill desk deny roll peril game anyway clan appeal walker atlas abrupt cheek play',
+    '0006007a0946f171a8b4ca0d44d8d78136286bb1d408923c99f8e58f5a4013852675a76930e00b82e9fc666e1dd30203a96b53':
+      'aback grape laser needle velvet booze renal pear effect mist lofty grudge horror brick angle canopy omega modify moon pilot beard flew june keep cotton above lovely pastel havoc test spouse burial pour repent',
+  };
+
+  it('TestBinToMnemonic', () => {
+    Object.getOwnPropertyNames(extendedSeed).forEach((eSeedStr) => {
+      const eSeedArray = [];
+      for (let c = 0; c < eSeedStr.length; c += 2) {
+        eSeedArray.push(parseInt(eSeedStr.substring(c, c + 2), 16));
+      }
+      const eSeed = new Uint8Array(eSeedArray);
+      const mnemonic = extendedSeedBinToMnemonic(eSeed);
+      const expectedMnemonic = extendedSeed[eSeedStr];
+
+      expect(mnemonic).to.equal(expectedMnemonic);
+    });
+  });
+
+  it('TestMnemonicToBin', () => {
+    Object.getOwnPropertyNames(extendedSeed).forEach((expectedESeed) => {
+      const mnemonic = extendedSeed[expectedESeed];
+      const eSeed = mnemonicToExtendedSeedBin(mnemonic);
+      const eSeedStr = Array.from(eSeed, (byte) => byte.toString(16).padStart(2, '0')).join('');
+
+      expect(expectedESeed).to.equal(eSeedStr);
     });
   });
 });
