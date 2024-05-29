@@ -3,7 +3,7 @@ import { describe, it } from 'mocha';
 import { HASH_FUNCTION } from '../src/constants.js';
 import { coreHash, hashH, prf } from '../src/hash.js';
 
-describe('hash', () => {
+describe('Test cases for [hash]', () => {
   describe('coreHash', () => {
     it('should generate coreHash output for the hashFunction SHA2_256', () => {
       const outValue = new Uint8Array([4, 7, 8, 2, 6, 9, 2]);

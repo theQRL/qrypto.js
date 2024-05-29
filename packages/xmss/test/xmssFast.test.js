@@ -19,7 +19,7 @@ import {
   xmssFastUpdate,
 } from '../src/xmssFast.js';
 
-describe('xmssFast', function testFunction() {
+describe('Test cases for [xmssFast]', function testFunction() {
   this.timeout(0);
 
   describe('getSeed', () => {

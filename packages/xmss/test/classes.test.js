@@ -12,7 +12,7 @@ import {
 } from '../src/classes.js';
 import { COMMON, CONSTANTS, HASH_FUNCTION } from '../src/constants.js';
 
-describe('classes', () => {
+describe('Test cases for [classes]', () => {
   describe('newTreeHashInst', () => {
     it('should create a TreeHashInst instance', () => {
       const treeHashInst = newTreeHashInst(8);

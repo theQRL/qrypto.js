@@ -30,7 +30,7 @@ import {
   xmssVerifySig,
 } from '../src/xmss.js';
 
-describe('xmss', function testFunction() {
+describe('Test cases for [xmss]', function testFunction() {
   this.timeout(0);
 
   describe('calculateSignatureBaseSize', () => {

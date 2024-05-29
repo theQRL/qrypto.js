@@ -21,7 +21,7 @@ import {
   shake256,
 } from '../src/helper.js';
 
-describe('helper', () => {
+describe('Test cases for [helper]', () => {
   describe('shake128', () => {
     it('should return the SHAKE128 hash of type Uint8Array', () => {
       const message = new Uint8Array(48);

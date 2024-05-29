@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { describe } from 'mocha';
 import WORD_LIST from '../src/wordList.js';
 
-describe('wordList', () => {
+describe('Test cases for [wordList]', () => {
   it('should ensure that the mnemonics word list has the original 4096 items', () => {
     expect(WORD_LIST).to.have.length(4096);
     expect(WORD_LIST).to.deep.equal([
