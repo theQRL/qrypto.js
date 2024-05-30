@@ -2788,4 +2788,23 @@ describe('Additional test cases for [xmss]', () => {
 
     expect(isValidXMSSAddress(address)).to.equal(true);
   });
+
+  it('TestIsValidXMSSAddress2', () => {
+    const addrStr = '2001430a5152fcc369c309caf3554bd3528161c8';
+    const addr = [];
+    for (let c = 0; c < addrStr.length; c += 2) {
+      addr.push(parseInt(addrStr.substring(c, c + 2), 16));
+    }
+    const address = new Uint8Array(20);
+
+    for (
+      let addressIndex = 0, addrIndex = 0;
+      addressIndex < address.length && addrIndex < addr.length;
+      addressIndex++, addrIndex++
+    ) {
+      address.set([addr[addrIndex]], addressIndex);
+    }
+
+    expect(isValidXMSSAddress(address)).to.equal(false);
+  });
 });
