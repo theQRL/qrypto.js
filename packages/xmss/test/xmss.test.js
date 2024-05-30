@@ -2765,7 +2765,9 @@ describe('Test cases for [xmss]', function testFunction() {
   });
 });
 
-describe('Additional test cases for [xmss]', () => {
+describe('Additional test cases for [xmss]', function testFunction() {
+  this.timeout(0);
+
   it('TestXMSSGetAddress', () => {
     const [height] = new Uint8Array([4]);
 
@@ -2864,6 +2866,37 @@ describe('Additional test cases for [xmss]', () => {
 
     const desc = newQRLDescriptorFromExtendedPk(pk);
     expect(desc.getHeight()).to.equal(4);
+    expect(desc.getHashFunction()).to.equal(HASH_FUNCTION.SHAKE_128);
+  });
+
+  it('TestXMSSCreationHeight6', () => {
+    const [height] = new Uint8Array([6]);
+
+    const seed = new Uint8Array(COMMON.SEED_SIZE);
+    const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
+
+    const expectedAddress = '11030084aa70bdb5f610cd0d75c9ae1b86606885';
+    const expectedPK =
+      '110300859060f15adc3825adeec85c7483' +
+      'd868e898bc5117d0cff04ab1343916d4' +
+      '07af3191da3442686282b3d5160f25cf' +
+      '162a517fd2131f83fbf2698a58f9c46a' +
+      'fc5d';
+
+    const pk = xmss.getPK();
+    const encodedPk = Array.from(pk, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    expect(encodedPk).to.equal(expectedPK);
+
+    const address = xmss.getAddress();
+    const encodedAddress = Array.from(address, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    expect(encodedAddress).to.equal(expectedAddress);
+
+    const tmpAddr = getXMSSAddressFromPK(pk);
+    const encodedTmpAddr = Array.from(tmpAddr, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    expect(encodedTmpAddr).to.equal(expectedAddress);
+
+    const desc = newQRLDescriptorFromExtendedPk(pk);
+    expect(desc.getHeight()).to.equal(6);
     expect(desc.getHashFunction()).to.equal(HASH_FUNCTION.SHAKE_128);
   });
 });
