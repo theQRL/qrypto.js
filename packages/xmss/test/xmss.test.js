@@ -2945,4 +2945,13 @@ describe('Additional test cases for [xmss]', function testFunction() {
 
     expect(() => verify(message, signature, pk)).to.throw('Invalid signature type');
   });
+
+  it('TestXMSSExceptionVerify2', () => {
+    const message = new Uint8Array(COMMON.SEED_SIZE);
+    const signature = new Uint8Array(2287);
+    const pk = new Uint8Array(CONSTANTS.EXTENDED_PK_SIZE);
+    pk[0] = new Uint8Array([COMMON.XMSS_SIG])[0] << 4;
+
+    expect(() => verify(message, signature, pk)).to.throw('Invalid signature size');
+  });
 });
