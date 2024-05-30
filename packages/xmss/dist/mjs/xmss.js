@@ -4541,7 +4541,7 @@ function seedBinToMnemonic(input) {
 }
 
 /**
- * @param {Uint8Arrayany} input
+ * @param {Uint8Array} input
  * @returns {string}
  */
 function extendedSeedBinToMnemonic(input) {
@@ -6186,4 +6186,4 @@ function verify(message, signature, extendedPK) {
   return verifyWithCustomWOTSParamW(message, signature, extendedPK, WOTS_PARAM.W);
 }
 
-export { COMMON, CONSTANTS, ENDIAN, HASH_FUNCTION, OFFSET_IDX, OFFSET_PUB_SEED, OFFSET_ROOT, OFFSET_SK_PRF, OFFSET_SK_SEED, WOTS_PARAM, XMSSFastGenKeyPair, addrToByte, bdsRound, bdsTreeHashUpdate, binToMnemonic, calcBaseW, calculateSignatureBaseSize, coreHash, expandSeed, extendedSeedBinToMnemonic, genChain, genLeafWOTS, getHeightFromSigSize, getSeed, getSignatureSize, getXMSSAddressFromPK, hMsg, hashF, hashH, initializeTree, isValidXMSSAddress, lTree, mnemonicToBin, mnemonicToExtendedSeedBin, mnemonicToSeedBin, newBDSState, newQRLDescriptor, newQRLDescriptorFromBytes, newQRLDescriptorFromExtendedPk, newQRLDescriptorFromExtendedSeed, newTreeHashInst, newWOTSParams, newXMSS, newXMSSFromExtendedSeed, newXMSSFromHeight, newXMSSFromSeed, newXMSSParams, prf, seedBinToMnemonic, setChainAddr, setHashAddr, setKeyAndMask, setLTreeAddr, setOTSAddr, setTreeHeight, setTreeIndex, setType, sha256, shake128, shake256, toByteLittleEndian, treeHashMinHeightOnStack, treeHashSetup, treeHashUpdate, validateAuthPath, verify, verifyWithCustomWOTSParamW, wOTSPKGen, wotsPKFromSig, wotsSign, xmssFastSignMessage, xmssFastUpdate, xmssVerifySig };
+export { COMMON, CONSTANTS, ENDIAN, HASH_FUNCTION, OFFSET_IDX, OFFSET_PUB_SEED, OFFSET_ROOT, OFFSET_SK_PRF, OFFSET_SK_SEED, WORD_LIST, WOTS_PARAM, XMSSFastGenKeyPair, addrToByte, bdsRound, bdsTreeHashUpdate, binToMnemonic, calcBaseW, calculateSignatureBaseSize, coreHash, expandSeed, extendedSeedBinToMnemonic, genChain, genLeafWOTS, getHeightFromSigSize, getSeed, getSignatureSize, getXMSSAddressFromPK, hMsg, hashF, hashH, initializeTree, isValidXMSSAddress, lTree, mnemonicToBin, mnemonicToExtendedSeedBin, mnemonicToSeedBin, newBDSState, newQRLDescriptor, newQRLDescriptorFromBytes, newQRLDescriptorFromExtendedPk, newQRLDescriptorFromExtendedSeed, newTreeHashInst, newWOTSParams, newXMSS, newXMSSFromExtendedSeed, newXMSSFromHeight, newXMSSFromSeed, newXMSSParams, prf, seedBinToMnemonic, setChainAddr, setHashAddr, setKeyAndMask, setLTreeAddr, setOTSAddr, setTreeHeight, setTreeIndex, setType, sha256, shake128, shake256, toByteLittleEndian, treeHashMinHeightOnStack, treeHashSetup, treeHashUpdate, validateAuthPath, verify, verifyWithCustomWOTSParamW, wOTSPKGen, wotsPKFromSig, wotsSign, xmssFastSignMessage, xmssFastUpdate, xmssVerifySig };

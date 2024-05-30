@@ -4543,7 +4543,7 @@ function seedBinToMnemonic(input) {
 }
 
 /**
- * @param {Uint8Arrayany} input
+ * @param {Uint8Array} input
  * @returns {string}
  */
 function extendedSeedBinToMnemonic(input) {
@@ -6197,6 +6197,7 @@ exports.OFFSET_PUB_SEED = OFFSET_PUB_SEED;
 exports.OFFSET_ROOT = OFFSET_ROOT;
 exports.OFFSET_SK_PRF = OFFSET_SK_PRF;
 exports.OFFSET_SK_SEED = OFFSET_SK_SEED;
+exports.WORD_LIST = WORD_LIST;
 exports.WOTS_PARAM = WOTS_PARAM;
 exports.XMSSFastGenKeyPair = XMSSFastGenKeyPair;
 exports.addrToByte = addrToByte;
