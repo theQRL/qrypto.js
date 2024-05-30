@@ -2807,4 +2807,17 @@ describe('Additional test cases for [xmss]', () => {
 
     expect(isValidXMSSAddress(address)).to.equal(false);
   });
+
+  it('TestXMSSGetMnemonic', () => {
+    const [height] = new Uint8Array([4]);
+
+    const seed = new Uint8Array(COMMON.SEED_SIZE);
+    const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
+
+    const expectedMnemonic =
+      'ban bunny aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback';
+    const mnemonic = xmss.getMnemonic();
+
+    expect(mnemonic).to.equal(expectedMnemonic);
+  });
 });
