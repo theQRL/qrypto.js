@@ -2763,3 +2763,18 @@ describe('Test cases for [xmss]', function testFunction() {
     });
   });
 });
+
+describe('Additional test cases for [xmss]', () => {
+  it('TestXMSSGetAddress', () => {
+    const [height] = new Uint8Array([4]);
+
+    const seed = new Uint8Array(COMMON.SEED_SIZE);
+    const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
+
+    const address = xmss.getAddress();
+    const encodedAddress = Array.from(address, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    const expectedAddress = '11020013b5158e1e45d28c5c2dee4abfaf7e4ebf';
+
+    expect(encodedAddress).to.equal(expectedAddress);
+  });
+});
