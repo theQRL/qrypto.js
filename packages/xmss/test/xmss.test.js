@@ -2937,4 +2937,12 @@ describe('Additional test cases for [xmss]', function testFunction() {
       'For BDS traversal, H - K must be even, with H > K >= 2!'
     );
   });
+
+  it('TestXMSSExceptionVerify', () => {
+    const message = new Uint8Array(COMMON.SEED_SIZE);
+    const signature = new Uint8Array(2287);
+    const pk = new Uint8Array(CONSTANTS.EXTENDED_PK_SIZE);
+
+    expect(() => verify(message, signature, pk)).to.throw('Invalid signature type');
+  });
 });
