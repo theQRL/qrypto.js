@@ -1,11 +1,8 @@
 {
   "editor.tabSize": 2,
-  "cSpell.words": [
-    "coeffs",
-    "dilithium",
-    "ETAN",
-    "Keccak",
-    "unforgeability",
-    "xffn"
-  ]
+  "cSpell.words": ["coeffs", "dilithium", "ETAN", "Keccak", "unforgeability", "xffn"],
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  }
 }
