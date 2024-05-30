@@ -2820,4 +2820,18 @@ describe('Additional test cases for [xmss]', () => {
 
     expect(mnemonic).to.equal(expectedMnemonic);
   });
+
+  it('TestXMSSGetExtendedSeed', () => {
+    const [height] = new Uint8Array([4]);
+
+    const seed = new Uint8Array(COMMON.SEED_SIZE);
+    const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
+
+    const expectedESeed =
+      '110200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+    const eSeed = xmss.getExtendedSeed();
+    const eSeedStr = Array.from(eSeed, (byte) => byte.toString(16).padStart(2, '0')).join('');
+
+    expect(eSeedStr).to.equal(expectedESeed);
+  });
 });
