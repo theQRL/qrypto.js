@@ -3,6 +3,7 @@ import { describe } from 'mocha';
 import {
   newBDSState,
   newQRLDescriptor,
+  newQRLDescriptorFromExtendedPk,
   newQRLDescriptorFromExtendedSeed,
   newWOTSParams,
   newXMSSParams,
@@ -2833,5 +2834,36 @@ describe('Additional test cases for [xmss]', () => {
     const eSeedStr = Array.from(eSeed, (byte) => byte.toString(16).padStart(2, '0')).join('');
 
     expect(eSeedStr).to.equal(expectedESeed);
+  });
+
+  it('TestXMSSCreationHeight4', () => {
+    const [height] = new Uint8Array([4]);
+
+    const seed = new Uint8Array(COMMON.SEED_SIZE);
+    const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
+
+    const expectedAddress = '11020013b5158e1e45d28c5c2dee4abfaf7e4ebf';
+    const expectedPK =
+      '110200c25188b585f731c128e2b457069e' +
+      'afd1e3fa3961605af8c58a1aec4d82ac' +
+      '316d3191da3442686282b3d5160f25cf' +
+      '162a517fd2131f83fbf2698a58f9c46a' +
+      'fc5d';
+
+    const pk = xmss.getPK();
+    const encodedPk = Array.from(pk, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    expect(encodedPk).to.equal(expectedPK);
+
+    const address = xmss.getAddress();
+    const encodedAddress = Array.from(address, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    expect(encodedAddress).to.equal(expectedAddress);
+
+    const tmpAddr = getXMSSAddressFromPK(pk);
+    const encodedTmpAddr = Array.from(tmpAddr, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    expect(encodedTmpAddr).to.equal(expectedAddress);
+
+    const desc = newQRLDescriptorFromExtendedPk(pk);
+    expect(desc.getHeight()).to.equal(4);
+    expect(desc.getHashFunction()).to.equal(HASH_FUNCTION.SHAKE_128);
   });
 });
