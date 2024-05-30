@@ -2777,4 +2777,15 @@ describe('Additional test cases for [xmss]', () => {
 
     expect(encodedAddress).to.equal(expectedAddress);
   });
+
+  it('TestIsValidXMSSAddress', () => {
+    const [height] = new Uint8Array([4]);
+
+    const seed = new Uint8Array(COMMON.SEED_SIZE);
+    const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
+
+    const address = xmss.getAddress();
+
+    expect(isValidXMSSAddress(address)).to.equal(true);
+  });
 });
