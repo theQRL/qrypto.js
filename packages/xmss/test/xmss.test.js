@@ -2928,4 +2928,13 @@ describe('Additional test cases for [xmss]', function testFunction() {
     message[2] -= 1;
     expect(verify(message, signature, xmss.getPK())).to.equal(true);
   });
+
+  it('TestXMSSExceptionConstructor', () => {
+    const height = new Uint8Array(7);
+    const seed = new Uint8Array(COMMON.SEED_SIZE);
+
+    expect(() => newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X)).to.throw(
+      'For BDS traversal, H - K must be even, with H > K >= 2!'
+    );
+  });
 });
