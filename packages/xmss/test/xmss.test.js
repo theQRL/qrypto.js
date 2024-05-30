@@ -2970,4 +2970,14 @@ describe('Additional test cases for [xmss]', function testFunction() {
 
     expect(() => xmss.setIndex(16)).to.throw('Index too high');
   });
+
+  it('TestXMSSChangeIndexLimit', () => {
+    const [height] = new Uint8Array([4]);
+    const seed = new Uint8Array(COMMON.SEED_SIZE);
+    const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, 16);
+    xmss.setIndex(15);
+    const index = xmss.getIndex();
+
+    expect(index).to.equal(15);
+  });
 });
