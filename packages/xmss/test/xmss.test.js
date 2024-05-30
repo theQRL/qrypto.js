@@ -2899,4 +2899,33 @@ describe('Additional test cases for [xmss]', function testFunction() {
     expect(desc.getHeight()).to.equal(6);
     expect(desc.getHashFunction()).to.equal(HASH_FUNCTION.SHAKE_128);
   });
+
+  it('TestXMSS', () => {
+    const [height] = new Uint8Array([4]);
+
+    const seed = new Uint8Array(COMMON.SEED_SIZE);
+    const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
+    expect(xmss).to.not.be.equal(null);
+    expect(xmss.getHeight()).to.equal(height);
+
+    const message = new Uint8Array(32);
+    const { sigMsg: signature, error } = xmss.sign(message);
+    expect(error).to.equal(null);
+
+    for (let i = 0; i < 1000; i++) {
+      expect(verify(message, signature, xmss.getPK())).to.equal(true);
+    }
+
+    signature[100] += 1;
+    expect(verify(message, signature, xmss.getPK())).to.equal(false);
+
+    signature[100] -= 1;
+    expect(verify(message, signature, xmss.getPK())).to.equal(true);
+
+    message[2] += 1;
+    expect(verify(message, signature, xmss.getPK())).to.equal(false);
+
+    message[2] -= 1;
+    expect(verify(message, signature, xmss.getPK())).to.equal(true);
+  });
 });
