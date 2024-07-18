@@ -2,47 +2,57 @@ import { expect } from 'chai';
 import { describe, it } from 'mocha';
 import { HASH_FUNCTION } from '../src/constants.js';
 import { coreHash, hashH, prf } from '../src/hash.js';
+import { getUInt8ArrayFromHex } from './utility/testUtility.js';
 
 describe('Test cases for [hash]', () => {
   describe('coreHash', () => {
     it('should generate coreHash output for the hashFunction SHA2_256', () => {
-      const outValue = new Uint8Array([4, 7, 8, 2, 6, 9, 2]);
+      const outValue = getUInt8ArrayFromHex('04070802060902');
       coreHash(
         HASH_FUNCTION.SHA2_256,
         outValue,
         2,
-        new Uint8Array([1, 0, 0, 0, 5, 1]),
+        getUInt8ArrayFromHex('010000000501'),
         6,
-        new Uint8Array([9, 9, 9, 9]),
+        getUInt8ArrayFromHex('09090909'),
         4,
         9
       );
-      const expectedOutValue = new Uint8Array([194, 214, 96, 196, 50, 145, 184]);
+      const expectedOutValue = getUInt8ArrayFromHex('c2d660c43291b8');
 
       expect(outValue).to.deep.equal(expectedOutValue);
     });
 
     it('should generate coreHash output for the hashFunction SHAKE_128', () => {
-      const outValue = new Uint8Array([1, 2, 3, 4, 5]);
-      coreHash(HASH_FUNCTION.SHAKE_128, outValue, 5, new Uint8Array([0, 0, 0]), 3, new Uint8Array([4, 5, 6]), 3, 4);
-      const expectedOutValue = new Uint8Array([115, 1, 116, 33, 66]);
+      const outValue = getUInt8ArrayFromHex('0102030405');
+      coreHash(
+        HASH_FUNCTION.SHAKE_128,
+        outValue,
+        5,
+        getUInt8ArrayFromHex('000000'),
+        3,
+        getUInt8ArrayFromHex('040506'),
+        3,
+        4
+      );
+      const expectedOutValue = getUInt8ArrayFromHex('7301742142');
 
       expect(outValue).to.deep.equal(expectedOutValue);
     });
 
     it('should generate coreHash output for the hashFunction SHAKE_256', () => {
-      const outValue = new Uint8Array([8, 4, 9, 1, 0, 1, 0]);
+      const outValue = getUInt8ArrayFromHex('08040901000100');
       coreHash(
         HASH_FUNCTION.SHAKE_256,
         outValue,
         7,
-        new Uint8Array([6, 3]),
+        getUInt8ArrayFromHex('0603'),
         2,
-        new Uint8Array([9, 7, 8, 1, 5, 8]),
+        getUInt8ArrayFromHex('090708010508'),
         6,
         1
       );
-      const expectedOutValue = new Uint8Array([50, 69, 218, 59, 239, 102, 54]);
+      const expectedOutValue = getUInt8ArrayFromHex('3245da3bef6636');
 
       expect(outValue).to.deep.equal(expectedOutValue);
     });
@@ -50,49 +60,43 @@ describe('Test cases for [hash]', () => {
 
   describe('prf', () => {
     it('should generate prf output for the hashFunction SHA2_256', () => {
-      const outValue = new Uint8Array([8, 4, 9, 1, 0, 1, 0]);
+      const outValue = getUInt8ArrayFromHex('08040901000100');
       prf(
         HASH_FUNCTION.SHA2_256,
         outValue,
-        new Uint8Array([
-          2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 3, 4,
-        ]),
-        new Uint8Array([6, 3, 2]),
+        getUInt8ArrayFromHex('0204050104060708090202040501040607080902020405010406070809020304'),
+        getUInt8ArrayFromHex('060302'),
         2
       );
-      const expectedOutValue = new Uint8Array([69, 154, 42, 118, 65, 97, 150]);
+      const expectedOutValue = getUInt8ArrayFromHex('459a2a76416196');
 
       expect(outValue).to.deep.equal(expectedOutValue);
     });
 
     it('should generate prf output for the hashFunction SHAKE_128', () => {
-      const outValue = new Uint8Array([8, 4, 9, 1, 0, 1, 0]);
+      const outValue = getUInt8ArrayFromHex('08040901000100');
       prf(
         HASH_FUNCTION.SHAKE_128,
         outValue,
-        new Uint8Array([
-          2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 3, 4,
-        ]),
-        new Uint8Array([6, 3, 2]),
+        getUInt8ArrayFromHex('0204050104060708090202040501040607080902020405010406070809020304'),
+        getUInt8ArrayFromHex('060302'),
         2
       );
-      const expectedOutValue = new Uint8Array([151, 162, 185, 97, 255, 51, 61]);
+      const expectedOutValue = getUInt8ArrayFromHex('97a2b961ff333d');
 
       expect(outValue).to.deep.equal(expectedOutValue);
     });
 
     it('should generate prf output for the hashFunction SHAKE_256', () => {
-      const outValue = new Uint8Array([8, 4, 9, 1, 0, 1, 0]);
+      const outValue = getUInt8ArrayFromHex('08040901000100');
       prf(
         HASH_FUNCTION.SHAKE_256,
         outValue,
-        new Uint8Array([
-          2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 2, 4, 5, 1, 4, 6, 7, 8, 9, 2, 3, 4,
-        ]),
-        new Uint8Array([6, 3, 2]),
+        getUInt8ArrayFromHex('0204050104060708090202040501040607080902020405010406070809020304'),
+        getUInt8ArrayFromHex('060302'),
         2
       );
-      const expectedOutValue = new Uint8Array([229, 148, 107, 211, 209, 43, 245]);
+      const expectedOutValue = getUInt8ArrayFromHex('e5946bd3d12bf5');
 
       expect(outValue).to.deep.equal(expectedOutValue);
     });
@@ -100,57 +104,57 @@ describe('Test cases for [hash]', () => {
 
   describe('hashH', () => {
     it('should generate prf output for the hashFunction SHA2_256', () => {
-      const outValue = new Uint8Array([8, 4, 9, 1, 0, 1, 0]);
+      const outValue = getUInt8ArrayFromHex('08040901000100');
       hashH(
         HASH_FUNCTION.SHA2_256,
         outValue,
-        new Uint8Array([2, 4, 3, 6]),
-        new Uint8Array([8, 4, 3, 2]),
-        new Uint32Array([3, 7, 2, 7, 2, 8, 7, 3]),
-        new Uint32Array([2])[0]
+        getUInt8ArrayFromHex('02040306'),
+        getUInt8ArrayFromHex('08040302'),
+        getUInt8ArrayFromHex('0307020702080703'),
+        getUInt8ArrayFromHex('02')[0]
       );
-      const expectedOutValue = new Uint8Array([251, 62, 233, 104, 61, 163, 240]);
+      const expectedOutValue = getUInt8ArrayFromHex('fb3ee9683da3f0');
 
       expect(outValue).to.deep.equal(expectedOutValue);
     });
 
     it('should generate prf output for the hashFunction SHAKE_128', () => {
-      const outValue = new Uint8Array([8, 1, 0, 3, 6, 8, 9, 2, 6, 8]);
+      const outValue = getUInt8ArrayFromHex('08010003060809020608');
       hashH(
         HASH_FUNCTION.SHAKE_128,
         outValue,
-        new Uint8Array([2, 4, 3, 4, 6, 8, 6]),
-        new Uint8Array([8, 4, 4, 43, 2]),
-        new Uint32Array([3, 7, 2, 8, 7, 3, 0, 0]),
-        new Uint32Array([3])[0]
+        getUInt8ArrayFromHex('02040304060806'),
+        getUInt8ArrayFromHex('0804042b02'),
+        getUInt8ArrayFromHex('0307020807030000'),
+        getUInt8ArrayFromHex('03')[0]
       );
-      const expectedOutValue = new Uint8Array([243, 139, 85, 6, 180, 216, 43, 72, 46, 11]);
+      const expectedOutValue = getUInt8ArrayFromHex('f38b5506b4d82b482e0b');
 
       expect(outValue).to.deep.equal(expectedOutValue);
     });
 
     it('should generate prf output for the hashFunction SHAKE_256', () => {
-      const outValue = new Uint8Array([2, 3, 5, 7, 8, 9, 1, 0]);
+      const outValue = getUInt8ArrayFromHex('0203050708090100');
       hashH(
         HASH_FUNCTION.SHAKE_256,
         outValue,
-        new Uint8Array([2, 3, 6]),
-        new Uint8Array([4, 3, 2]),
-        new Uint32Array([3, 0, 0, 0, 0, 0, 2, 8]),
-        new Uint32Array([1])[0]
+        getUInt8ArrayFromHex('020306'),
+        getUInt8ArrayFromHex('040302'),
+        getUInt8ArrayFromHex('0300000000000208'),
+        getUInt8ArrayFromHex('01')[0]
       );
-      const expectedOutValue = new Uint8Array([149, 194, 107, 177, 208, 102, 106, 74]);
+      const expectedOutValue = getUInt8ArrayFromHex('95c26bb1d0666a4a');
 
       expect(outValue).to.deep.equal(expectedOutValue);
     });
 
     it('should modify the out variable correctly if the same variable sliced and passed for input and out', () => {
       const paramHashFunction = HASH_FUNCTION.SHAKE_256;
-      const paramOut = new Uint8Array([2, 3, 5, 1, 7, 3, 8, 3, 8, 3, 9, 2, 9, 2, 7, 7, 9]);
-      const paramPubSeed = new Uint8Array([2, 5, 1, 5, 1, 6, 3, 6]);
-      const paramAddr = new Uint32Array([3, 5, 1, 2, 6, 8, 3, 2]);
-      const paramN = new Uint32Array([2])[0];
-      const expectedOut = new Uint8Array([2, 3, 66, 1, 214, 201, 214, 235, 3, 215, 9, 2, 9, 2, 7, 7, 9]);
+      const paramOut = getUInt8ArrayFromHex('0203050107030803080309020902070709');
+      const paramPubSeed = getUInt8ArrayFromHex('0205010501060306');
+      const paramAddr = getUInt8ArrayFromHex('0305010206080302');
+      const paramN = getUInt8ArrayFromHex('02')[0];
+      const expectedOut = getUInt8ArrayFromHex('02034201d6c9d6eb03d709020902070709');
       hashH(paramHashFunction, paramOut.subarray(2, 10), paramOut.subarray(4, 12), paramPubSeed, paramAddr, paramN);
       expect(paramOut).to.deep.equal(expectedOut);
     });
