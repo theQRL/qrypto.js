@@ -6,29 +6,29 @@ export const U_INT_ARRAY_VARIANT = {
 };
 
 /**
- * @param {string} hexaDecimalString
+ * @param {string} hexString
  * @param {keyof typeof U_INT_ARRAY_VARIANT} variant
  * @returns {Uint8Array | Uint32Array}
  */
-export const getUIntArrayFromHex = (hexaDecimalString, variant) => {
+export const getUIntArrayFromHex = (hexString, variant) => {
   let charSize;
   let strLength;
   let uIntArray;
   switch (variant) {
     case U_INT_ARRAY_VARIANT[32]:
       charSize = 8;
-      strLength = hexaDecimalString.length / charSize;
+      strLength = hexString.length / charSize;
       uIntArray = new Uint32Array(strLength);
       break;
     default:
       charSize = 2;
-      strLength = hexaDecimalString.length / charSize;
+      strLength = hexString.length / charSize;
       uIntArray = new Uint8Array(strLength);
       break;
   }
 
   for (let i = 0; i < strLength; i++) {
-    const element = parseInt(hexaDecimalString.substring(i * charSize, i * charSize + charSize), 16);
+    const element = parseInt(hexString.substring(i * charSize, i * charSize + charSize), 16);
     uIntArray.set([element], i);
   }
 
@@ -50,11 +50,11 @@ export const getHexFromUIntArray = (uIntArray, variant) => {
       charSize = 2;
       break;
   }
-  const hexaDecimalString = Array.from(uIntArray)
+  const hexString = Array.from(uIntArray)
     .map((byte) => byte.toString(16).padStart(charSize, '0'))
     .join('');
 
-  return hexaDecimalString;
+  return hexString;
 };
 
 /**
