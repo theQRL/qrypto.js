@@ -11,11 +11,13 @@ import {
   newXMSSParams,
 } from '../src/classes.js';
 import { COMMON, CONSTANTS, HASH_FUNCTION } from '../src/constants.js';
+import { getUInt32ArrayFromHex, getUInt8ArrayFromHex } from './utility/testUtility.js';
 
 describe('Test cases for [classes]', () => {
   describe('newTreeHashInst', () => {
     it('should create a TreeHashInst instance', () => {
       const treeHashInst = newTreeHashInst(8);
+      const expectedTreeHashNode = getUInt8ArrayFromHex('0000000000000000');
 
       expect(Object.getOwnPropertyNames(treeHashInst)).to.deep.equal([
         'h',
@@ -27,15 +29,16 @@ describe('Test cases for [classes]', () => {
       expect(treeHashInst.completed).to.equal(0);
       expect(treeHashInst.h).to.equal(0);
       expect(treeHashInst.nextIdx).to.equal(0);
-      expect(treeHashInst.node).to.deep.equal(new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]));
+      expect(treeHashInst.node).to.deep.equal(expectedTreeHashNode);
       expect(treeHashInst.node.length).to.equal(8);
       expect(treeHashInst.stackUsage).to.equal(0);
     });
 
     it('should create a TreeHashInst instance with default n value 0', () => {
       const treeHashInst = newTreeHashInst();
+      const expectedTreeHashNode = getUInt8ArrayFromHex('');
 
-      expect(treeHashInst.node).to.deep.equal(new Uint8Array([]));
+      expect(treeHashInst.node).to.deep.equal(expectedTreeHashNode);
       expect(treeHashInst.node.length).to.equal(0);
     });
   });
@@ -213,10 +216,10 @@ describe('Test cases for [classes]', () => {
 
   describe('newQRLDescriptor', () => {
     it('should create a QRLDescriptor instance', () => {
-      const [height] = new Uint8Array([5]);
+      const [height] = getUInt8ArrayFromHex('05');
       const hashFunction = HASH_FUNCTION.SHAKE_128;
-      const [signatureType] = new Uint32Array([34]);
-      const [addrFormatType] = new Uint32Array([65]);
+      const [signatureType] = getUInt32ArrayFromHex('00000004');
+      const [addrFormatType] = getUInt32ArrayFromHex('00000041');
       const qrlDescriptor = newQRLDescriptor(height, hashFunction, signatureType, addrFormatType);
 
       expect(Object.getOwnPropertyNames(qrlDescriptor)).to.deep.equal([
@@ -234,7 +237,7 @@ describe('Test cases for [classes]', () => {
 
   describe('newQRLDescriptorFromBytes', () => {
     it('should create a QRLDescriptor instance', () => {
-      const descriptorBytes = new Uint8Array([3, 6, 9]);
+      const descriptorBytes = getUInt8ArrayFromHex('030609');
       const qrlDescriptor = newQRLDescriptorFromBytes(descriptorBytes);
 
       expect(Object.getOwnPropertyNames(qrlDescriptor)).to.deep.equal([
@@ -246,13 +249,13 @@ describe('Test cases for [classes]', () => {
     });
 
     it('should throw an error if the size of descriptionBytes array is not 3', () => {
-      const descriptorBytes = new Uint8Array([45, 33, 7, 3, 6, 77]);
+      const descriptorBytes = getUInt8ArrayFromHex('2d210703064d');
 
       expect(() => newQRLDescriptorFromBytes(descriptorBytes)).to.throw('Descriptor size should be 3 bytes');
     });
 
-    it('should create a QRLDescriptor instance, with descriptorBytes[49, 6, 34]', () => {
-      const descriptorBytes = new Uint8Array([49, 6, 34]);
+    it('should create a QRLDescriptor instance, with descriptorBytes[310622]', () => {
+      const descriptorBytes = getUInt8ArrayFromHex('310622');
       const qrlDescriptor = newQRLDescriptorFromBytes(descriptorBytes);
 
       expect(qrlDescriptor.hashFunction).to.equal(1);
@@ -261,8 +264,8 @@ describe('Test cases for [classes]', () => {
       expect(qrlDescriptor.addrFormatType).to.equal(0);
     });
 
-    it('should create a QRLDescriptor instance, with descriptorBytes[0, 1, 254]', () => {
-      const descriptorBytes = new Uint8Array([0, 1, 254]);
+    it('should create a QRLDescriptor instance, with descriptorBytes[0001fe]', () => {
+      const descriptorBytes = getUInt8ArrayFromHex('0001fe');
       const qrlDescriptor = newQRLDescriptorFromBytes(descriptorBytes);
 
       expect(qrlDescriptor.hashFunction).to.equal(0);
@@ -271,8 +274,8 @@ describe('Test cases for [classes]', () => {
       expect(qrlDescriptor.addrFormatType).to.equal(0);
     });
 
-    it('should create a QRLDescriptor instance, with descriptorBytes[220, 0, 111]', () => {
-      const descriptorBytes = new Uint8Array([220, 0, 111]);
+    it('should create a QRLDescriptor instance, with descriptorBytes[dc006f]', () => {
+      const descriptorBytes = getUInt8ArrayFromHex('dc006f');
       const qrlDescriptor = newQRLDescriptorFromBytes(descriptorBytes);
 
       expect(qrlDescriptor.hashFunction).to.equal(12);
@@ -284,10 +287,9 @@ describe('Test cases for [classes]', () => {
 
   describe('newQRLDescriptorFromExtendedSeed', () => {
     it('should create a QRLDescriptor instance', () => {
-      const extendedSeeds = new Uint8Array([
-        9, 4, 6, 9, 1, 12, 2, 9, 12, 4, 6, 13, 3, 2, 12, 6, 12, 4, 2, 5, 4, 12, 8, 11, 13, 15, 11, 0, 7, 0, 9, 4, 2, 2,
-        6, 8, 8, 3, 14, 3, 8, 6, 2, 6, 0, 9, 3, 7, 6, 14, 14,
-      ]);
+      const extendedSeeds = getUInt8ArrayFromHex(
+        '09040609010c02090c04060d03020c060c040205040c080b0d0f0b00070009040202060808030e030806020600090307060e0e'
+      );
       const qrlDescriptor = newQRLDescriptorFromExtendedSeed(extendedSeeds);
 
       expect(Object.getOwnPropertyNames(qrlDescriptor)).to.deep.equal([
@@ -299,18 +301,17 @@ describe('Test cases for [classes]', () => {
     });
 
     it('should throw an error if the size of extendedSeeds array is not EXTENDED_SEED_SIZE', () => {
-      const extendedSeeds = new Uint8Array([4]);
+      const extendedSeeds = getUInt8ArrayFromHex('04');
 
       expect(() => newQRLDescriptorFromExtendedSeed(extendedSeeds)).to.throw(
         `extendedSeed should be an array of size ${COMMON.EXTENDED_SEED_SIZE}`
       );
     });
 
-    it('should create a QRLDescriptor instance, with extendedSeeds[9, 4 ...]', () => {
-      const extendedSeeds = new Uint8Array([
-        9, 4, 6, 9, 1, 12, 2, 9, 12, 4, 6, 13, 3, 2, 12, 6, 12, 4, 2, 5, 4, 12, 8, 11, 13, 15, 11, 0, 7, 0, 9, 4, 2, 2,
-        6, 8, 8, 3, 14, 3, 8, 6, 2, 6, 0, 9, 3, 7, 6, 14, 14,
-      ]);
+    it('should create a QRLDescriptor instance, with extendedSeeds[0904...]', () => {
+      const extendedSeeds = getUInt8ArrayFromHex(
+        '09040609010c02090c04060d03020c060c040205040c080b0d0f0b00070009040202060808030e030806020600090307060e0e'
+      );
       const qrlDescriptor = newQRLDescriptorFromExtendedSeed(extendedSeeds);
 
       expect(qrlDescriptor.hashFunction).to.equal(9);
@@ -319,12 +320,10 @@ describe('Test cases for [classes]', () => {
       expect(qrlDescriptor.addrFormatType).to.equal(0);
     });
 
-    it('should create a QRLDescriptor instance, with extendedSeeds[92, 164 ...]', () => {
-      const extendedSeeds = new Uint8Array([
-        92, 164, 78, 27, 20, 148, 230, 46, 92, 113, 65, 34, 150, 203, 3, 100, 29, 2, 96, 69, 148, 129, 243, 182, 138,
-        181, 219, 223, 88, 211, 202, 170, 80, 146, 155, 239, 68, 23, 154, 138, 23, 191, 63, 2, 164, 29, 14, 132, 205,
-        61, 3,
-      ]);
+    it('should create a QRLDescriptor instance, with extendedSeeds[5ca4...]', () => {
+      const extendedSeeds = getUInt8ArrayFromHex(
+        '5ca44e1b1494e62e5c71412296cb03641d0260459481f3b68ab5dbdf58d3caaa50929bef44179a8a17bf3f02a41d0e84cd3d03'
+      );
       const qrlDescriptor = newQRLDescriptorFromExtendedSeed(extendedSeeds);
 
       expect(qrlDescriptor.hashFunction).to.equal(12);
@@ -333,12 +332,10 @@ describe('Test cases for [classes]', () => {
       expect(qrlDescriptor.addrFormatType).to.equal(10);
     });
 
-    it('should create a QRLDescriptor instance, with extendedSeeds[141, 9 ...]', () => {
-      const extendedSeeds = new Uint8Array([
-        141, 9, 185, 102, 123, 177, 144, 213, 151, 52, 135, 96, 10, 106, 46, 116, 23, 26, 151, 50, 129, 183, 119, 188,
-        127, 163, 199, 171, 203, 203, 119, 89, 97, 241, 67, 13, 170, 98, 155, 107, 164, 40, 146, 204, 4, 236, 224, 210,
-        67, 0, 161,
-      ]);
+    it('should create a QRLDescriptor instance, with extendedSeeds[8d09...]', () => {
+      const extendedSeeds = getUInt8ArrayFromHex(
+        '8d09b9667bb190d5973487600a6a2e74171a973281b777bc7fa3c7abcbcb775961f1430daa629b6ba42892cc04ece0d24300a1'
+      );
       const qrlDescriptor = newQRLDescriptorFromExtendedSeed(extendedSeeds);
 
       expect(qrlDescriptor.hashFunction).to.equal(13);
@@ -350,11 +347,9 @@ describe('Test cases for [classes]', () => {
 
   describe('newQRLDescriptorFromExtendedPk', () => {
     it('should create a QRLDescriptor instance', () => {
-      const extendedPk = new Uint8Array([
-        67, 5, 63, 239, 190, 194, 90, 63, 116, 243, 240, 154, 214, 84, 217, 78, 125, 166, 75, 89, 30, 14, 209, 0, 144,
-        140, 211, 67, 221, 165, 114, 72, 145, 39, 81, 9, 89, 223, 3, 250, 163, 63, 174, 140, 188, 164, 68, 243, 115, 43,
-        91, 23, 193, 134, 51, 185, 227, 253, 178, 110, 86, 240, 112, 89, 52, 33, 86,
-      ]);
+      const extendedPk = getUInt8ArrayFromHex(
+        '43053fefbec25a3f74f3f09ad654d94e7da64b591e0ed100908cd343dda572489127510959df03faa33fae8cbca444f3732b5b17c18633b9e3fdb26e56f07059342156'
+      );
       const qrlDescriptor = newQRLDescriptorFromExtendedPk(extendedPk);
 
       expect(Object.getOwnPropertyNames(qrlDescriptor)).to.deep.equal([
@@ -366,19 +361,17 @@ describe('Test cases for [classes]', () => {
     });
 
     it('should throw an error if the size of extendedPk array is not EXTENDED_PK_SIZE', () => {
-      const extendedPk = new Uint8Array([56, 87]);
+      const extendedPk = getUInt8ArrayFromHex('3857');
 
       expect(() => newQRLDescriptorFromExtendedPk(extendedPk)).to.throw(
         `extendedPk should be an array of size ${CONSTANTS.EXTENDED_PK_SIZE}`
       );
     });
 
-    it('should create a QRLDescriptor instance, with extendedPk[84, 156 ...]', () => {
-      const extendedPk = new Uint8Array([
-        67, 5, 63, 239, 190, 194, 90, 63, 116, 243, 240, 154, 214, 84, 217, 78, 125, 166, 75, 89, 30, 14, 209, 0, 144,
-        140, 211, 67, 221, 165, 114, 72, 145, 39, 81, 9, 89, 223, 3, 250, 163, 63, 174, 140, 188, 164, 68, 243, 115, 43,
-        91, 23, 193, 134, 51, 185, 227, 253, 178, 110, 86, 240, 112, 89, 52, 33, 86,
-      ]);
+    it('should create a QRLDescriptor instance, with extendedPk[4305...]', () => {
+      const extendedPk = getUInt8ArrayFromHex(
+        '43053fefbec25a3f74f3f09ad654d94e7da64b591e0ed100908cd343dda572489127510959df03faa33fae8cbca444f3732b5b17c18633b9e3fdb26e56f07059342156'
+      );
       const qrlDescriptor = newQRLDescriptorFromExtendedPk(extendedPk);
 
       expect(qrlDescriptor.hashFunction).to.equal(3);
@@ -387,12 +380,10 @@ describe('Test cases for [classes]', () => {
       expect(qrlDescriptor.addrFormatType).to.equal(0);
     });
 
-    it('should create a QRLDescriptor instance, with extendedPk[109, 20 ...]', () => {
-      const extendedPk = new Uint8Array([
-        109, 20, 218, 222, 200, 116, 109, 209, 45, 84, 242, 238, 1, 215, 18, 124, 77, 222, 142, 183, 218, 224, 123, 109,
-        105, 152, 164, 128, 116, 30, 156, 246, 219, 20, 150, 250, 207, 120, 22, 20, 133, 179, 53, 87, 130, 204, 183,
-        234, 109, 94, 55, 187, 242, 43, 179, 19, 10, 81, 128, 151, 20, 245, 207, 216, 18, 235, 1,
-      ]);
+    it('should create a QRLDescriptor instance, with extendedPk[6d14...]', () => {
+      const extendedPk = getUInt8ArrayFromHex(
+        '6d14dadec8746dd12d54f2ee01d7127c4dde8eb7dae07b6d6998a480741e9cf6db1496facf78161485b3355782ccb7ea6d5e37bbf22bb3130a51809714f5cfd812eb01'
+      );
       const qrlDescriptor = newQRLDescriptorFromExtendedPk(extendedPk);
 
       expect(qrlDescriptor.hashFunction).to.equal(13);
@@ -401,12 +392,10 @@ describe('Test cases for [classes]', () => {
       expect(qrlDescriptor.addrFormatType).to.equal(1);
     });
 
-    it('should create a QRLDescriptor instance, with extendedPk[102, 25 ...]', () => {
-      const extendedPk = new Uint8Array([
-        102, 25, 153, 94, 80, 214, 241, 97, 162, 182, 144, 99, 214, 38, 231, 227, 119, 188, 178, 202, 22, 56, 171, 125,
-        111, 0, 211, 152, 129, 100, 89, 132, 105, 56, 52, 86, 112, 147, 92, 125, 232, 52, 36, 136, 247, 132, 140, 97,
-        32, 216, 217, 65, 247, 236, 104, 107, 3, 57, 23, 172, 136, 102, 73, 78, 88, 47, 212,
-      ]);
+    it('should create a QRLDescriptor instance, with extendedPk[6619...]', () => {
+      const extendedPk = getUInt8ArrayFromHex(
+        '6619995e50d6f161a2b69063d626e7e377bcb2ca1638ab7d6f00d398816459846938345670935c7de8342488f7848c6120d8d941f7ec686b033917ac8866494e582fd4'
+      );
       const qrlDescriptor = newQRLDescriptorFromExtendedPk(extendedPk);
 
       expect(qrlDescriptor.hashFunction).to.equal(6);
