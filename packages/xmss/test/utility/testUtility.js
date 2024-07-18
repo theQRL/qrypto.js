@@ -1,13 +1,13 @@
 /* The following functions are only used within this library for testing purposes, and not part of the library for end user. */
 
-export const U_INT_ARRAY_VARIANT = {
+export const UINT = {
   8: 8,
   32: 32,
 };
 
 /**
  * @param {string} hexString
- * @param {keyof typeof U_INT_ARRAY_VARIANT} variant
+ * @param {keyof typeof UINT} variant
  * @returns {Uint8Array | Uint32Array}
  */
 export const getUIntArrayFromHex = (hexString, variant) => {
@@ -15,7 +15,7 @@ export const getUIntArrayFromHex = (hexString, variant) => {
   let strLength;
   let uIntArray;
   switch (variant) {
-    case U_INT_ARRAY_VARIANT[32]:
+    case UINT[32]:
       charSize = 8;
       strLength = hexString.length / charSize;
       uIntArray = new Uint32Array(strLength);
@@ -37,13 +37,13 @@ export const getUIntArrayFromHex = (hexString, variant) => {
 
 /**
  * @param {Uint8Array | Uint32Array} uIntArray
- * @param {keyof typeof U_INT_ARRAY_VARIANT} variant
+ * @param {keyof typeof UINT} variant
  * @returns {string}
  */
 export const getHexFromUIntArray = (uIntArray, variant) => {
   let charSize;
   switch (variant) {
-    case U_INT_ARRAY_VARIANT[32]:
+    case UINT[32]:
       charSize = 8;
       break;
     default:
@@ -53,13 +53,14 @@ export const getHexFromUIntArray = (uIntArray, variant) => {
   const hexString = Array.from(uIntArray)
     .map((byte) => byte.toString(16).padStart(charSize, '0'))
     .join('');
+  console.log('>>>hexString: ', hexString);
 
   return hexString;
 };
 
 /**
  * @param {Uint8Array | Uint32Array} uIntArray
- * @param {keyof typeof U_INT_ARRAY_VARIANT} variant
+ * @param {keyof typeof UINT} variant
  * @returns {Uint8Array | Uint32Array}
  */
 export const getRecreatedUIntArray = (uIntArray, variant) => {
@@ -67,3 +68,5 @@ export const getRecreatedUIntArray = (uIntArray, variant) => {
   const recreatedUIntArray = getUIntArrayFromHex(hexString, variant);
   return recreatedUIntArray;
 };
+
+getHexFromUIntArray(new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]), UINT[8]);
