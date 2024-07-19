@@ -30,13 +30,14 @@ import {
   xmssFastSignMessage,
   xmssVerifySig,
 } from '../src/xmss.js';
+import { getUInt32ArrayFromHex, getUInt8ArrayFromHex } from './utility/testUtility.js';
 
 describe('Test cases for [xmss]', function testFunction() {
   this.timeout(0);
 
   describe('calculateSignatureBaseSize', () => {
     it('should return the signature base size for the keysize 65', () => {
-      const [keySize] = new Uint32Array([65]);
+      const [keySize] = getUInt32ArrayFromHex('00000041');
       const signautreBaseSize = calculateSignatureBaseSize(keySize);
       const expectedSignatureBaseSize = 101;
 
@@ -44,7 +45,7 @@ describe('Test cases for [xmss]', function testFunction() {
     });
 
     it('should return the signature base size for the keysize 399', () => {
-      const [keySize] = new Uint32Array([399]);
+      const [keySize] = getUInt32ArrayFromHex('0000018f');
       const signautreBaseSize = calculateSignatureBaseSize(keySize);
       const expectedSignatureBaseSize = 435;
 
@@ -52,7 +53,7 @@ describe('Test cases for [xmss]', function testFunction() {
     });
 
     it('should return the signature base size for the keysize 1064', () => {
-      const [keySize] = new Uint32Array([1064]);
+      const [keySize] = getUInt32ArrayFromHex('00000428');
       const signautreBaseSize = calculateSignatureBaseSize(keySize);
       const expectedSignatureBaseSize = 1100;
 
@@ -101,9 +102,9 @@ describe('Test cases for [xmss]', function testFunction() {
   describe('hMsg', () => {
     it('should return an error if key length is not equal to 3 times n', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_128;
-      const out = new Uint8Array([34, 56, 2, 7, 8, 45]);
-      const input = new Uint8Array([32, 45, 7, 8, 23, 5, 7]);
-      const key = new Uint8Array([34, 56, 2, 7, 8, 45, 34, 56, 2, 2]);
+      const out = getUInt8ArrayFromHex('22380207082d');
+      const input = getUInt8ArrayFromHex('202d0708170507');
+      const key = getUInt8ArrayFromHex('22380207082d22380202');
       const n = 3;
       const error = hMsg(hashFunction, out, input, key, n);
 
@@ -114,9 +115,9 @@ describe('Test cases for [xmss]', function testFunction() {
 
     it('should return an null error if the function is executed correctly', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_128;
-      const out = new Uint8Array([34, 56, 2, 7, 8, 45]);
-      const input = new Uint8Array([32, 45, 7, 8, 23, 5, 7]);
-      const key = new Uint8Array([34, 56, 2, 7, 8, 45, 34, 56, 2]);
+      const out = getUInt8ArrayFromHex('22380207082d');
+      const input = getUInt8ArrayFromHex('202d0708170507');
+      const key = getUInt8ArrayFromHex('22380207082d223802');
       const n = 3;
       const error = hMsg(hashFunction, out, input, key, n);
 
@@ -127,26 +128,19 @@ describe('Test cases for [xmss]', function testFunction() {
   });
 
   describe('calcBaseW', () => {
-    it('should calculate the base w, with w[6] input[74, 74, ...]', () => {
+    it('should calculate the base w, with w[6] input[4a4a...]', () => {
       const n = 13;
       const w = 6;
       const wotsParams = newWOTSParams(n, w);
       const outputLen = wotsParams.len1;
       const output = new Uint8Array(wotsParams.len);
-      const input = new Uint8Array([
-        74, 74, 32, 16, 12, 189, 110, 39, 169, 21, 184, 111, 59, 158, 132, 251, 205, 225, 89, 45, 117, 81, 92, 143, 82,
-        170, 238, 156, 75,
-      ]);
+      const input = getUInt8ArrayFromHex('4a4a20100cbd6e27a915b86f3b9e84fbcde1592d75515c8f52aaee9c4b');
       const expectedWotsParams = newWOTSParams(n, w);
       const expectedOutputLen = expectedWotsParams.len1;
-      const expectedOutput = new Uint8Array([
-        1, 4, 0, 0, 1, 4, 0, 0, 0, 0, 0, 0, 0, 1, 4, 0, 0, 0, 1, 4, 0, 1, 5, 5, 1, 4, 1, 4, 0, 0, 1, 5, 0, 0, 0, 1, 0,
-        1, 5, 5, 0, 1, 4, 0, 1, 4, 1, 5, 0, 1, 4, 1, 0, 0, 0, 0, 0,
-      ]);
-      const expectedInput = new Uint8Array([
-        74, 74, 32, 16, 12, 189, 110, 39, 169, 21, 184, 111, 59, 158, 132, 251, 205, 225, 89, 45, 117, 81, 92, 143, 82,
-        170, 238, 156, 75,
-      ]);
+      const expectedOutput = getUInt8ArrayFromHex(
+        '010400000104000000000000000104000000010400010505010401040000010500000001000105050001040001040105000104010000000000'
+      );
+      const expectedInput = getUInt8ArrayFromHex('4a4a20100cbd6e27a915b86f3b9e84fbcde1592d75515c8f52aaee9c4b');
       calcBaseW(output, outputLen, input, wotsParams);
 
       expect(wotsParams).to.deep.equal(expectedWotsParams);
@@ -155,26 +149,19 @@ describe('Test cases for [xmss]', function testFunction() {
       expect(input).to.deep.equal(expectedInput);
     });
 
-    it('should calculate the base w, with w[16] input[34, 23, ...]', () => {
+    it('should calculate the base w, with w[16] input[2217...]', () => {
       const n = 25;
       const w = 16;
       const wotsParams = newWOTSParams(n, w);
       const outputLen = wotsParams.len1;
       const output = new Uint8Array(wotsParams.len);
-      const input = new Uint8Array([
-        34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8,
-        23, 34,
-      ]);
+      const input = getUInt8ArrayFromHex('221742170407081722174217040708172217421704070817221742170407081722');
       const expectedWotsParams = newWOTSParams(n, w);
       const expectedOutputLen = expectedWotsParams.len1;
-      const expectedOutput = new Uint8Array([
-        2, 2, 1, 7, 4, 2, 1, 7, 0, 4, 0, 7, 0, 8, 1, 7, 2, 2, 1, 7, 4, 2, 1, 7, 0, 4, 0, 7, 0, 8, 1, 7, 2, 2, 1, 7, 4,
-        2, 1, 7, 0, 4, 0, 7, 0, 8, 1, 7, 2, 2, 0, 0, 0,
-      ]);
-      const expectedInput = new Uint8Array([
-        34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8, 23, 34, 23, 66, 23, 4, 7, 8,
-        23, 34,
-      ]);
+      const expectedOutput = getUInt8ArrayFromHex(
+        '0202010704020107000400070008010702020107040201070004000700080107020201070402010700040007000801070202000000'
+      );
+      const expectedInput = getUInt8ArrayFromHex('221742170407081722174217040708172217421704070817221742170407081722');
       calcBaseW(output, outputLen, input, wotsParams);
 
       expect(wotsParams).to.deep.equal(expectedWotsParams);
@@ -183,23 +170,17 @@ describe('Test cases for [xmss]', function testFunction() {
       expect(input).to.deep.equal(expectedInput);
     });
 
-    it('should calculate the base w, with w[256] input[159, 202, ...]', () => {
+    it('should calculate the base w, with w[256] input[9fca...]', () => {
       const n = 11;
       const w = 256;
       const wotsParams = newWOTSParams(n, w);
       const outputLen = wotsParams.len1;
       const output = new Uint8Array(wotsParams.len);
-      const input = new Uint8Array([
-        159, 202, 211, 84, 72, 119, 20, 240, 87, 221, 150, 241, 19, 50, 16, 16, 212, 61, 35, 204, 89, 163, 228, 212, 10,
-        173, 44, 146, 41, 95, 131, 72,
-      ]);
+      const input = getUInt8ArrayFromHex('9fcad354487714f057dd96f113321010d43d23cc59a3e4d40aad2c92295f8348');
       const expectedWotsParams = newWOTSParams(n, w);
       const expectedOutputLen = expectedWotsParams.len1;
-      const expectedOutput = new Uint8Array([159, 202, 211, 84, 72, 119, 20, 240, 87, 221, 150, 0, 0]);
-      const expectedInput = new Uint8Array([
-        159, 202, 211, 84, 72, 119, 20, 240, 87, 221, 150, 241, 19, 50, 16, 16, 212, 61, 35, 204, 89, 163, 228, 212, 10,
-        173, 44, 146, 41, 95, 131, 72,
-      ]);
+      const expectedOutput = getUInt8ArrayFromHex('9fcad354487714f057dd960000');
+      const expectedInput = getUInt8ArrayFromHex('9fcad354487714f057dd96f113321010d43d23cc59a3e4d40aad2c92295f8348');
       calcBaseW(output, outputLen, input, wotsParams);
 
       expect(wotsParams).to.deep.equal(expectedWotsParams);
@@ -212,25 +193,14 @@ describe('Test cases for [xmss]', function testFunction() {
   describe('wotsSign', () => {
     it('should throw an error if the size of addr is invalid', () => {
       const hashFunction = HASH_FUNCTION.SHA2_256;
-      const sig = new Uint8Array([
-        224, 201, 246, 138, 163, 4, 236, 101, 149, 141, 198, 200, 52, 152, 221, 51, 7, 165, 205, 23, 66, 130, 153, 139,
-        158, 164, 149, 241,
-      ]);
-      const msg = new Uint8Array([
-        139, 172, 150, 45, 231, 244, 232, 178, 87, 66, 68, 153, 193, 43, 143, 159, 174, 252, 98, 12, 196, 221, 107, 122,
-        97, 174,
-      ]);
-      const sk = new Uint8Array([
-        68, 172, 140, 141, 41, 40, 252, 44, 118, 197, 181, 104, 53, 95, 217, 186, 119, 36, 131, 206, 57,
-      ]);
+      const sig = getUInt8ArrayFromHex('e0c9f68aa304ec65958dc6c83498dd3307a5cd174282998b9ea495f1');
+      const msg = getUInt8ArrayFromHex('8bac962de7f4e8b257424499c12b8f9faefc620cc4dd6b7a61ae');
+      const sk = getUInt8ArrayFromHex('44ac8c8d2928fc2c76c5b568355fd9ba772483ce39');
       const n = 2;
       const w = 16;
       const params = newWOTSParams(n, w);
-      const pubSeed = new Uint8Array([
-        232, 10, 209, 120, 126, 242, 118, 253, 164, 208, 15, 70, 40, 111, 142, 239, 154, 123, 96, 189, 176, 202, 3, 213,
-        148, 237, 38, 241, 149, 238, 21, 26, 10,
-      ]);
-      const addr = new Uint32Array([136, 63, 214, 113, 214, 45, 225]);
+      const pubSeed = getUInt8ArrayFromHex('e80ad1787ef276fda4d00f46286f8eef9a7b60bdb0ca03d594ed26f195ee151a0a');
+      const addr = getUInt8ArrayFromHex('883fd671d62de1');
 
       expect(() => wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr)).to.throw(
         'addr should be an array of size 8'
@@ -239,42 +209,22 @@ describe('Test cases for [xmss]', function testFunction() {
 
     it('should sign wots, with SHA2_256 n[2] w[16]', () => {
       const hashFunction = HASH_FUNCTION.SHA2_256;
-      const sig = new Uint8Array([
-        224, 201, 246, 138, 163, 4, 236, 101, 149, 141, 198, 200, 52, 152, 221, 51, 7, 165, 205, 23, 66, 130, 153, 139,
-        158, 164, 149, 241,
-      ]);
-      const msg = new Uint8Array([
-        139, 172, 150, 45, 231, 244, 232, 178, 87, 66, 68, 153, 193, 43, 143, 159, 174, 252, 98, 12, 196, 221, 107, 122,
-        97, 174,
-      ]);
-      const sk = new Uint8Array([
-        68, 172, 140, 141, 41, 40, 252, 44, 118, 197, 181, 104, 53, 95, 217, 186, 119, 36, 131, 206, 57,
-      ]);
+      const sig = getUInt8ArrayFromHex('e0c9f68aa304ec65958dc6c83498dd3307a5cd174282998b9ea495f1');
+      const msg = getUInt8ArrayFromHex('8bac962de7f4e8b257424499c12b8f9faefc620cc4dd6b7a61ae');
+      const sk = getUInt8ArrayFromHex('44ac8c8d2928fc2c76c5b568355fd9ba772483ce39');
       const n = 2;
       const w = 16;
       const params = newWOTSParams(n, w);
-      const pubSeed = new Uint8Array([
-        232, 10, 209, 120, 126, 242, 118, 253, 164, 208, 15, 70, 40, 111, 142, 239, 154, 123, 96, 189, 176, 202, 3, 213,
-        148, 237, 38, 241, 149, 238, 21, 26, 10,
-      ]);
-      const addr = new Uint32Array([136, 243, 63, 214, 113, 214, 45, 225]);
-      const expectedSig = new Uint8Array([
-        66, 143, 173, 51, 39, 251, 23, 249, 135, 223, 37, 136, 52, 152, 221, 51, 7, 165, 205, 23, 66, 130, 153, 139,
-        158, 164, 149, 241,
-      ]);
-      const expectedMsg = new Uint8Array([
-        139, 172, 150, 45, 231, 244, 232, 178, 87, 66, 68, 153, 193, 43, 143, 159, 174, 252, 98, 12, 196, 221, 107, 122,
-        97, 174,
-      ]);
-      const expectedSk = new Uint8Array([
-        68, 172, 140, 141, 41, 40, 252, 44, 118, 197, 181, 104, 53, 95, 217, 186, 119, 36, 131, 206, 57,
-      ]);
+      const pubSeed = getUInt8ArrayFromHex('e80ad1787ef276fda4d00f46286f8eef9a7b60bdb0ca03d594ed26f195ee151a0a');
+      const addr = getUInt8ArrayFromHex('88f33fd671d62de1');
+      const expectedSig = getUInt8ArrayFromHex('428fad3327fb17f987df25883498dd3307a5cd174282998b9ea495f1');
+      const expectedMsg = getUInt8ArrayFromHex('8bac962de7f4e8b257424499c12b8f9faefc620cc4dd6b7a61ae');
+      const expectedSk = getUInt8ArrayFromHex('44ac8c8d2928fc2c76c5b568355fd9ba772483ce39');
       const expectedParams = newWOTSParams(n, w);
-      const expectedPubSeed = new Uint8Array([
-        232, 10, 209, 120, 126, 242, 118, 253, 164, 208, 15, 70, 40, 111, 142, 239, 154, 123, 96, 189, 176, 202, 3, 213,
-        148, 237, 38, 241, 149, 238, 21, 26, 10,
-      ]);
-      const expectedAddr = new Uint32Array([136, 243, 63, 214, 113, 5, 11, 1]);
+      const expectedPubSeed = getUInt8ArrayFromHex(
+        'e80ad1787ef276fda4d00f46286f8eef9a7b60bdb0ca03d594ed26f195ee151a0a'
+      );
+      const expectedAddr = getUInt8ArrayFromHex('88f33fd671050b01');
       wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr);
 
       expect(sig).to.deep.equal(expectedSig);
@@ -287,40 +237,22 @@ describe('Test cases for [xmss]', function testFunction() {
 
     it('should sign wots, with SHAKE_128 n[2] w[6]', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_128;
-      const sig = new Uint8Array([
-        8, 8, 2, 13, 4, 14, 0, 5, 5, 7, 11, 12, 2, 11, 10, 11, 14, 0, 4, 11, 13, 2, 8, 7, 12, 9, 122, 26, 49, 178, 15,
-        72, 228,
-      ]);
-      const msg = new Uint8Array([
-        178, 104, 176, 20, 253, 235, 214, 9, 122, 26, 49, 178, 15, 72, 228, 226, 9, 56, 105, 40, 93, 189, 155, 23, 2,
-      ]);
-      const sk = new Uint8Array([
-        114, 54, 69, 150, 127, 24, 154, 74, 203, 198, 101, 138, 26, 233, 160, 137, 224, 2, 108, 75, 141, 166, 239, 172,
-      ]);
+      const sig = getUInt8ArrayFromHex('0808020d040e000505070b0c020b0a0b0e00040b0d0208070c097a1a31b20f48e4');
+      const msg = getUInt8ArrayFromHex('b268b014fdebd6097a1a31b20f48e4e2093869285dbd9b1702');
+      const sk = getUInt8ArrayFromHex('723645967f189a4acbc6658a1ae9a089e0026c4b8da6efac');
       const n = 2;
       const w = 6;
       const params = newWOTSParams(n, w);
-      const pubSeed = new Uint8Array([
-        217, 43, 195, 228, 235, 132, 239, 100, 186, 210, 252, 23, 0, 47, 179, 206, 150, 115, 99, 49, 26, 187, 128, 134,
-        101, 110, 246, 77, 32, 69, 224, 166, 171, 130,
-      ]);
-      const addr = new Uint32Array([253, 215, 207, 144, 64, 155, 102, 31]);
-      const expectedSig = new Uint8Array([
-        230, 213, 215, 44, 58, 144, 232, 247, 57, 34, 134, 197, 101, 141, 171, 217, 43, 14, 100, 242, 118, 92, 8, 7, 12,
-        9, 122, 26, 49, 178, 15, 72, 228,
-      ]);
-      const expectedMsg = new Uint8Array([
-        178, 104, 176, 20, 253, 235, 214, 9, 122, 26, 49, 178, 15, 72, 228, 226, 9, 56, 105, 40, 93, 189, 155, 23, 2,
-      ]);
-      const expectedSk = new Uint8Array([
-        114, 54, 69, 150, 127, 24, 154, 74, 203, 198, 101, 138, 26, 233, 160, 137, 224, 2, 108, 75, 141, 166, 239, 172,
-      ]);
+      const pubSeed = getUInt8ArrayFromHex('d92bc3e4eb84ef64bad2fc17002fb3ce967363311abb8086656ef64d2045e0a6ab82');
+      const addr = getUInt8ArrayFromHex('fdd7cf90409b661f');
+      const expectedSig = getUInt8ArrayFromHex('e6d5d72c3a90e8f7392286c5658dabd92b0e64f2765c08070c097a1a31b20f48e4');
+      const expectedMsg = getUInt8ArrayFromHex('b268b014fdebd6097a1a31b20f48e4e2093869285dbd9b1702');
+      const expectedSk = getUInt8ArrayFromHex('723645967f189a4acbc6658a1ae9a089e0026c4b8da6efac');
       const expectedParams = newWOTSParams(n, w);
-      const expectedPubSeed = new Uint8Array([
-        217, 43, 195, 228, 235, 132, 239, 100, 186, 210, 252, 23, 0, 47, 179, 206, 150, 115, 99, 49, 26, 187, 128, 134,
-        101, 110, 246, 77, 32, 69, 224, 166, 171, 130,
-      ]);
-      const expectedAddr = new Uint32Array([253, 215, 207, 144, 64, 10, 3, 1]);
+      const expectedPubSeed = getUInt8ArrayFromHex(
+        'd92bc3e4eb84ef64bad2fc17002fb3ce967363311abb8086656ef64d2045e0a6ab82'
+      );
+      const expectedAddr = getUInt8ArrayFromHex('fdd7cf90400a0301');
       wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr);
 
       expect(sig).to.deep.equal(expectedSig);
@@ -333,42 +265,22 @@ describe('Test cases for [xmss]', function testFunction() {
 
     it('should sign wots, with SHAKE_256 n[3] w[256]', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_256;
-      const sig = new Uint8Array([
-        94, 41, 14, 122, 27, 26, 103, 13, 225, 153, 164, 236, 149, 75, 253, 59, 114, 172, 163, 230, 161, 149, 76, 9,
-        231, 240, 141,
-      ]);
-      const msg = new Uint8Array([
-        34, 122, 83, 18, 112, 92, 216, 101, 49, 184, 37, 119, 62, 113, 223, 50, 162, 74, 67, 23, 245, 103, 184, 130, 27,
-        156, 153, 196, 32, 48, 65, 130, 207, 64, 226,
-      ]);
-      const sk = new Uint8Array([
-        11, 198, 107, 59, 33, 178, 149, 21, 29, 158, 31, 154, 251, 220, 67, 213, 31, 29, 140, 184, 122, 89, 240, 132,
-        129, 182, 118, 140, 155, 59,
-      ]);
+      const sig = getUInt8ArrayFromHex('5e290e7a1b1a670de199a4ec954bfd3b72aca3e6a1954c09e7f08d');
+      const msg = getUInt8ArrayFromHex('227a5312705cd86531b825773e71df32a24a4317f567b8821b9c99c420304182cf40e2');
+      const sk = getUInt8ArrayFromHex('0bc66b3b21b295151d9e1f9afbdc43d51f1d8cb87a59f08481b6768c9b3b');
       const n = 3;
       const w = 256;
       const params = newWOTSParams(n, w);
-      const pubSeed = new Uint8Array([
-        240, 169, 165, 69, 9, 20, 6, 63, 132, 84, 168, 26, 76, 63, 61, 220, 204, 240, 41, 252, 197, 225, 7, 246, 185,
-      ]);
-      const addr = new Uint32Array([13, 215, 66, 106, 98, 55, 105, 183]);
-      const expectedSig = new Uint8Array([
-        163, 210, 143, 216, 97, 38, 11, 67, 245, 99, 82, 239, 15, 209, 230, 59, 114, 172, 163, 230, 161, 149, 76, 9,
-        231, 240, 141,
-      ]);
-      const expectedMsg = new Uint8Array([
-        34, 122, 83, 18, 112, 92, 216, 101, 49, 184, 37, 119, 62, 113, 223, 50, 162, 74, 67, 23, 245, 103, 184, 130, 27,
-        156, 153, 196, 32, 48, 65, 130, 207, 64, 226,
-      ]);
-      const expectedSk = new Uint8Array([
-        11, 198, 107, 59, 33, 178, 149, 21, 29, 158, 31, 154, 251, 220, 67, 213, 31, 29, 140, 184, 122, 89, 240, 132,
-        129, 182, 118, 140, 155, 59,
-      ]);
+      const pubSeed = getUInt8ArrayFromHex('f0a9a5450914063f8454a81a4c3f3ddcccf029fcc5e107f6b9');
+      const addr = getUInt8ArrayFromHex('0dd7426a623769b7');
+      const expectedSig = getUInt8ArrayFromHex('a3d28fd861260b43f56352ef0fd1e63b72aca3e6a1954c09e7f08d');
+      const expectedMsg = getUInt8ArrayFromHex(
+        '227a5312705cd86531b825773e71df32a24a4317f567b8821b9c99c420304182cf40e2'
+      );
+      const expectedSk = getUInt8ArrayFromHex('0bc66b3b21b295151d9e1f9afbdc43d51f1d8cb87a59f08481b6768c9b3b');
       const expectedParams = newWOTSParams(n, w);
-      const expectedPubSeed = new Uint8Array([
-        240, 169, 165, 69, 9, 20, 6, 63, 132, 84, 168, 26, 76, 63, 61, 220, 204, 240, 41, 252, 197, 225, 7, 246, 185,
-      ]);
-      const expectedAddr = new Uint32Array([13, 215, 66, 106, 98, 4, 13, 1]);
+      const expectedPubSeed = getUInt8ArrayFromHex('f0a9a5450914063f8454a81a4c3f3ddcccf029fcc5e107f6b9');
+      const expectedAddr = getUInt8ArrayFromHex('0dd7426a62040d01');
       wotsSign(hashFunction, sig, msg, sk, params, pubSeed, addr);
 
       expect(sig).to.deep.equal(expectedSig);
@@ -381,58 +293,35 @@ describe('Test cases for [xmss]', function testFunction() {
   });
 
   describe('xmssFastSignMessage', () => {
-    it('should return sigMsg after signing the message, with message[116, 62, ...]', () => {
+    it('should return sigMsg after signing the message, with message[743e...]', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_128;
       const n = 32;
       const height = 4;
       const w = 16;
       const k = 2;
       const params = newXMSSParams(n, height, w, k);
-      const sk = new Uint8Array([
-        175, 164, 62, 237, 79, 76, 8, 86, 43, 180, 106, 168, 95, 139, 122, 187, 198, 147, 211, 215, 139, 152, 26, 170,
-        124, 222, 30, 42, 136, 1, 177, 153, 145, 26, 229, 135, 116, 182, 40, 166, 129, 230, 53, 42, 210, 79, 66, 218,
-        222, 26, 58, 44, 244, 220, 164, 90, 214, 131, 7, 17, 231, 238, 185, 162, 41, 75, 71, 184, 172, 55, 195, 48, 219,
-        75, 71, 25, 58, 152, 69, 18, 137, 121, 180, 35, 242, 222, 64, 217, 55, 62, 116, 214, 184, 58, 157, 212, 245,
-        198, 103, 246, 146, 99, 60, 2, 48, 175, 123, 32, 39, 168, 210, 10, 187, 230, 36, 172, 231, 2, 235, 28, 191, 8,
-        61, 146, 243, 14, 80, 250, 216, 159, 43, 45,
-      ]);
+      const sk = getUInt8ArrayFromHex(
+        'afa43eed4f4c08562bb46aa85f8b7abbc693d3d78b981aaa7cde1e2a8801b199911ae58774b628a681e6352ad24f42dade1a3a2cf4dca45ad6830711e7eeb9a2294b47b8ac37c330db4b47193a9845128979b423f2de40d9373e74d6b83a9dd4f5c667f692633c0230af7b2027a8d20abbe624ace702eb1cbf083d92f30e50fad89f2b2d'
+      );
       const bdsState = newBDSState(height, n, k);
-      const message = new Uint8Array([
-        116, 62, 21, 79, 2, 108, 85, 248, 89, 228, 92, 147, 122, 86, 174, 18, 183, 241, 242, 48, 164, 250, 62, 149, 2,
-        205, 141, 174, 129, 176, 155, 0,
-      ]);
+      const message = getUInt8ArrayFromHex('743e154f026c55f859e45c937a56ae12b7f1f230a4fa3e9502cd8dae81b09b00');
       const expectedParams = newXMSSParams(n, height, w, k);
-      const expectedSk = new Uint8Array([
-        175, 164, 62, 238, 79, 76, 8, 86, 43, 180, 106, 168, 95, 139, 122, 187, 198, 147, 211, 215, 139, 152, 26, 170,
-        124, 222, 30, 42, 136, 1, 177, 153, 145, 26, 229, 135, 116, 182, 40, 166, 129, 230, 53, 42, 210, 79, 66, 218,
-        222, 26, 58, 44, 244, 220, 164, 90, 214, 131, 7, 17, 231, 238, 185, 162, 41, 75, 71, 184, 172, 55, 195, 48, 219,
-        75, 71, 25, 58, 152, 69, 18, 137, 121, 180, 35, 242, 222, 64, 217, 55, 62, 116, 214, 184, 58, 157, 212, 245,
-        198, 103, 246, 146, 99, 60, 2, 48, 175, 123, 32, 39, 168, 210, 10, 187, 230, 36, 172, 231, 2, 235, 28, 191, 8,
-        61, 146, 243, 14, 80, 250, 216, 159, 43, 45,
-      ]);
+      const expectedSk = getUInt8ArrayFromHex(
+        'afa43eee4f4c08562bb46aa85f8b7abbc693d3d78b981aaa7cde1e2a8801b199911ae58774b628a681e6352ad24f42dade1a3a2cf4dca45ad6830711e7eeb9a2294b47b8ac37c330db4b47193a9845128979b423f2de40d9373e74d6b83a9dd4f5c667f692633c0230af7b2027a8d20abbe624ace702eb1cbf083d92f30e50fad89f2b2d'
+      );
       const expectedBdsState = {
-        auth: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
-        keep: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        auth: getUInt8ArrayFromHex(
+          '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
+        keep: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         nextLeaf: 0,
-        retain: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
-        stack: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
-        stackLevels: new Uint8Array([0, 0, 0, 0, 0]),
+        retain: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
+        stack: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
+        stackLevels: getUInt8ArrayFromHex('0000000000'),
         stackOffset: 0,
         treeHash: [
           {
@@ -440,121 +329,21 @@ describe('Test cases for [xmss]', function testFunction() {
             nextIdx: 0,
             stackUsage: 0,
             completed: 0,
-            node: new Uint8Array([
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ]),
+            node: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
           },
           {
             h: 0,
             nextIdx: 0,
             stackUsage: 0,
             completed: 0,
-            node: new Uint8Array([
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ]),
+            node: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
           },
         ],
       };
-      const expectedMessage = new Uint8Array([
-        116, 62, 21, 79, 2, 108, 85, 248, 89, 228, 92, 147, 122, 86, 174, 18, 183, 241, 242, 48, 164, 250, 62, 149, 2,
-        205, 141, 174, 129, 176, 155, 0,
-      ]);
-      const expectedSigMsg = new Uint8Array([
-        175, 164, 62, 237, 56, 53, 95, 198, 208, 224, 108, 72, 195, 200, 38, 113, 176, 192, 17, 54, 207, 152, 169, 101,
-        217, 216, 19, 193, 110, 53, 162, 154, 2, 242, 57, 54, 158, 0, 253, 214, 74, 10, 20, 248, 233, 89, 29, 140, 84,
-        66, 97, 162, 0, 68, 85, 61, 128, 201, 56, 77, 152, 206, 90, 104, 218, 255, 108, 85, 161, 29, 27, 26, 133, 151,
-        252, 65, 216, 96, 248, 185, 106, 119, 12, 74, 221, 242, 104, 69, 170, 212, 73, 83, 40, 147, 112, 171, 139, 123,
-        199, 195, 43, 209, 111, 106, 204, 176, 251, 23, 21, 187, 132, 198, 207, 53, 193, 13, 67, 138, 47, 81, 245, 182,
-        145, 128, 153, 207, 249, 199, 50, 86, 187, 239, 21, 219, 178, 41, 254, 108, 190, 138, 25, 47, 56, 123, 180, 203,
-        213, 117, 88, 36, 23, 127, 255, 157, 60, 22, 164, 147, 249, 158, 59, 46, 171, 93, 16, 178, 183, 93, 213, 238,
-        165, 210, 137, 66, 121, 16, 99, 58, 209, 98, 95, 195, 219, 193, 165, 26, 114, 60, 92, 254, 132, 136, 238, 144,
-        151, 100, 173, 169, 240, 117, 57, 112, 46, 61, 207, 215, 46, 125, 43, 74, 252, 234, 27, 253, 202, 60, 249, 61,
-        17, 231, 185, 254, 236, 73, 187, 230, 85, 204, 24, 19, 9, 167, 131, 113, 15, 18, 216, 200, 73, 35, 112, 223,
-        204, 12, 191, 110, 140, 152, 190, 67, 64, 199, 209, 181, 40, 212, 120, 37, 62, 176, 19, 73, 120, 140, 138, 111,
-        247, 36, 41, 39, 84, 76, 104, 63, 13, 136, 59, 227, 194, 53, 3, 70, 96, 119, 183, 168, 3, 48, 82, 159, 65, 108,
-        176, 162, 116, 246, 54, 190, 69, 85, 191, 201, 19, 223, 236, 115, 36, 238, 149, 223, 174, 34, 185, 68, 71, 162,
-        45, 158, 154, 152, 210, 195, 186, 29, 11, 151, 74, 88, 132, 112, 124, 178, 57, 34, 112, 100, 85, 21, 215, 194,
-        207, 240, 41, 191, 70, 206, 205, 93, 90, 129, 151, 133, 83, 217, 61, 53, 254, 112, 162, 247, 161, 67, 49, 104,
-        102, 88, 18, 47, 227, 173, 187, 64, 85, 141, 140, 206, 228, 154, 83, 72, 81, 103, 237, 22, 54, 60, 133, 109,
-        219, 113, 194, 138, 152, 147, 236, 167, 180, 30, 11, 225, 121, 242, 238, 135, 77, 120, 215, 205, 49, 180, 134,
-        80, 224, 223, 63, 75, 61, 7, 35, 164, 142, 170, 47, 123, 92, 119, 24, 17, 174, 8, 150, 145, 100, 203, 227, 29,
-        123, 250, 211, 12, 180, 161, 198, 159, 104, 125, 50, 67, 173, 242, 239, 253, 254, 129, 85, 211, 15, 104, 138,
-        206, 111, 196, 86, 211, 238, 233, 12, 87, 40, 163, 106, 49, 207, 96, 25, 140, 125, 24, 127, 248, 245, 92, 32,
-        90, 233, 1, 85, 58, 211, 35, 67, 71, 205, 182, 92, 113, 45, 252, 234, 142, 118, 36, 29, 125, 123, 135, 160, 213,
-        60, 220, 10, 38, 160, 162, 246, 81, 130, 182, 178, 137, 236, 27, 16, 61, 207, 29, 160, 88, 154, 163, 134, 165,
-        9, 121, 4, 118, 27, 196, 93, 220, 182, 45, 79, 112, 244, 223, 23, 228, 165, 8, 73, 153, 209, 47, 210, 16, 211,
-        166, 201, 247, 190, 51, 95, 54, 250, 111, 131, 202, 52, 111, 96, 184, 27, 162, 102, 176, 74, 12, 31, 149, 164,
-        24, 192, 173, 174, 34, 69, 81, 61, 154, 225, 55, 115, 255, 242, 252, 131, 67, 6, 159, 189, 27, 207, 220, 46, 87,
-        120, 168, 31, 47, 14, 170, 252, 150, 187, 149, 132, 198, 68, 169, 249, 169, 86, 71, 209, 97, 198, 35, 133, 246,
-        38, 35, 100, 250, 130, 82, 85, 123, 117, 161, 87, 36, 26, 216, 90, 138, 255, 37, 85, 186, 118, 0, 71, 252, 247,
-        52, 91, 9, 188, 3, 71, 122, 187, 149, 47, 124, 166, 135, 49, 135, 196, 102, 63, 36, 220, 213, 77, 151, 58, 227,
-        49, 222, 17, 136, 244, 22, 190, 230, 47, 41, 147, 137, 195, 140, 184, 223, 46, 146, 136, 47, 21, 59, 129, 44,
-        96, 123, 184, 27, 244, 216, 180, 206, 5, 77, 138, 39, 113, 98, 146, 39, 17, 68, 85, 150, 39, 119, 242, 98, 137,
-        184, 250, 142, 60, 56, 248, 0, 194, 108, 184, 94, 86, 5, 225, 112, 44, 160, 169, 128, 58, 89, 65, 97, 60, 150,
-        5, 28, 120, 17, 154, 79, 188, 185, 84, 248, 230, 58, 82, 69, 72, 219, 237, 20, 127, 24, 86, 118, 23, 113, 46,
-        208, 178, 121, 88, 175, 126, 203, 27, 44, 254, 16, 82, 118, 82, 93, 235, 115, 205, 138, 185, 178, 4, 58, 208,
-        200, 74, 222, 133, 187, 112, 101, 243, 185, 189, 193, 48, 9, 187, 122, 224, 120, 235, 133, 170, 205, 208, 22, 6,
-        62, 239, 52, 104, 125, 242, 177, 27, 89, 229, 152, 135, 0, 84, 54, 141, 164, 253, 97, 239, 224, 122, 70, 247,
-        124, 75, 140, 53, 248, 146, 140, 133, 128, 201, 153, 137, 99, 254, 4, 105, 144, 158, 144, 171, 220, 101, 71, 9,
-        87, 154, 234, 238, 6, 135, 225, 201, 150, 71, 250, 173, 91, 132, 81, 56, 222, 154, 169, 238, 233, 143, 32, 88,
-        227, 58, 91, 53, 27, 226, 199, 183, 140, 38, 103, 230, 214, 215, 40, 237, 1, 113, 154, 74, 64, 29, 213, 169, 99,
-        251, 223, 173, 80, 166, 248, 11, 209, 77, 133, 171, 183, 127, 13, 212, 75, 114, 143, 240, 115, 156, 35, 233, 33,
-        34, 134, 231, 188, 95, 245, 97, 9, 101, 166, 187, 23, 103, 255, 144, 99, 74, 141, 247, 78, 77, 228, 220, 14,
-        103, 122, 14, 241, 109, 253, 198, 73, 112, 207, 253, 177, 184, 62, 121, 45, 102, 29, 71, 131, 80, 67, 125, 27,
-        53, 125, 139, 160, 21, 134, 105, 205, 253, 172, 246, 128, 169, 137, 192, 103, 77, 200, 70, 187, 79, 18, 132,
-        215, 128, 30, 149, 182, 11, 24, 1, 209, 15, 156, 131, 0, 244, 179, 159, 134, 237, 78, 237, 195, 113, 60, 122,
-        233, 117, 237, 65, 27, 34, 0, 234, 107, 186, 53, 126, 209, 234, 16, 152, 254, 155, 20, 71, 107, 66, 208, 222,
-        248, 91, 147, 38, 99, 134, 162, 6, 13, 70, 190, 114, 71, 136, 34, 168, 21, 50, 144, 233, 68, 185, 43, 175, 176,
-        246, 177, 204, 200, 97, 37, 18, 141, 95, 38, 186, 110, 238, 14, 254, 186, 111, 132, 41, 14, 242, 222, 136, 159,
-        51, 20, 223, 231, 208, 41, 163, 139, 62, 138, 165, 47, 81, 123, 253, 134, 90, 66, 100, 83, 63, 192, 188, 97, 56,
-        212, 11, 73, 28, 196, 176, 200, 175, 179, 216, 109, 29, 28, 0, 100, 216, 118, 118, 13, 215, 93, 231, 82, 247,
-        153, 120, 127, 122, 205, 242, 3, 100, 224, 11, 151, 4, 252, 242, 72, 210, 238, 217, 107, 119, 227, 118, 13, 213,
-        33, 30, 174, 137, 170, 154, 57, 142, 165, 74, 133, 176, 104, 40, 56, 121, 74, 197, 167, 164, 213, 0, 194, 9,
-        246, 73, 19, 23, 123, 15, 233, 153, 71, 192, 39, 10, 153, 173, 48, 18, 235, 33, 179, 21, 24, 89, 167, 222, 168,
-        241, 107, 36, 4, 53, 142, 60, 73, 113, 172, 133, 131, 238, 103, 78, 92, 51, 105, 126, 242, 220, 233, 54, 117,
-        232, 160, 48, 234, 70, 126, 168, 98, 62, 150, 186, 104, 151, 240, 59, 16, 97, 233, 199, 138, 158, 69, 27, 199,
-        95, 29, 121, 162, 98, 90, 38, 91, 245, 247, 43, 126, 73, 59, 88, 178, 237, 50, 190, 25, 186, 31, 240, 145, 176,
-        110, 84, 32, 88, 35, 161, 34, 112, 201, 58, 192, 154, 109, 138, 233, 106, 19, 246, 237, 87, 139, 16, 100, 65,
-        85, 118, 224, 245, 219, 154, 58, 228, 95, 116, 34, 3, 163, 131, 253, 7, 93, 4, 102, 196, 160, 165, 135, 57, 211,
-        180, 31, 158, 90, 126, 187, 107, 9, 0, 151, 196, 186, 247, 207, 158, 198, 2, 4, 197, 166, 100, 112, 21, 218,
-        140, 156, 75, 112, 114, 51, 73, 228, 202, 249, 148, 105, 175, 122, 61, 173, 198, 17, 156, 250, 155, 162, 232,
-        108, 148, 111, 211, 139, 8, 56, 182, 170, 110, 60, 44, 144, 60, 85, 223, 44, 54, 36, 97, 25, 118, 120, 218, 149,
-        32, 160, 10, 107, 228, 247, 57, 214, 213, 142, 220, 148, 211, 96, 233, 164, 116, 159, 203, 66, 204, 118, 120, 4,
-        121, 68, 159, 33, 160, 160, 184, 64, 204, 144, 69, 220, 128, 207, 65, 208, 13, 205, 184, 214, 121, 32, 206, 196,
-        81, 186, 42, 0, 143, 137, 150, 207, 237, 210, 37, 249, 73, 246, 35, 51, 75, 207, 81, 39, 144, 137, 208, 241,
-        113, 7, 134, 224, 219, 231, 92, 121, 255, 23, 195, 233, 80, 134, 114, 51, 4, 109, 238, 150, 7, 129, 199, 206,
-        53, 232, 225, 195, 139, 136, 107, 98, 39, 216, 238, 217, 144, 62, 15, 226, 17, 197, 240, 126, 3, 12, 157, 27,
-        193, 87, 119, 234, 162, 102, 237, 2, 241, 112, 204, 153, 16, 187, 232, 71, 153, 9, 237, 238, 76, 142, 166, 47,
-        112, 208, 62, 50, 68, 71, 208, 204, 212, 74, 180, 101, 40, 145, 84, 226, 1, 40, 151, 219, 70, 195, 7, 246, 73,
-        15, 58, 89, 233, 27, 0, 137, 6, 19, 93, 107, 23, 105, 173, 15, 60, 119, 170, 228, 167, 19, 79, 131, 206, 15,
-        202, 96, 87, 202, 142, 151, 101, 197, 120, 142, 164, 0, 85, 155, 164, 207, 143, 165, 231, 188, 169, 7, 244, 190,
-        233, 82, 183, 90, 175, 85, 3, 160, 20, 116, 186, 210, 192, 61, 204, 139, 239, 25, 144, 99, 168, 147, 182, 218,
-        249, 211, 84, 222, 146, 85, 111, 222, 35, 246, 152, 103, 217, 184, 87, 62, 43, 116, 106, 156, 224, 105, 24, 137,
-        189, 26, 94, 156, 220, 72, 114, 33, 22, 30, 171, 76, 87, 186, 189, 36, 176, 38, 125, 219, 189, 51, 171, 30, 31,
-        188, 116, 56, 218, 39, 3, 141, 114, 171, 70, 176, 132, 178, 24, 101, 187, 121, 181, 120, 145, 191, 64, 75, 221,
-        62, 44, 213, 30, 98, 158, 58, 160, 120, 182, 24, 38, 46, 105, 116, 225, 44, 18, 55, 117, 221, 111, 222, 154, 12,
-        115, 150, 105, 144, 46, 244, 164, 171, 70, 95, 216, 21, 161, 14, 244, 153, 139, 173, 33, 250, 243, 37, 203, 191,
-        50, 43, 255, 31, 237, 174, 76, 3, 248, 184, 217, 43, 172, 232, 210, 166, 116, 6, 146, 167, 106, 3, 148, 30, 153,
-        85, 12, 130, 201, 80, 24, 194, 180, 57, 209, 145, 54, 2, 48, 165, 100, 70, 114, 114, 228, 4, 16, 193, 235, 12,
-        1, 2, 208, 126, 110, 110, 166, 226, 14, 134, 43, 31, 18, 227, 136, 145, 208, 35, 45, 233, 56, 154, 72, 98, 32,
-        230, 180, 66, 186, 254, 85, 89, 27, 54, 203, 246, 97, 75, 162, 145, 250, 23, 183, 224, 245, 254, 119, 251, 74,
-        81, 176, 11, 77, 226, 217, 190, 52, 179, 62, 90, 226, 128, 254, 126, 180, 40, 215, 163, 143, 110, 58, 246, 199,
-        74, 35, 252, 194, 24, 226, 159, 49, 16, 152, 227, 93, 91, 131, 133, 203, 38, 26, 25, 181, 189, 226, 39, 185,
-        148, 56, 103, 169, 103, 35, 107, 75, 115, 118, 231, 143, 157, 254, 61, 92, 86, 24, 178, 140, 16, 18, 193, 68,
-        161, 188, 7, 150, 80, 164, 253, 45, 130, 174, 37, 206, 242, 89, 77, 48, 99, 210, 197, 95, 223, 80, 170, 142,
-        100, 247, 200, 5, 5, 58, 39, 158, 22, 135, 162, 124, 51, 141, 90, 223, 30, 56, 9, 40, 37, 203, 10, 252, 155,
-        151, 144, 111, 70, 99, 185, 52, 180, 252, 175, 151, 49, 201, 215, 249, 113, 165, 199, 117, 147, 194, 67, 150,
-        184, 246, 0, 152, 196, 87, 116, 235, 78, 61, 194, 84, 251, 157, 188, 202, 121, 35, 5, 152, 222, 239, 53, 109,
-        126, 239, 66, 101, 175, 152, 134, 192, 206, 143, 219, 109, 141, 126, 208, 228, 194, 151, 251, 118, 210, 218,
-        130, 177, 226, 117, 93, 163, 190, 218, 12, 164, 200, 127, 162, 118, 226, 14, 221, 160, 72, 232, 93, 46, 164, 46,
-        207, 192, 197, 169, 195, 114, 74, 92, 13, 78, 85, 187, 68, 14, 148, 37, 133, 120, 109, 15, 84, 250, 35, 44, 182,
-        54, 174, 114, 116, 162, 94, 143, 97, 39, 46, 162, 112, 232, 217, 66, 138, 144, 36, 159, 246, 46, 236, 248, 34,
-        19, 122, 208, 20, 121, 109, 50, 48, 44, 73, 110, 218, 213, 229, 85, 227, 152, 251, 68, 201, 114, 28, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      ]);
+      const expectedMessage = getUInt8ArrayFromHex('743e154f026c55f859e45c937a56ae12b7f1f230a4fa3e9502cd8dae81b09b00');
+      const expectedSigMsg = getUInt8ArrayFromHex(
+        'afa43eed38355fc6d0e06c48c3c82671b0c01136cf98a965d9d813c16e35a29a02f239369e00fdd64a0a14f8e9591d8c544261a20044553d80c9384d98ce5a68daff6c55a11d1b1a8597fc41d860f8b96a770c4addf26845aad44953289370ab8b7bc7c32bd16f6accb0fb1715bb84c6cf35c10d438a2f51f5b6918099cff9c73256bbef15dbb229fe6cbe8a192f387bb4cbd5755824177fff9d3c16a493f99e3b2eab5d10b2b75dd5eea5d289427910633ad1625fc3dbc1a51a723c5cfe8488ee909764ada9f07539702e3dcfd72e7d2b4afcea1bfdca3cf93d11e7b9feec49bbe655cc181309a783710f12d8c8492370dfcc0cbf6e8c98be4340c7d1b528d478253eb01349788c8a6ff7242927544c683f0d883be3c23503466077b7a80330529f416cb0a274f636be4555bfc913dfec7324ee95dfae22b94447a22d9e9a98d2c3ba1d0b974a5884707cb2392270645515d7c2cff029bf46cecd5d5a81978553d93d35fe70a2f7a14331686658122fe3adbb40558d8ccee49a53485167ed16363c856ddb71c28a9893eca7b41e0be179f2ee874d78d7cd31b48650e0df3f4b3d0723a48eaa2f7b5c771811ae08969164cbe31d7bfad30cb4a1c69f687d3243adf2effdfe8155d30f688ace6fc456d3eee90c5728a36a31cf60198c7d187ff8f55c205ae901553ad3234347cdb65c712dfcea8e76241d7d7b87a0d53cdc0a26a0a2f65182b6b289ec1b103dcf1da0589aa386a5097904761bc45ddcb62d4f70f4df17e4a5084999d12fd210d3a6c9f7be335f36fa6f83ca346f60b81ba266b04a0c1f95a418c0adae2245513d9ae13773fff2fc8343069fbd1bcfdc2e5778a81f2f0eaafc96bb9584c644a9f9a95647d161c62385f6262364fa8252557b75a157241ad85a8aff2555ba760047fcf7345b09bc03477abb952f7ca6873187c4663f24dcd54d973ae331de1188f416bee62f299389c38cb8df2e92882f153b812c607bb81bf4d8b4ce054d8a2771629227114455962777f26289b8fa8e3c38f800c26cb85e5605e1702ca0a9803a5941613c96051c78119a4fbcb954f8e63a524548dbed147f18567617712ed0b27958af7ecb1b2cfe105276525deb73cd8ab9b2043ad0c84ade85bb7065f3b9bdc13009bb7ae078eb85aacdd016063eef34687df2b11b59e598870054368da4fd61efe07a46f77c4b8c35f8928c8580c9998963fe0469909e90abdc654709579aeaee0687e1c99647faad5b845138de9aa9eee98f2058e33a5b351be2c7b78c2667e6d6d728ed01719a4a401dd5a963fbdfad50a6f80bd14d85abb77f0dd44b728ff0739c23e9212286e7bc5ff5610965a6bb1767ff90634a8df74e4de4dc0e677a0ef16dfdc64970cffdb1b83e792d661d478350437d1b357d8ba0158669cdfdacf680a989c0674dc846bb4f1284d7801e95b60b1801d10f9c8300f4b39f86ed4eedc3713c7ae975ed411b2200ea6bba357ed1ea1098fe9b14476b42d0def85b93266386a2060d46be72478822a8153290e944b92bafb0f6b1ccc86125128d5f26ba6eee0efeba6f84290ef2de889f3314dfe7d029a38b3e8aa52f517bfd865a4264533fc0bc6138d40b491cc4b0c8afb3d86d1d1c0064d876760dd75de752f799787f7acdf20364e00b9704fcf248d2eed96b77e3760dd5211eae89aa9a398ea54a85b0682838794ac5a7a4d500c209f64913177b0fe99947c0270a99ad3012eb21b3151859a7dea8f16b2404358e3c4971ac8583ee674e5c33697ef2dce93675e8a030ea467ea8623e96ba6897f03b1061e9c78a9e451bc75f1d79a2625a265bf5f72b7e493b58b2ed32be19ba1ff091b06e54205823a12270c93ac09a6d8ae96a13f6ed578b1064415576e0f5db9a3ae45f742203a383fd075d0466c4a0a58739d3b41f9e5a7ebb6b090097c4baf7cf9ec60204c5a6647015da8c9c4b70723349e4caf99469af7a3dadc6119cfa9ba2e86c946fd38b0838b6aa6e3c2c903c55df2c362461197678da9520a00a6be4f739d6d58edc94d360e9a4749fcb42cc76780479449f21a0a0b840cc9045dc80cf41d00dcdb8d67920cec451ba2a008f8996cfedd225f949f623334bcf51279089d0f1710786e0dbe75c79ff17c3e950867233046dee960781c7ce35e8e1c38b886b6227d8eed9903e0fe211c5f07e030c9d1bc15777eaa266ed02f170cc9910bbe8479909edee4c8ea62f70d03e324447d0ccd44ab465289154e2012897db46c307f6490f3a59e91b008906135d6b1769ad0f3c77aae4a7134f83ce0fca6057ca8e9765c5788ea400559ba4cf8fa5e7bca907f4bee952b75aaf5503a01474bad2c03dcc8bef199063a893b6daf9d354de92556fde23f69867d9b8573e2b746a9ce0691889bd1a5e9cdc487221161eab4c57babd24b0267ddbbd33ab1e1fbc7438da27038d72ab46b084b21865bb79b57891bf404bdd3e2cd51e629e3aa078b618262e6974e12c123775dd6fde9a0c739669902ef4a4ab465fd815a10ef4998bad21faf325cbbf322bff1fedae4c03f8b8d92bace8d2a6740692a76a03941e99550c82c95018c2b439d191360230a564467272e40410c1eb0c0102d07e6e6ea6e20e862b1f12e38891d0232de9389a486220e6b442bafe55591b36cbf6614ba291fa17b7e0f5fe77fb4a51b00b4de2d9be34b33e5ae280fe7eb428d7a38f6e3af6c74a23fcc218e29f311098e35d5b8385cb261a19b5bde227b9943867a967236b4b7376e78f9dfe3d5c5618b28c1012c144a1bc079650a4fd2d82ae25cef2594d3063d2c55fdf50aa8e64f7c805053a279e1687a27c338d5adf1e38092825cb0afc9b97906f4663b934b4fcaf9731c9d7f971a5c77593c24396b8f60098c45774eb4e3dc254fb9dbcca79230598deef356d7eef4265af9886c0ce8fdb6d8d7ed0e4c297fb76d2da82b1e2755da3beda0ca4c87fa276e20edda048e85d2ea42ecfc0c5a9c3724a5c0d4e55bb440e942585786d0f54fa232cb636ae7274a25e8f61272ea270e8d9428a90249ff62eecf822137ad014796d32302c496edad5e555e398fb44c9721c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+      );
       const { sigMsg, error } = xmssFastSignMessage(hashFunction, params, sk, bdsState, message);
 
       expect(params).to.deep.equal(expectedParams);
@@ -565,57 +354,35 @@ describe('Test cases for [xmss]', function testFunction() {
       expect(error).to.equal(null);
     });
 
-    it('should return sigMsg after signing the message, with message[0, 0, ...]', () => {
+    it('should return sigMsg after signing the message, with message[0000...]', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_128;
       const n = 32;
       const height = 4;
       const w = 16;
       const k = 2;
       const params = newXMSSParams(n, height, w, k);
-      const sk = new Uint8Array([
-        0, 0, 0, 0, 237, 163, 19, 201, 85, 145, 160, 35, 165, 179, 127, 54, 28, 7, 165, 117, 58, 146, 211, 208, 66, 116,
-        89, 243, 76, 120, 149, 215, 39, 214, 40, 22, 179, 170, 34, 36, 235, 157, 130, 49, 39, 212, 249, 248, 163, 15,
-        215, 161, 160, 44, 100, 131, 217, 192, 241, 253, 65, 149, 123, 154, 228, 223, 198, 58, 49, 145, 218, 52, 66,
-        104, 98, 130, 179, 213, 22, 15, 37, 207, 22, 42, 81, 127, 210, 19, 31, 131, 251, 242, 105, 138, 88, 249, 196,
-        106, 252, 93, 194, 81, 136, 181, 133, 247, 49, 193, 40, 226, 180, 87, 6, 158, 175, 209, 227, 250, 57, 97, 96,
-        90, 248, 197, 138, 26, 236, 77, 130, 172, 49, 109,
-      ]);
+      const sk = getUInt8ArrayFromHex(
+        '00000000eda313c95591a023a5b37f361c07a5753a92d3d0427459f34c7895d727d62816b3aa2224eb9d823127d4f9f8a30fd7a1a02c6483d9c0f1fd41957b9ae4dfc63a3191da3442686282b3d5160f25cf162a517fd2131f83fbf2698a58f9c46afc5dc25188b585f731c128e2b457069eafd1e3fa3961605af8c58a1aec4d82ac316d'
+      );
       const bdsState = newBDSState(height, n, k);
-      const message = new Uint8Array([
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      ]);
+      const message = getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000');
       const expectedParams = newXMSSParams(n, height, w, k);
-      const expectedSk = new Uint8Array([
-        0, 0, 0, 1, 237, 163, 19, 201, 85, 145, 160, 35, 165, 179, 127, 54, 28, 7, 165, 117, 58, 146, 211, 208, 66, 116,
-        89, 243, 76, 120, 149, 215, 39, 214, 40, 22, 179, 170, 34, 36, 235, 157, 130, 49, 39, 212, 249, 248, 163, 15,
-        215, 161, 160, 44, 100, 131, 217, 192, 241, 253, 65, 149, 123, 154, 228, 223, 198, 58, 49, 145, 218, 52, 66,
-        104, 98, 130, 179, 213, 22, 15, 37, 207, 22, 42, 81, 127, 210, 19, 31, 131, 251, 242, 105, 138, 88, 249, 196,
-        106, 252, 93, 194, 81, 136, 181, 133, 247, 49, 193, 40, 226, 180, 87, 6, 158, 175, 209, 227, 250, 57, 97, 96,
-        90, 248, 197, 138, 26, 236, 77, 130, 172, 49, 109,
-      ]);
+      const expectedSk = getUInt8ArrayFromHex(
+        '00000001eda313c95591a023a5b37f361c07a5753a92d3d0427459f34c7895d727d62816b3aa2224eb9d823127d4f9f8a30fd7a1a02c6483d9c0f1fd41957b9ae4dfc63a3191da3442686282b3d5160f25cf162a517fd2131f83fbf2698a58f9c46afc5dc25188b585f731c128e2b457069eafd1e3fa3961605af8c58a1aec4d82ac316d'
+      );
       const expectedBdsState = {
-        auth: new Uint8Array([
-          60, 137, 245, 64, 97, 152, 193, 57, 123, 165, 33, 143, 119, 26, 81, 84, 157, 94, 108, 98, 197, 133, 57, 194,
-          131, 24, 156, 191, 2, 137, 159, 166, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
-        keep: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        auth: getUInt8ArrayFromHex(
+          '3c89f5406198c1397ba5218f771a51549d5e6c62c58539c283189cbf02899fa6000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
+        keep: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         nextLeaf: 0,
-        retain: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
-        stack: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
-        stackLevels: new Uint8Array([0, 0, 0, 0, 0]),
+        retain: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
+        stack: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
+        stackLevels: getUInt8ArrayFromHex('0000000000'),
         stackOffset: 0,
         treeHash: [
           {
@@ -623,120 +390,21 @@ describe('Test cases for [xmss]', function testFunction() {
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              60, 137, 245, 64, 97, 152, 193, 57, 123, 165, 33, 143, 119, 26, 81, 84, 157, 94, 108, 98, 197, 133, 57,
-              194, 131, 24, 156, 191, 2, 137, 159, 166,
-            ]),
+            node: getUInt8ArrayFromHex('3c89f5406198c1397ba5218f771a51549d5e6c62c58539c283189cbf02899fa6'),
           },
           {
             h: 0,
             nextIdx: 0,
             stackUsage: 0,
             completed: 0,
-            node: new Uint8Array([
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ]),
+            node: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
           },
         ],
       };
-      const expectedMessage = new Uint8Array([
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      ]);
-      const expectedSigMsg = new Uint8Array([
-        0, 0, 0, 0, 16, 221, 252, 63, 123, 251, 156, 149, 204, 72, 244, 207, 172, 30, 255, 44, 187, 3, 192, 208, 100,
-        126, 65, 168, 77, 232, 211, 236, 235, 254, 11, 194, 93, 229, 111, 117, 118, 173, 145, 2, 222, 214, 65, 109, 196,
-        141, 182, 25, 199, 237, 40, 228, 222, 143, 26, 31, 164, 202, 160, 239, 217, 218, 237, 151, 12, 142, 159, 15,
-        125, 230, 224, 165, 146, 175, 143, 187, 190, 100, 149, 202, 169, 2, 145, 101, 122, 227, 88, 24, 87, 226, 22,
-        243, 8, 122, 208, 208, 12, 153, 72, 237, 249, 83, 216, 163, 76, 74, 192, 203, 158, 103, 32, 8, 94, 48, 248, 150,
-        143, 15, 70, 215, 100, 132, 28, 66, 55, 107, 31, 73, 146, 13, 89, 49, 218, 20, 136, 15, 249, 143, 36, 0, 166,
-        93, 31, 239, 124, 146, 249, 57, 94, 177, 79, 146, 96, 126, 73, 160, 152, 130, 71, 86, 30, 6, 171, 10, 192, 229,
-        101, 141, 243, 219, 131, 182, 190, 248, 221, 195, 122, 180, 81, 109, 92, 214, 12, 12, 100, 77, 183, 143, 178,
-        214, 62, 156, 93, 57, 235, 244, 18, 130, 117, 23, 76, 102, 141, 223, 154, 82, 178, 93, 193, 205, 254, 227, 158,
-        213, 69, 46, 7, 167, 237, 204, 59, 118, 147, 199, 110, 11, 7, 94, 25, 250, 140, 39, 91, 153, 65, 181, 23, 101,
-        82, 34, 83, 43, 99, 193, 135, 6, 205, 169, 127, 76, 50, 160, 114, 4, 104, 115, 19, 80, 156, 252, 170, 10, 100,
-        175, 165, 114, 237, 26, 250, 128, 170, 72, 90, 128, 91, 69, 107, 40, 250, 36, 77, 117, 142, 31, 162, 179, 40,
-        53, 235, 165, 53, 81, 185, 92, 34, 232, 128, 15, 10, 137, 88, 144, 218, 100, 54, 170, 242, 94, 228, 139, 3, 7,
-        65, 223, 182, 221, 237, 113, 45, 29, 242, 156, 126, 128, 170, 31, 112, 22, 94, 200, 145, 41, 102, 206, 102, 102,
-        166, 195, 102, 91, 52, 80, 236, 46, 21, 226, 158, 120, 15, 152, 178, 255, 236, 0, 220, 211, 174, 220, 45, 4,
-        164, 60, 237, 71, 209, 197, 41, 23, 168, 82, 143, 166, 164, 108, 119, 172, 194, 39, 214, 143, 84, 106, 18, 130,
-        95, 205, 206, 27, 36, 70, 251, 188, 112, 71, 51, 126, 142, 236, 41, 109, 146, 89, 215, 95, 244, 178, 25, 214,
-        54, 208, 152, 35, 146, 106, 229, 123, 193, 216, 224, 87, 128, 4, 141, 39, 117, 81, 2, 68, 99, 93, 6, 242, 44,
-        72, 173, 41, 158, 0, 104, 130, 171, 126, 237, 43, 12, 88, 99, 20, 2, 26, 104, 19, 191, 113, 12, 193, 231, 227,
-        27, 233, 48, 127, 220, 221, 161, 94, 132, 211, 186, 133, 58, 2, 158, 177, 115, 47, 246, 165, 86, 9, 49, 251,
-        118, 52, 206, 212, 148, 142, 16, 70, 175, 148, 154, 149, 213, 179, 243, 81, 14, 137, 33, 183, 219, 4, 201, 223,
-        216, 85, 53, 55, 231, 216, 221, 38, 160, 201, 52, 56, 187, 58, 195, 150, 190, 213, 138, 227, 217, 108, 25, 189,
-        170, 106, 27, 250, 28, 184, 179, 238, 236, 192, 69, 138, 26, 55, 196, 215, 121, 3, 15, 180, 75, 161, 2, 14, 121,
-        197, 109, 206, 180, 67, 134, 135, 2, 160, 113, 129, 247, 116, 13, 197, 20, 119, 146, 141, 166, 49, 181, 43, 146,
-        141, 11, 129, 201, 163, 122, 73, 160, 166, 49, 28, 22, 221, 98, 41, 186, 201, 216, 144, 172, 143, 242, 211, 105,
-        214, 200, 157, 86, 56, 168, 127, 61, 162, 162, 237, 8, 135, 137, 125, 142, 56, 177, 1, 137, 188, 206, 137, 107,
-        228, 194, 99, 120, 245, 246, 42, 147, 169, 114, 219, 5, 141, 127, 128, 37, 9, 75, 25, 212, 234, 217, 78, 128,
-        79, 53, 50, 58, 136, 145, 216, 10, 135, 159, 160, 98, 203, 57, 84, 217, 108, 100, 81, 167, 104, 202, 48, 115,
-        246, 137, 34, 140, 98, 155, 33, 45, 222, 45, 100, 96, 93, 129, 183, 246, 99, 202, 180, 208, 181, 107, 158, 67,
-        237, 201, 165, 143, 146, 182, 164, 160, 61, 205, 190, 96, 250, 67, 18, 158, 103, 132, 74, 134, 125, 53, 13, 102,
-        138, 47, 63, 206, 226, 108, 146, 229, 83, 33, 5, 33, 95, 203, 110, 99, 230, 12, 75, 217, 215, 58, 63, 97, 102,
-        154, 184, 114, 180, 114, 86, 144, 198, 48, 77, 155, 198, 173, 203, 63, 86, 75, 24, 15, 228, 172, 170, 74, 55,
-        205, 77, 1, 139, 58, 13, 193, 22, 83, 172, 103, 148, 52, 99, 29, 123, 39, 36, 127, 236, 166, 74, 138, 5, 217,
-        113, 212, 179, 35, 140, 228, 33, 125, 75, 41, 2, 53, 176, 30, 84, 185, 222, 105, 253, 1, 69, 6, 121, 177, 100,
-        196, 95, 206, 168, 216, 115, 234, 75, 208, 176, 55, 125, 54, 80, 106, 152, 57, 46, 40, 254, 129, 197, 37, 112,
-        61, 169, 228, 166, 54, 239, 76, 26, 201, 144, 183, 39, 134, 157, 162, 229, 74, 142, 210, 117, 117, 43, 142, 217,
-        20, 217, 11, 198, 133, 206, 87, 42, 131, 3, 47, 4, 242, 102, 216, 187, 20, 244, 80, 145, 124, 145, 204, 131,
-        199, 228, 4, 173, 41, 5, 207, 190, 78, 162, 228, 11, 117, 124, 126, 62, 64, 151, 246, 180, 172, 145, 87, 131,
-        107, 30, 164, 17, 127, 206, 207, 183, 82, 73, 100, 246, 4, 85, 152, 76, 5, 116, 173, 255, 234, 40, 148, 20, 222,
-        165, 51, 44, 40, 31, 198, 88, 174, 224, 45, 148, 133, 158, 15, 147, 84, 114, 53, 130, 52, 220, 155, 139, 106,
-        68, 168, 74, 132, 61, 223, 8, 202, 33, 197, 199, 153, 102, 231, 245, 7, 76, 109, 255, 43, 4, 11, 74, 175, 213,
-        130, 137, 216, 46, 225, 193, 219, 202, 32, 187, 79, 173, 31, 234, 71, 0, 199, 41, 82, 12, 7, 215, 215, 224, 113,
-        208, 102, 209, 220, 181, 15, 173, 239, 86, 169, 165, 110, 202, 155, 9, 72, 47, 5, 19, 143, 77, 34, 89, 131, 156,
-        128, 174, 30, 179, 241, 14, 39, 35, 63, 135, 97, 205, 122, 103, 134, 146, 77, 108, 239, 167, 174, 203, 97, 13,
-        193, 70, 237, 146, 166, 236, 157, 52, 180, 23, 92, 209, 59, 197, 79, 32, 32, 132, 250, 76, 91, 129, 185, 203,
-        132, 108, 186, 13, 80, 30, 218, 193, 220, 157, 168, 193, 61, 181, 58, 191, 97, 40, 107, 93, 167, 193, 214, 236,
-        178, 158, 46, 212, 174, 169, 5, 126, 104, 119, 7, 214, 152, 132, 182, 22, 134, 137, 77, 9, 62, 44, 225, 91, 130,
-        81, 136, 96, 45, 159, 0, 249, 81, 61, 191, 59, 44, 47, 217, 176, 189, 227, 184, 49, 53, 86, 195, 201, 129, 203,
-        112, 197, 131, 135, 156, 253, 43, 46, 141, 103, 205, 76, 135, 73, 168, 238, 41, 212, 43, 218, 201, 205, 95, 244,
-        77, 131, 117, 196, 149, 254, 192, 120, 0, 81, 216, 5, 229, 230, 38, 18, 57, 59, 36, 234, 41, 35, 36, 201, 212,
-        88, 81, 124, 165, 207, 6, 249, 186, 201, 221, 200, 77, 3, 210, 12, 121, 255, 141, 84, 223, 41, 124, 75, 99, 13,
-        95, 209, 158, 117, 98, 30, 117, 38, 145, 103, 64, 6, 92, 79, 199, 74, 36, 102, 195, 44, 109, 159, 13, 156, 77,
-        238, 107, 108, 196, 12, 78, 53, 231, 125, 121, 167, 46, 193, 86, 101, 65, 130, 62, 10, 203, 211, 16, 34, 206,
-        175, 213, 135, 16, 40, 154, 192, 105, 158, 214, 226, 81, 134, 99, 140, 55, 151, 154, 14, 87, 242, 219, 13, 97,
-        57, 96, 139, 107, 255, 59, 72, 214, 43, 168, 115, 121, 246, 66, 160, 2, 86, 29, 195, 138, 189, 201, 183, 153,
-        224, 194, 208, 53, 111, 113, 73, 20, 244, 212, 49, 110, 59, 167, 112, 196, 171, 126, 48, 194, 43, 224, 160, 185,
-        32, 241, 50, 75, 237, 235, 40, 62, 32, 42, 157, 175, 135, 180, 149, 156, 177, 22, 23, 161, 246, 77, 50, 129, 40,
-        66, 143, 199, 204, 121, 71, 191, 225, 82, 89, 253, 17, 168, 187, 102, 57, 22, 162, 136, 145, 222, 200, 51, 76,
-        21, 71, 211, 113, 81, 160, 95, 221, 253, 224, 25, 10, 218, 50, 45, 190, 157, 219, 131, 235, 5, 149, 178, 117,
-        24, 39, 120, 43, 158, 231, 142, 62, 144, 160, 31, 20, 33, 39, 159, 205, 13, 207, 16, 150, 157, 24, 99, 60, 75,
-        164, 60, 191, 42, 131, 100, 250, 34, 195, 41, 93, 71, 26, 220, 65, 101, 29, 11, 207, 54, 117, 31, 228, 158, 20,
-        108, 184, 93, 95, 63, 155, 156, 103, 48, 190, 220, 99, 136, 230, 56, 209, 230, 92, 129, 249, 37, 77, 214, 43,
-        168, 38, 76, 26, 224, 22, 249, 205, 51, 186, 80, 161, 87, 118, 60, 163, 209, 116, 145, 182, 164, 135, 214, 57,
-        139, 206, 158, 195, 104, 130, 174, 248, 77, 12, 192, 120, 221, 179, 41, 174, 241, 150, 44, 134, 175, 57, 37,
-        107, 198, 90, 185, 38, 82, 110, 168, 215, 178, 144, 186, 173, 242, 20, 93, 78, 10, 202, 243, 12, 36, 253, 109,
-        96, 60, 27, 60, 255, 26, 108, 81, 255, 65, 228, 171, 95, 97, 172, 189, 11, 253, 12, 194, 60, 24, 166, 132, 228,
-        12, 165, 241, 22, 43, 8, 194, 65, 149, 103, 146, 133, 94, 162, 151, 18, 199, 159, 251, 235, 4, 223, 50, 208, 39,
-        251, 104, 218, 59, 102, 117, 21, 192, 81, 164, 7, 21, 166, 120, 30, 204, 3, 19, 252, 145, 232, 212, 75, 142,
-        254, 206, 105, 178, 197, 51, 29, 250, 19, 169, 6, 17, 85, 50, 109, 16, 106, 33, 179, 194, 11, 132, 224, 200,
-        178, 249, 186, 112, 23, 182, 100, 52, 236, 187, 159, 45, 214, 250, 239, 198, 124, 218, 233, 98, 253, 159, 116,
-        9, 59, 82, 201, 227, 40, 145, 177, 144, 132, 12, 214, 51, 63, 228, 228, 191, 89, 80, 133, 41, 229, 171, 59, 91,
-        26, 186, 131, 86, 95, 245, 212, 122, 58, 7, 181, 90, 186, 242, 164, 98, 174, 6, 207, 231, 231, 43, 244, 161,
-        135, 3, 227, 194, 168, 64, 243, 253, 31, 38, 54, 20, 219, 114, 240, 212, 232, 57, 30, 52, 139, 17, 113, 131, 25,
-        50, 78, 141, 22, 83, 125, 23, 155, 252, 176, 56, 153, 117, 85, 182, 125, 234, 225, 134, 129, 154, 97, 174, 98,
-        151, 175, 157, 177, 227, 19, 238, 170, 155, 88, 195, 178, 183, 145, 143, 30, 227, 76, 68, 97, 232, 145, 45, 210,
-        148, 74, 191, 37, 78, 154, 46, 54, 169, 156, 57, 32, 101, 64, 139, 3, 18, 81, 255, 8, 149, 183, 231, 35, 29, 71,
-        88, 82, 246, 213, 26, 196, 80, 244, 145, 172, 118, 203, 141, 173, 5, 59, 81, 26, 23, 252, 243, 153, 129, 22, 86,
-        112, 174, 94, 171, 97, 24, 197, 6, 188, 28, 103, 192, 53, 229, 37, 221, 35, 204, 100, 72, 215, 184, 188, 43, 12,
-        194, 26, 45, 48, 22, 125, 67, 204, 143, 230, 198, 55, 58, 4, 27, 42, 45, 114, 13, 206, 132, 91, 225, 120, 205,
-        81, 232, 31, 46, 182, 147, 31, 205, 30, 99, 119, 133, 80, 96, 14, 145, 88, 92, 200, 50, 191, 77, 34, 21, 123,
-        173, 197, 187, 13, 161, 225, 47, 160, 160, 55, 53, 240, 63, 56, 117, 28, 11, 198, 76, 224, 73, 5, 7, 27, 118,
-        217, 204, 224, 62, 238, 192, 238, 254, 130, 26, 2, 143, 77, 24, 223, 178, 232, 209, 21, 99, 198, 238, 193, 176,
-        138, 231, 129, 24, 172, 61, 98, 215, 149, 64, 236, 236, 14, 17, 249, 252, 95, 81, 210, 251, 56, 103, 238, 164,
-        92, 31, 176, 217, 240, 58, 48, 209, 121, 134, 21, 203, 186, 71, 14, 187, 96, 40, 16, 56, 9, 213, 4, 202, 202,
-        194, 108, 251, 88, 61, 188, 177, 16, 74, 173, 222, 91, 51, 43, 105, 56, 131, 46, 249, 31, 87, 200, 66, 88, 130,
-        194, 125, 161, 252, 138, 87, 63, 29, 154, 195, 135, 152, 245, 128, 134, 36, 214, 76, 149, 202, 162, 177, 0, 154,
-        181, 209, 186, 53, 176, 61, 67, 175, 234, 49, 205, 75, 237, 83, 171, 87, 234, 140, 96, 9, 162, 4, 176, 211, 14,
-        10, 214, 51, 164, 54, 162, 183, 22, 134, 1, 132, 145, 144, 99, 206, 90, 221, 172, 4, 52, 122, 27, 235, 163, 208,
-        62, 65, 237, 111, 252, 88, 169, 23, 177, 63, 182, 79, 31, 54, 197, 247, 36, 77, 251, 250, 84, 101, 171, 158, 93,
-        222, 157, 65, 184, 117, 242, 48, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      ]);
+      const expectedMessage = getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000');
+      const expectedSigMsg = getUInt8ArrayFromHex(
+        '0000000010ddfc3f7bfb9c95cc48f4cfac1eff2cbb03c0d0647e41a84de8d3ecebfe0bc25de56f7576ad9102ded6416dc48db619c7ed28e4de8f1a1fa4caa0efd9daed970c8e9f0f7de6e0a592af8fbbbe6495caa90291657ae3581857e216f3087ad0d00c9948edf953d8a34c4ac0cb9e6720085e30f8968f0f46d764841c42376b1f49920d5931da14880ff98f2400a65d1fef7c92f9395eb14f92607e49a0988247561e06ab0ac0e5658df3db83b6bef8ddc37ab4516d5cd60c0c644db78fb2d63e9c5d39ebf4128275174c668ddf9a52b25dc1cdfee39ed5452e07a7edcc3b7693c76e0b075e19fa8c275b9941b517655222532b63c18706cda97f4c32a07204687313509cfcaa0a64afa572ed1afa80aa485a805b456b28fa244d758e1fa2b32835eba53551b95c22e8800f0a895890da6436aaf25ee48b030741dfb6dded712d1df29c7e80aa1f70165ec8912966ce6666a6c3665b3450ec2e15e29e780f98b2ffec00dcd3aedc2d04a43ced47d1c52917a8528fa6a46c77acc227d68f546a12825fcdce1b2446fbbc7047337e8eec296d9259d75ff4b219d636d09823926ae57bc1d8e05780048d2775510244635d06f22c48ad299e006882ab7eed2b0c586314021a6813bf710cc1e7e31be9307fdcdda15e84d3ba853a029eb1732ff6a5560931fb7634ced4948e1046af949a95d5b3f3510e8921b7db04c9dfd8553537e7d8dd26a0c93438bb3ac396bed58ae3d96c19bdaa6a1bfa1cb8b3eeecc0458a1a37c4d779030fb44ba1020e79c56dceb443868702a07181f7740dc51477928da631b52b928d0b81c9a37a49a0a6311c16dd6229bac9d890ac8ff2d369d6c89d5638a87f3da2a2ed0887897d8e38b10189bcce896be4c26378f5f62a93a972db058d7f8025094b19d4ead94e804f35323a8891d80a879fa062cb3954d96c6451a768ca3073f689228c629b212dde2d64605d81b7f663cab4d0b56b9e43edc9a58f92b6a4a03dcdbe60fa43129e67844a867d350d668a2f3fcee26c92e5532105215fcb6e63e60c4bd9d73a3f61669ab872b4725690c6304d9bc6adcb3f564b180fe4acaa4a37cd4d018b3a0dc11653ac679434631d7b27247feca64a8a05d971d4b3238ce4217d4b290235b01e54b9de69fd01450679b164c45fcea8d873ea4bd0b0377d36506a98392e28fe81c525703da9e4a636ef4c1ac990b727869da2e54a8ed275752b8ed914d90bc685ce572a83032f04f266d8bb14f450917c91cc83c7e404ad2905cfbe4ea2e40b757c7e3e4097f6b4ac9157836b1ea4117fcecfb7524964f60455984c0574adffea289414dea5332c281fc658aee02d94859e0f935472358234dc9b8b6a44a84a843ddf08ca21c5c79966e7f5074c6dff2b040b4aafd58289d82ee1c1dbca20bb4fad1fea4700c729520c07d7d7e071d066d1dcb50fadef56a9a56eca9b09482f05138f4d2259839c80ae1eb3f10e27233f8761cd7a6786924d6cefa7aecb610dc146ed92a6ec9d34b4175cd13bc54f202084fa4c5b81b9cb846cba0d501edac1dc9da8c13db53abf61286b5da7c1d6ecb29e2ed4aea9057e687707d69884b61686894d093e2ce15b825188602d9f00f9513dbf3b2c2fd9b0bde3b8313556c3c981cb70c583879cfd2b2e8d67cd4c8749a8ee29d42bdac9cd5ff44d8375c495fec0780051d805e5e62612393b24ea292324c9d458517ca5cf06f9bac9ddc84d03d20c79ff8d54df297c4b630d5fd19e75621e7526916740065c4fc74a2466c32c6d9f0d9c4dee6b6cc40c4e35e77d79a72ec1566541823e0acbd31022ceafd58710289ac0699ed6e25186638c37979a0e57f2db0d6139608b6bff3b48d62ba87379f642a002561dc38abdc9b799e0c2d0356f714914f4d4316e3ba770c4ab7e30c22be0a0b920f1324bedeb283e202a9daf87b4959cb11617a1f64d328128428fc7cc7947bfe15259fd11a8bb663916a28891dec8334c1547d37151a05fddfde0190ada322dbe9ddb83eb0595b2751827782b9ee78e3e90a01f1421279fcd0dcf10969d18633c4ba43cbf2a8364fa22c3295d471adc41651d0bcf36751fe49e146cb85d5f3f9b9c6730bedc6388e638d1e65c81f9254dd62ba8264c1ae016f9cd33ba50a157763ca3d17491b6a487d6398bce9ec36882aef84d0cc078ddb329aef1962c86af39256bc65ab926526ea8d7b290baadf2145d4e0acaf30c24fd6d603c1b3cff1a6c51ff41e4ab5f61acbd0bfd0cc23c18a684e40ca5f1162b08c241956792855ea29712c79ffbeb04df32d027fb68da3b667515c051a40715a6781ecc0313fc91e8d44b8efece69b2c5331dfa13a9061155326d106a21b3c20b84e0c8b2f9ba7017b66434ecbb9f2dd6faefc67cdae962fd9f74093b52c9e32891b190840cd6333fe4e4bf59508529e5ab3b5b1aba83565ff5d47a3a07b55abaf2a462ae06cfe7e72bf4a18703e3c2a840f3fd1f263614db72f0d4e8391e348b11718319324e8d16537d179bfcb038997555b67deae186819a61ae6297af9db1e313eeaa9b58c3b2b7918f1ee34c4461e8912dd2944abf254e9a2e36a99c392065408b031251ff0895b7e7231d475852f6d51ac450f491ac76cb8dad053b511a17fcf39981165670ae5eab6118c506bc1c67c035e525dd23cc6448d7b8bc2b0cc21a2d30167d43cc8fe6c6373a041b2a2d720dce845be178cd51e81f2eb6931fcd1e63778550600e91585cc832bf4d22157badc5bb0da1e12fa0a03735f03f38751c0bc64ce04905071b76d9cce03eeec0eefe821a028f4d18dfb2e8d11563c6eec1b08ae78118ac3d62d79540ecec0e11f9fc5f51d2fb3867eea45c1fb0d9f03a30d1798615cbba470ebb6028103809d504cacac26cfb583dbcb1104aadde5b332b6938832ef91f57c8425882c27da1fc8a573f1d9ac38798f5808624d64c95caa2b1009ab5d1ba35b03d43afea31cd4bed53ab57ea8c6009a204b0d30e0ad633a436a2b716860184919063ce5addac04347a1beba3d03e41ed6ffc58a917b13fb64f1f36c5f7244dfbfa5465ab9e5dde9d41b875f230140000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+      );
       const { sigMsg, error } = xmssFastSignMessage(hashFunction, params, sk, bdsState, message);
 
       expect(params).to.deep.equal(expectedParams);
@@ -747,58 +415,35 @@ describe('Test cases for [xmss]', function testFunction() {
       expect(error).to.equal(null);
     });
 
-    it('should return sigMsg after signing the message, with message[104, 188, ...]', () => {
+    it('should return sigMsg after signing the message, with message[68bc...]', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_256;
       const n = 32;
       const height = 4;
       const w = 16;
       const k = 2;
       const params = newXMSSParams(n, height, w, k);
-      const sk = new Uint8Array([
-        177, 2, 23, 207, 113, 64, 68, 168, 145, 161, 159, 60, 23, 178, 103, 80, 16, 224, 93, 94, 168, 74, 150, 177, 129,
-        146, 105, 149, 223, 91, 189, 219, 82, 59, 118, 81, 127, 163, 34, 207, 94, 197, 55, 252, 106, 127, 116, 166, 240,
-        17, 15, 153, 111, 198, 90, 106, 155, 213, 242, 184, 170, 87, 170, 104, 213, 206, 3, 228, 222, 181, 62, 214, 217,
-        118, 163, 23, 208, 59, 37, 14, 135, 2, 246, 141, 158, 93, 10, 65, 197, 172, 108, 94, 203, 241, 78, 182, 218,
-        114, 40, 174, 207, 198, 81, 128, 140, 221, 159, 232, 161, 55, 125, 144, 120, 55, 162, 192, 146, 225, 42, 200, 8,
-        58, 85, 222, 144, 79, 84, 178, 146, 196, 8, 103,
-      ]);
+      const sk = getUInt8ArrayFromHex(
+        'b10217cf714044a891a19f3c17b2675010e05d5ea84a96b181926995df5bbddb523b76517fa322cf5ec537fc6a7f74a6f0110f996fc65a6a9bd5f2b8aa57aa68d5ce03e4deb53ed6d976a317d03b250e8702f68d9e5d0a41c5ac6c5ecbf14eb6da7228aecfc651808cdd9fe8a1377d907837a2c092e12ac8083a55de904f54b292c40867'
+      );
       const bdsState = newBDSState(height, n, k);
-      const message = new Uint8Array([
-        104, 188, 39, 89, 62, 198, 136, 70, 70, 34, 193, 94, 130, 14, 84, 86, 110, 28, 151, 246, 202, 79, 180, 172, 118,
-        158, 48, 147, 31, 238, 25, 82,
-      ]);
+      const message = getUInt8ArrayFromHex('68bc27593ec688464622c15e820e54566e1c97f6ca4fb4ac769e30931fee1952');
       const expectedParams = newXMSSParams(n, height, w, k);
-      const expectedSk = new Uint8Array([
-        177, 2, 23, 208, 113, 64, 68, 168, 145, 161, 159, 60, 23, 178, 103, 80, 16, 224, 93, 94, 168, 74, 150, 177, 129,
-        146, 105, 149, 223, 91, 189, 219, 82, 59, 118, 81, 127, 163, 34, 207, 94, 197, 55, 252, 106, 127, 116, 166, 240,
-        17, 15, 153, 111, 198, 90, 106, 155, 213, 242, 184, 170, 87, 170, 104, 213, 206, 3, 228, 222, 181, 62, 214, 217,
-        118, 163, 23, 208, 59, 37, 14, 135, 2, 246, 141, 158, 93, 10, 65, 197, 172, 108, 94, 203, 241, 78, 182, 218,
-        114, 40, 174, 207, 198, 81, 128, 140, 221, 159, 232, 161, 55, 125, 144, 120, 55, 162, 192, 146, 225, 42, 200, 8,
-        58, 85, 222, 144, 79, 84, 178, 146, 196, 8, 103,
-      ]);
+      const expectedSk = getUInt8ArrayFromHex(
+        'b10217d0714044a891a19f3c17b2675010e05d5ea84a96b181926995df5bbddb523b76517fa322cf5ec537fc6a7f74a6f0110f996fc65a6a9bd5f2b8aa57aa68d5ce03e4deb53ed6d976a317d03b250e8702f68d9e5d0a41c5ac6c5ecbf14eb6da7228aecfc651808cdd9fe8a1377d907837a2c092e12ac8083a55de904f54b292c40867'
+      );
       const expectedBdsState = {
-        auth: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
-        keep: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        auth: getUInt8ArrayFromHex(
+          '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
+        keep: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         nextLeaf: 0,
-        retain: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
-        stack: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
-        stackLevels: new Uint8Array([0, 0, 0, 0, 0]),
+        retain: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
+        stack: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
+        stackLevels: getUInt8ArrayFromHex('0000000000'),
         stackOffset: 0,
         treeHash: [
           {
@@ -806,120 +451,21 @@ describe('Test cases for [xmss]', function testFunction() {
             nextIdx: 0,
             stackUsage: 0,
             completed: 0,
-            node: new Uint8Array([
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ]),
+            node: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
           },
           {
             h: 0,
             nextIdx: 0,
             stackUsage: 0,
             completed: 0,
-            node: new Uint8Array([
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ]),
+            node: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
           },
         ],
       };
-      const expectedMessage = new Uint8Array([
-        104, 188, 39, 89, 62, 198, 136, 70, 70, 34, 193, 94, 130, 14, 84, 86, 110, 28, 151, 246, 202, 79, 180, 172, 118,
-        158, 48, 147, 31, 238, 25, 82,
-      ]);
-      const expectedSigMsg = new Uint8Array([
-        177, 2, 23, 207, 182, 143, 234, 184, 91, 67, 168, 187, 11, 153, 209, 245, 194, 23, 132, 166, 102, 156, 97, 152,
-        213, 141, 126, 174, 28, 54, 20, 54, 95, 148, 46, 27, 169, 113, 185, 255, 68, 153, 165, 36, 82, 236, 14, 31, 206,
-        225, 127, 207, 98, 5, 175, 0, 88, 251, 86, 20, 200, 98, 2, 158, 253, 18, 7, 165, 146, 200, 168, 202, 67, 46, 99,
-        102, 215, 133, 191, 26, 63, 37, 13, 115, 13, 88, 91, 69, 29, 106, 208, 125, 204, 46, 3, 203, 77, 67, 101, 0,
-        243, 235, 255, 201, 183, 13, 243, 253, 162, 32, 137, 36, 55, 57, 162, 11, 39, 74, 182, 13, 62, 15, 218, 61, 167,
-        78, 170, 87, 12, 5, 178, 35, 0, 99, 197, 222, 61, 157, 106, 165, 215, 219, 54, 118, 247, 70, 204, 248, 70, 76,
-        101, 67, 170, 216, 123, 87, 54, 76, 148, 242, 151, 4, 15, 105, 239, 171, 48, 22, 48, 58, 186, 22, 142, 57, 170,
-        221, 51, 36, 239, 238, 198, 236, 107, 111, 59, 2, 137, 8, 171, 78, 38, 132, 20, 105, 41, 194, 214, 81, 88, 179,
-        22, 144, 176, 116, 246, 202, 204, 189, 105, 126, 103, 145, 188, 137, 77, 144, 102, 102, 144, 223, 116, 28, 251,
-        26, 78, 145, 32, 67, 117, 185, 127, 193, 114, 200, 67, 54, 12, 172, 197, 242, 27, 231, 150, 7, 70, 70, 223, 87,
-        154, 77, 109, 82, 20, 78, 43, 13, 76, 11, 94, 207, 0, 183, 225, 150, 7, 198, 251, 37, 1, 72, 78, 107, 241, 114,
-        233, 66, 71, 178, 175, 90, 115, 128, 61, 175, 255, 154, 33, 200, 106, 96, 60, 78, 8, 169, 53, 90, 192, 181, 222,
-        143, 247, 161, 239, 130, 62, 162, 198, 110, 236, 129, 233, 18, 96, 174, 224, 92, 221, 224, 43, 95, 74, 52, 126,
-        22, 189, 116, 127, 198, 9, 230, 44, 145, 147, 144, 129, 198, 224, 250, 169, 4, 167, 126, 229, 118, 59, 232, 5,
-        125, 23, 216, 220, 104, 207, 247, 192, 121, 42, 176, 182, 100, 143, 166, 60, 190, 210, 115, 219, 32, 133, 1,
-        154, 158, 246, 97, 36, 222, 165, 192, 21, 134, 36, 7, 62, 147, 146, 211, 213, 188, 104, 50, 128, 176, 202, 81,
-        222, 137, 108, 27, 176, 236, 239, 219, 214, 168, 81, 112, 74, 228, 146, 254, 24, 143, 5, 110, 135, 172, 124,
-        162, 0, 212, 56, 40, 218, 250, 209, 30, 100, 120, 97, 201, 139, 219, 201, 209, 215, 224, 65, 20, 74, 10, 86, 73,
-        83, 33, 177, 106, 9, 212, 179, 227, 115, 163, 241, 92, 237, 255, 93, 179, 234, 189, 50, 160, 208, 214, 92, 98,
-        184, 111, 87, 93, 195, 46, 245, 80, 161, 239, 47, 195, 164, 218, 98, 74, 107, 80, 223, 158, 231, 166, 254, 65,
-        239, 241, 130, 65, 71, 140, 71, 182, 9, 221, 230, 3, 197, 107, 220, 79, 249, 90, 49, 153, 208, 175, 168, 214,
-        193, 153, 120, 23, 150, 108, 196, 151, 227, 66, 141, 158, 144, 41, 98, 193, 233, 20, 24, 109, 160, 37, 77, 157,
-        158, 74, 16, 239, 126, 244, 126, 173, 130, 21, 212, 166, 11, 73, 201, 212, 231, 80, 139, 243, 108, 150, 213,
-        181, 83, 171, 190, 181, 23, 216, 62, 140, 239, 77, 164, 198, 113, 169, 45, 77, 7, 86, 64, 234, 206, 105, 18,
-        178, 70, 111, 69, 217, 95, 82, 96, 169, 228, 222, 87, 100, 183, 113, 195, 150, 57, 52, 103, 97, 156, 181, 157,
-        55, 14, 113, 235, 228, 30, 79, 148, 20, 170, 119, 59, 88, 0, 41, 154, 32, 247, 242, 7, 224, 35, 12, 161, 176,
-        91, 137, 160, 153, 197, 118, 243, 120, 37, 87, 236, 27, 55, 52, 24, 26, 66, 169, 42, 150, 185, 13, 147, 179,
-        128, 58, 125, 68, 36, 114, 23, 235, 255, 128, 224, 208, 174, 65, 253, 14, 38, 166, 229, 108, 255, 160, 122, 204,
-        90, 236, 251, 131, 61, 154, 202, 150, 181, 123, 244, 113, 104, 72, 193, 6, 155, 219, 220, 133, 250, 55, 41, 197,
-        24, 245, 67, 78, 5, 251, 109, 31, 38, 247, 251, 117, 28, 162, 237, 90, 183, 22, 124, 140, 247, 112, 118, 101,
-        106, 150, 224, 45, 219, 194, 216, 180, 39, 158, 103, 110, 75, 156, 215, 47, 47, 165, 158, 45, 105, 140, 215, 51,
-        164, 104, 171, 77, 53, 164, 76, 140, 46, 177, 42, 118, 214, 228, 104, 110, 227, 147, 147, 140, 82, 213, 150, 65,
-        87, 187, 133, 147, 48, 110, 14, 150, 227, 188, 82, 163, 46, 109, 155, 35, 73, 32, 6, 116, 185, 62, 37, 62, 6,
-        51, 30, 53, 86, 76, 216, 156, 130, 132, 9, 123, 142, 126, 29, 53, 219, 122, 51, 122, 62, 244, 73, 162, 129, 1,
-        6, 60, 55, 208, 25, 4, 108, 65, 41, 72, 157, 21, 94, 194, 213, 185, 34, 122, 234, 219, 25, 74, 241, 86, 163,
-        192, 77, 65, 42, 212, 65, 50, 69, 74, 13, 206, 204, 50, 45, 85, 214, 147, 214, 173, 82, 103, 243, 72, 151, 131,
-        17, 31, 233, 34, 236, 205, 187, 112, 172, 40, 153, 49, 95, 250, 88, 82, 91, 34, 115, 167, 70, 216, 146, 220,
-        248, 149, 253, 81, 39, 2, 13, 134, 132, 198, 176, 156, 201, 140, 211, 210, 241, 70, 173, 81, 152, 150, 202, 163,
-        56, 53, 254, 18, 184, 173, 102, 235, 118, 68, 234, 38, 189, 26, 133, 16, 210, 104, 247, 111, 162, 222, 141, 225,
-        142, 89, 244, 173, 126, 198, 24, 212, 191, 137, 66, 165, 36, 27, 143, 67, 109, 146, 85, 158, 56, 36, 165, 21,
-        19, 2, 159, 96, 123, 200, 230, 177, 81, 65, 122, 132, 202, 253, 120, 176, 201, 30, 5, 142, 191, 101, 66, 178,
-        118, 249, 212, 203, 223, 32, 124, 130, 59, 222, 195, 16, 163, 24, 139, 61, 243, 250, 5, 229, 219, 204, 154, 107,
-        152, 44, 106, 142, 236, 31, 172, 156, 109, 117, 78, 118, 124, 59, 83, 223, 10, 197, 91, 120, 5, 234, 16, 131,
-        192, 84, 117, 192, 249, 78, 206, 85, 122, 18, 210, 85, 182, 140, 148, 126, 74, 196, 29, 58, 142, 125, 205, 182,
-        234, 211, 82, 163, 7, 73, 74, 228, 170, 163, 144, 138, 169, 105, 49, 154, 128, 128, 58, 209, 112, 77, 101, 201,
-        171, 48, 147, 23, 205, 216, 124, 160, 149, 33, 113, 91, 175, 117, 253, 107, 111, 185, 84, 36, 178, 236, 81, 146,
-        2, 8, 20, 82, 202, 154, 121, 195, 66, 164, 81, 82, 22, 61, 70, 131, 29, 201, 71, 27, 129, 74, 152, 196, 203, 24,
-        108, 84, 10, 144, 223, 30, 78, 216, 152, 130, 178, 195, 172, 185, 14, 142, 95, 101, 144, 233, 2, 46, 169, 31,
-        240, 159, 115, 136, 123, 45, 104, 65, 49, 180, 155, 57, 60, 107, 96, 189, 166, 16, 250, 11, 102, 143, 204, 81,
-        221, 114, 144, 16, 241, 252, 226, 113, 116, 126, 152, 97, 78, 255, 61, 221, 178, 12, 165, 241, 169, 139, 96, 9,
-        120, 152, 43, 160, 81, 52, 238, 2, 200, 63, 105, 60, 64, 59, 129, 19, 67, 94, 103, 230, 0, 34, 81, 61, 217, 18,
-        175, 238, 11, 227, 69, 58, 79, 160, 209, 46, 15, 169, 11, 30, 68, 232, 167, 19, 240, 78, 147, 9, 215, 76, 46,
-        227, 179, 159, 43, 113, 100, 162, 61, 7, 221, 20, 175, 3, 166, 98, 116, 128, 42, 127, 3, 69, 211, 157, 215, 246,
-        159, 68, 44, 15, 142, 132, 80, 75, 15, 149, 191, 53, 34, 218, 153, 87, 42, 210, 7, 75, 241, 141, 195, 174, 131,
-        168, 61, 214, 59, 42, 112, 198, 116, 173, 77, 76, 214, 60, 84, 202, 199, 6, 114, 142, 112, 162, 146, 142, 213,
-        175, 143, 168, 223, 254, 173, 22, 166, 194, 74, 150, 104, 24, 255, 171, 230, 18, 226, 171, 95, 53, 95, 80, 27,
-        210, 192, 165, 38, 97, 249, 95, 73, 170, 98, 223, 130, 48, 62, 0, 229, 104, 219, 23, 9, 113, 156, 129, 93, 182,
-        157, 6, 100, 98, 218, 111, 101, 25, 153, 24, 194, 61, 254, 58, 46, 251, 11, 106, 249, 148, 212, 86, 202, 74, 71,
-        166, 210, 204, 207, 60, 182, 161, 0, 22, 85, 186, 163, 233, 228, 19, 67, 183, 37, 211, 155, 31, 25, 5, 15, 211,
-        8, 19, 230, 237, 174, 155, 103, 240, 120, 3, 92, 69, 198, 173, 155, 39, 38, 47, 208, 82, 220, 149, 23, 187, 65,
-        32, 237, 99, 120, 40, 25, 86, 165, 202, 131, 8, 164, 247, 11, 161, 217, 114, 193, 133, 124, 210, 23, 166, 243,
-        204, 140, 111, 86, 36, 134, 84, 160, 153, 183, 250, 71, 181, 230, 74, 240, 84, 11, 103, 2, 104, 229, 38, 3, 102,
-        73, 174, 223, 3, 107, 243, 50, 232, 123, 34, 135, 177, 58, 150, 144, 89, 86, 173, 218, 214, 148, 236, 180, 227,
-        183, 100, 199, 84, 31, 180, 184, 141, 12, 169, 183, 125, 2, 5, 248, 144, 63, 234, 178, 218, 64, 24, 130, 224,
-        93, 26, 100, 87, 194, 6, 54, 178, 149, 109, 246, 85, 114, 254, 127, 80, 116, 28, 206, 240, 142, 21, 92, 17, 205,
-        255, 206, 184, 88, 217, 4, 4, 16, 94, 91, 27, 203, 239, 20, 43, 166, 198, 33, 225, 131, 149, 158, 190, 88, 124,
-        229, 150, 222, 21, 225, 50, 248, 188, 156, 118, 38, 236, 86, 18, 133, 183, 57, 189, 181, 236, 90, 74, 152, 193,
-        202, 35, 128, 47, 155, 183, 86, 49, 29, 178, 25, 162, 35, 8, 240, 180, 72, 86, 136, 123, 155, 0, 118, 6, 29,
-        189, 191, 162, 166, 210, 204, 210, 21, 138, 87, 177, 19, 138, 185, 159, 17, 153, 153, 142, 24, 111, 187, 240,
-        148, 161, 233, 80, 145, 68, 113, 240, 93, 71, 151, 102, 109, 57, 116, 143, 222, 227, 77, 160, 6, 104, 16, 104,
-        11, 151, 5, 120, 134, 88, 160, 34, 47, 59, 8, 53, 121, 167, 135, 253, 106, 28, 242, 207, 17, 234, 16, 223, 169,
-        4, 110, 66, 15, 40, 15, 136, 137, 96, 81, 206, 81, 149, 86, 124, 116, 33, 56, 21, 254, 92, 194, 66, 51, 207,
-        178, 163, 98, 106, 119, 72, 119, 245, 89, 8, 30, 10, 24, 43, 132, 132, 231, 96, 224, 224, 241, 124, 247, 5, 15,
-        97, 134, 137, 111, 232, 158, 1, 193, 248, 124, 24, 224, 200, 226, 15, 123, 88, 120, 118, 192, 127, 4, 233, 103,
-        237, 79, 82, 212, 33, 52, 253, 20, 118, 160, 166, 33, 151, 2, 92, 216, 166, 102, 129, 217, 173, 219, 238, 36,
-        139, 94, 72, 51, 11, 46, 132, 118, 87, 77, 176, 142, 52, 10, 123, 222, 227, 53, 55, 16, 246, 248, 9, 250, 217,
-        188, 196, 250, 193, 14, 167, 167, 190, 38, 58, 190, 20, 196, 152, 247, 196, 223, 88, 13, 97, 211, 37, 148, 143,
-        212, 37, 29, 91, 98, 10, 219, 96, 174, 144, 5, 79, 59, 182, 22, 172, 213, 251, 93, 212, 20, 78, 79, 113, 95,
-        250, 39, 140, 116, 41, 129, 133, 86, 129, 46, 230, 198, 32, 157, 36, 3, 147, 114, 254, 66, 157, 22, 174, 145,
-        14, 176, 230, 26, 176, 129, 37, 52, 13, 2, 137, 183, 86, 250, 71, 96, 151, 210, 57, 148, 75, 4, 41, 171, 149,
-        48, 37, 168, 31, 158, 9, 46, 119, 58, 55, 193, 175, 116, 21, 98, 81, 165, 147, 166, 88, 3, 61, 59, 228, 18, 135,
-        146, 232, 61, 198, 119, 28, 252, 74, 165, 142, 113, 255, 237, 251, 44, 118, 248, 48, 153, 127, 91, 136, 216,
-        128, 93, 185, 143, 171, 249, 67, 224, 102, 12, 200, 37, 232, 109, 223, 248, 216, 127, 160, 177, 67, 121, 34, 46,
-        5, 211, 251, 187, 194, 99, 64, 134, 114, 12, 241, 39, 221, 12, 146, 172, 111, 17, 28, 10, 86, 249, 253, 21, 216,
-        4, 3, 200, 103, 14, 160, 153, 218, 167, 160, 133, 239, 92, 76, 213, 244, 175, 79, 131, 65, 68, 33, 102, 198, 22,
-        70, 21, 115, 166, 39, 130, 26, 105, 104, 56, 172, 23, 153, 96, 13, 3, 87, 157, 193, 115, 107, 76, 218, 32, 51,
-        35, 54, 112, 146, 82, 29, 12, 214, 187, 171, 121, 90, 147, 197, 168, 227, 84, 54, 209, 119, 240, 77, 187, 13,
-        114, 30, 210, 119, 84, 150, 240, 194, 87, 94, 146, 227, 13, 13, 6, 122, 151, 255, 101, 132, 228, 28, 225, 200,
-        80, 148, 207, 98, 133, 105, 140, 89, 35, 57, 182, 233, 89, 217, 64, 254, 197, 1, 132, 204, 174, 190, 221, 32,
-        115, 244, 26, 111, 178, 87, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      ]);
+      const expectedMessage = getUInt8ArrayFromHex('68bc27593ec688464622c15e820e54566e1c97f6ca4fb4ac769e30931fee1952');
+      const expectedSigMsg = getUInt8ArrayFromHex(
+        'b10217cfb68feab85b43a8bb0b99d1f5c21784a6669c6198d58d7eae1c3614365f942e1ba971b9ff4499a52452ec0e1fcee17fcf6205af0058fb5614c862029efd1207a592c8a8ca432e6366d785bf1a3f250d730d585b451d6ad07dcc2e03cb4d436500f3ebffc9b70df3fda22089243739a20b274ab60d3e0fda3da74eaa570c05b2230063c5de3d9d6aa5d7db3676f746ccf8464c6543aad87b57364c94f297040f69efab3016303aba168e39aadd3324efeec6ec6b6f3b028908ab4e2684146929c2d65158b31690b074f6caccbd697e6791bc894d90666690df741cfb1a4e91204375b97fc172c843360cacc5f21be796074646df579a4d6d52144e2b0d4c0b5ecf00b7e19607c6fb2501484e6bf172e94247b2af5a73803dafff9a21c86a603c4e08a9355ac0b5de8ff7a1ef823ea2c66eec81e91260aee05cdde02b5f4a347e16bd747fc609e62c91939081c6e0faa904a77ee5763be8057d17d8dc68cff7c0792ab0b6648fa63cbed273db2085019a9ef66124dea5c0158624073e9392d3d5bc683280b0ca51de896c1bb0ecefdbd6a851704ae492fe188f056e87ac7ca200d43828dafad11e647861c98bdbc9d1d7e041144a0a56495321b16a09d4b3e373a3f15cedff5db3eabd32a0d0d65c62b86f575dc32ef550a1ef2fc3a4da624a6b50df9ee7a6fe41eff18241478c47b609dde603c56bdc4ff95a3199d0afa8d6c1997817966cc497e3428d9e902962c1e914186da0254d9d9e4a10ef7ef47ead8215d4a60b49c9d4e7508bf36c96d5b553abbeb517d83e8cef4da4c671a92d4d075640eace6912b2466f45d95f5260a9e4de5764b771c396393467619cb59d370e71ebe41e4f9414aa773b5800299a20f7f207e0230ca1b05b89a099c576f3782557ec1b3734181a42a92a96b90d93b3803a7d44247217ebff80e0d0ae41fd0e26a6e56cffa07acc5aecfb833d9aca96b57bf4716848c1069bdbdc85fa3729c518f5434e05fb6d1f26f7fb751ca2ed5ab7167c8cf77076656a96e02ddbc2d8b4279e676e4b9cd72f2fa59e2d698cd733a468ab4d35a44c8c2eb12a76d6e4686ee393938c52d5964157bb8593306e0e96e3bc52a32e6d9b2349200674b93e253e06331e35564cd89c8284097b8e7e1d35db7a337a3ef449a28101063c37d019046c4129489d155ec2d5b9227aeadb194af156a3c04d412ad44132454a0dcecc322d55d693d6ad5267f3489783111fe922eccdbb70ac2899315ffa58525b2273a746d892dcf895fd5127020d8684c6b09cc98cd3d2f146ad519896caa33835fe12b8ad66eb7644ea26bd1a8510d268f76fa2de8de18e59f4ad7ec618d4bf8942a5241b8f436d92559e3824a51513029f607bc8e6b151417a84cafd78b0c91e058ebf6542b276f9d4cbdf207c823bdec310a3188b3df3fa05e5dbcc9a6b982c6a8eec1fac9c6d754e767c3b53df0ac55b7805ea1083c05475c0f94ece557a12d255b68c947e4ac41d3a8e7dcdb6ead352a307494ae4aaa3908aa969319a80803ad1704d65c9ab309317cdd87ca09521715baf75fd6b6fb95424b2ec519202081452ca9a79c342a45152163d46831dc9471b814a98c4cb186c540a90df1e4ed89882b2c3acb90e8e5f6590e9022ea91ff09f73887b2d684131b49b393c6b60bda610fa0b668fcc51dd729010f1fce271747e98614eff3dddb20ca5f1a98b600978982ba05134ee02c83f693c403b8113435e67e60022513dd912afee0be3453a4fa0d12e0fa90b1e44e8a713f04e9309d74c2ee3b39f2b7164a23d07dd14af03a66274802a7f0345d39dd7f69f442c0f8e84504b0f95bf3522da99572ad2074bf18dc3ae83a83dd63b2a70c674ad4d4cd63c54cac706728e70a2928ed5af8fa8dffead16a6c24a966818ffabe612e2ab5f355f501bd2c0a52661f95f49aa62df82303e00e568db1709719c815db69d066462da6f65199918c23dfe3a2efb0b6af994d456ca4a47a6d2cccf3cb6a1001655baa3e9e41343b725d39b1f19050fd30813e6edae9b67f078035c45c6ad9b27262fd052dc9517bb4120ed6378281956a5ca8308a4f70ba1d972c1857cd217a6f3cc8c6f56248654a099b7fa47b5e64af0540b670268e526036649aedf036bf332e87b2287b13a96905956addad694ecb4e3b764c7541fb4b88d0ca9b77d0205f8903feab2da401882e05d1a6457c20636b2956df65572fe7f50741ccef08e155c11cdffceb858d90404105e5b1bcbef142ba6c621e183959ebe587ce596de15e132f8bc9c7626ec561285b739bdb5ec5a4a98c1ca23802f9bb756311db219a22308f0b44856887b9b0076061dbdbfa2a6d2ccd2158a57b1138ab99f1199998e186fbbf094a1e950914471f05d4797666d39748fdee34da0066810680b9705788658a0222f3b083579a787fd6a1cf2cf11ea10dfa9046e420f280f88896051ce5195567c74213815fe5cc24233cfb2a3626a774877f559081e0a182b8484e760e0e0f17cf7050f6186896fe89e01c1f87c18e0c8e20f7b587876c07f04e967ed4f52d42134fd1476a0a62197025cd8a66681d9addbee248b5e48330b2e8476574db08e340a7bdee3353710f6f809fad9bcc4fac10ea7a7be263abe14c498f7c4df580d61d325948fd4251d5b620adb60ae90054f3bb616acd5fb5dd4144e4f715ffa278c7429818556812ee6c6209d24039372fe429d16ae910eb0e61ab08125340d0289b756fa476097d239944b0429ab953025a81f9e092e773a37c1af74156251a593a658033d3be4128792e83dc6771cfc4aa58e71ffedfb2c76f830997f5b88d8805db98fabf943e0660cc825e86ddff8d87fa0b14379222e05d3fbbbc2634086720cf127dd0c92ac6f111c0a56f9fd15d80403c8670ea099daa7a085ef5c4cd5f4af4f8341442166c616461573a627821a696838ac1799600d03579dc1736b4cda203323367092521d0cd6bbab795a93c5a8e35436d177f04dbb0d721ed2775496f0c2575e92e30d0d067a97ff6584e41ce1c85094cf6285698c592339b6e959d940fec50184ccaebedd2073f41a6fb2570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+      );
       const { sigMsg, error } = xmssFastSignMessage(hashFunction, params, sk, bdsState, message);
 
       expect(params).to.deep.equal(expectedParams);
@@ -933,39 +479,29 @@ describe('Test cases for [xmss]', function testFunction() {
 
   describe('getXMSSAddressFromPK', () => {
     it('should throw an error if QRL descriptor address format type is not SHA_256', () => {
-      const ePK = new Uint8Array([
-        240, 128, 131, 4, 135, 135, 133, 223, 122, 68, 32, 197, 228, 178, 18, 135, 32, 136, 162, 246, 150, 15, 233, 102,
-        45, 199, 126, 40, 75, 204, 85, 209, 127, 50, 81, 8, 248, 48, 90, 124, 46, 157, 183, 28, 90, 137, 75, 93, 89, 29,
-        44, 113, 173, 190, 146, 102, 4, 89, 139, 253, 157, 197, 232, 37, 24, 102, 164,
-      ]);
+      const ePK = getUInt8ArrayFromHex(
+        'f0808304878785df7a4420c5e4b212872088a2f6960fe9662dc77e284bcc55d17f325108f8305a7c2e9db71c5a894b5d591d2c71adbe926604598bfd9dc5e8251866a4'
+      );
 
       expect(() => getXMSSAddressFromPK(ePK)).to.throw('Address format type not supported');
     });
 
-    it('should generate an address for ePK[222, 0, ...]', () => {
-      const ePK = new Uint8Array([
-        222, 0, 123, 124, 112, 218, 61, 237, 137, 199, 97, 99, 20, 29, 57, 212, 69, 210, 127, 234, 120, 116, 54, 165, 4,
-        214, 159, 56, 7, 55, 69, 133, 80, 162, 9, 175, 17, 70, 178, 160, 181, 183, 33, 131, 161, 243, 191, 126, 28, 199,
-        159, 138, 103, 215, 227, 22, 164, 233, 196, 23, 139, 213, 127, 155, 96, 241, 35,
-      ]);
+    it('should generate an address for ePK[de00...]', () => {
+      const ePK = getUInt8ArrayFromHex(
+        'de007b7c70da3ded89c76163141d39d445d27fea787436a504d69f380737458550a209af1146b2a0b5b72183a1f3bf7e1cc79f8a67d7e316a4e9c4178bd57f9b60f123'
+      );
       const address = getXMSSAddressFromPK(ePK);
-      const expectedAddress = new Uint8Array([
-        222, 0, 0, 154, 168, 199, 132, 10, 231, 152, 7, 212, 3, 165, 140, 55, 38, 78, 178, 232,
-      ]);
+      const expectedAddress = getUInt8ArrayFromHex('de00009aa8c7840ae79807d403a58c37264eb2e8');
 
       expect(address).to.deep.equal(expectedAddress);
     });
 
-    it('should generate an address for ePK[186, 0, ...]', () => {
-      const ePK = new Uint8Array([
-        186, 0, 63, 100, 24, 159, 52, 132, 38, 6, 108, 37, 39, 71, 247, 52, 195, 100, 17, 238, 106, 210, 74, 19, 104,
-        10, 174, 129, 14, 103, 175, 39, 169, 50, 149, 10, 118, 176, 22, 44, 48, 128, 160, 185, 3, 25, 149, 182, 222,
-        137, 136, 191, 152, 247, 158, 83, 8, 172, 192, 142, 47, 202, 137, 234, 207, 251, 203,
-      ]);
+    it('should generate an address for ePK[ba00...]', () => {
+      const ePK = getUInt8ArrayFromHex(
+        'ba003f64189f348426066c252747f734c36411ee6ad24a13680aae810e67af27a932950a76b0162c3080a0b9031995b6de8988bf98f79e5308acc08e2fca89eacffbcb'
+      );
       const address = getXMSSAddressFromPK(ePK);
-      const expectedAddress = new Uint8Array([
-        186, 0, 0, 159, 128, 46, 176, 187, 231, 134, 36, 252, 141, 177, 138, 118, 97, 126, 114, 73,
-      ]);
+      const expectedAddress = getUInt8ArrayFromHex('ba00009f802eb0bbe78624fc8db18a76617e7249');
 
       expect(address).to.deep.equal(expectedAddress);
     });
@@ -980,11 +516,10 @@ describe('Test cases for [xmss]', function testFunction() {
       const xmssParams = newXMSSParams(n, h, w, k);
       const hashFunction = HASH_FUNCTION.SHAKE_128;
       const height = 10;
-      const sk = new Uint8Array([32, 43, 44, 13, 4, 23]);
-      const seed = new Uint8Array([
-        188, 38, 37, 243, 247, 59, 68, 36, 53, 11, 207, 33, 178, 161, 10, 250, 95, 200, 204, 40, 110, 14, 88, 221, 212,
-        183, 109, 91, 139, 242, 140, 80, 67, 219, 47, 111, 131, 171, 29, 159, 98, 252, 171, 152, 245, 229, 78, 69,
-      ]);
+      const sk = getUInt8ArrayFromHex('202b2c0d0417');
+      const seed = getUInt8ArrayFromHex(
+        'bc2625f3f73b4424350bcf21b2a10afa5fc8cc286e0e58ddd4b76d5b8bf28c5043db2f6f83ab1d9f62fcab98f5e54e45'
+      );
       const bdsState = newBDSState(height, n, k);
       const signatureType = 3;
       const addrFormatType = 7;
@@ -1010,11 +545,10 @@ describe('Test cases for [xmss]', function testFunction() {
       const xmssParams = newXMSSParams(n, h, w, k);
       const hashFunction = HASH_FUNCTION.SHAKE_128;
       const height = 10;
-      const sk = new Uint8Array([79, 115, 70]);
-      const seed = new Uint8Array([
-        148, 27, 26, 33, 199, 18, 153, 138, 13, 233, 100, 136, 145, 121, 129, 116, 28, 0, 124, 202, 224, 154, 69, 126,
-        29, 51, 246, 120, 212, 31, 185, 97, 130, 78, 26, 148, 48, 98, 251, 149, 211, 182, 90, 36, 30, 121, 112, 51,
-      ]);
+      const sk = getUInt8ArrayFromHex('4f7346');
+      const seed = getUInt8ArrayFromHex(
+        '941b1a21c712998a0de96488917981741c007ccae09a457e1d33f678d41fb961824e1a943062fb95d3b65a241e797033'
+      );
       const bdsState = newBDSState(height, n, k);
       const signatureType = 3;
       const addrFormatType = 7;
@@ -1048,22 +582,17 @@ describe('Test cases for [xmss]', function testFunction() {
 
       expect(xmss.getHeight()).to.equal(4);
       expect(xmss.getPKSeed()).to.deep.equal(
-        new Uint8Array([
-          49, 145, 218, 52, 66, 104, 98, 130, 179, 213, 22, 15, 37, 207, 22, 42, 81, 127, 210, 19, 31, 131, 251, 242,
-          105, 138, 88, 249, 196, 106, 252, 93,
-        ])
+        getUInt8ArrayFromHex('3191da3442686282b3d5160f25cf162a517fd2131f83fbf2698a58f9c46afc5d')
       );
       expect(xmss.getSeed()).to.deep.equal(
-        new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ])
+        getUInt8ArrayFromHex(
+          '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        )
       );
       expect(xmss.getExtendedSeed()).to.deep.equal(
-        new Uint8Array([
-          16, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ])
+        getUInt8ArrayFromHex(
+          '100200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        )
       );
       expect(xmss.getHexSeed()).to.equal(
         '0x100200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
@@ -1072,150 +601,37 @@ describe('Test cases for [xmss]', function testFunction() {
         'badge bunny aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback aback'
       );
       expect(xmss.getRoot()).to.deep.equal(
-        new Uint8Array([
-          235, 3, 114, 213, 107, 136, 102, 69, 231, 192, 54, 180, 128, 190, 149, 237, 151, 188, 67, 27, 78, 130, 139,
-          239, 212, 22, 43, 244, 50, 133, 141, 248,
-        ])
+        getUInt8ArrayFromHex('eb0372d56b886645e7c036b480be95ed97bc431b4e828befd4162bf432858df8')
       );
       expect(xmss.getPK()).to.deep.equal(
-        new Uint8Array([
-          16, 2, 0, 235, 3, 114, 213, 107, 136, 102, 69, 231, 192, 54, 180, 128, 190, 149, 237, 151, 188, 67, 27, 78,
-          130, 139, 239, 212, 22, 43, 244, 50, 133, 141, 248, 49, 145, 218, 52, 66, 104, 98, 130, 179, 213, 22, 15, 37,
-          207, 22, 42, 81, 127, 210, 19, 31, 131, 251, 242, 105, 138, 88, 249, 196, 106, 252, 93,
-        ])
+        getUInt8ArrayFromHex(
+          '100200eb0372d56b886645e7c036b480be95ed97bc431b4e828befd4162bf432858df83191da3442686282b3d5160f25cf162a517fd2131f83fbf2698a58f9c46afc5d'
+        )
       );
       expect(xmss.getSK()).to.deep.equal(
-        new Uint8Array([
-          0, 0, 0, 0, 237, 163, 19, 201, 85, 145, 160, 35, 165, 179, 127, 54, 28, 7, 165, 117, 58, 146, 211, 208, 66,
-          116, 89, 243, 76, 120, 149, 215, 39, 214, 40, 22, 179, 170, 34, 36, 235, 157, 130, 49, 39, 212, 249, 248, 163,
-          15, 215, 161, 160, 44, 100, 131, 217, 192, 241, 253, 65, 149, 123, 154, 228, 223, 198, 58, 49, 145, 218, 52,
-          66, 104, 98, 130, 179, 213, 22, 15, 37, 207, 22, 42, 81, 127, 210, 19, 31, 131, 251, 242, 105, 138, 88, 249,
-          196, 106, 252, 93, 235, 3, 114, 213, 107, 136, 102, 69, 231, 192, 54, 180, 128, 190, 149, 237, 151, 188, 67,
-          27, 78, 130, 139, 239, 212, 22, 43, 244, 50, 133, 141, 248,
-        ])
+        getUInt8ArrayFromHex(
+          '00000000eda313c95591a023a5b37f361c07a5753a92d3d0427459f34c7895d727d62816b3aa2224eb9d823127d4f9f8a30fd7a1a02c6483d9c0f1fd41957b9ae4dfc63a3191da3442686282b3d5160f25cf162a517fd2131f83fbf2698a58f9c46afc5deb0372d56b886645e7c036b480be95ed97bc431b4e828befd4162bf432858df8'
+        )
       );
-      expect(xmss.getAddress()).to.deep.equal(
-        new Uint8Array([16, 2, 0, 209, 58, 10, 219, 214, 193, 121, 29, 214, 230, 5, 230, 25, 5, 44, 88, 95])
-      );
+      expect(xmss.getAddress()).to.deep.equal(getUInt8ArrayFromHex('100200d13a0adbd6c1791dd6e605e619052c585f'));
       expect(xmss.getIndex()).to.equal(0);
       xmss.setIndex(6);
       expect(xmss.getIndex()).to.equal(6);
-      const { sigMsg, error } = xmss.sign(
-        new Uint8Array([
-          137, 184, 173, 124, 21, 216, 1, 146, 54, 182, 97, 136, 82, 49, 108, 190, 155, 6, 66, 150, 33, 86, 242, 234,
-        ])
-      );
+      const { sigMsg, error } = xmss.sign(getUInt8ArrayFromHex('89b8ad7c15d8019236b6618852316cbe9b0642962156f2ea'));
       expect(sigMsg).to.deep.equal(
-        new Uint8Array([
-          0, 0, 0, 6, 228, 185, 192, 11, 140, 60, 168, 179, 216, 203, 5, 253, 195, 110, 174, 178, 236, 5, 92, 164, 35,
-          13, 2, 147, 29, 216, 135, 150, 71, 13, 51, 153, 247, 218, 220, 46, 64, 14, 46, 118, 127, 110, 151, 165, 91,
-          143, 189, 242, 205, 178, 97, 211, 106, 200, 242, 206, 103, 14, 249, 255, 139, 119, 227, 252, 35, 108, 250, 76,
-          164, 70, 201, 217, 245, 72, 123, 231, 31, 229, 31, 100, 176, 205, 76, 125, 117, 233, 93, 69, 232, 189, 189,
-          111, 209, 84, 69, 247, 129, 219, 201, 50, 200, 149, 57, 243, 94, 22, 122, 140, 152, 28, 135, 186, 218, 157,
-          113, 4, 135, 67, 98, 5, 66, 53, 218, 187, 111, 79, 6, 170, 103, 134, 131, 214, 37, 146, 12, 68, 224, 80, 122,
-          148, 79, 66, 223, 148, 94, 100, 90, 131, 47, 207, 197, 41, 137, 194, 209, 255, 78, 157, 79, 254, 175, 211,
-          118, 72, 9, 140, 228, 1, 244, 236, 1, 169, 227, 54, 60, 44, 169, 90, 207, 122, 208, 97, 217, 148, 62, 171, 1,
-          1, 116, 21, 189, 87, 217, 214, 195, 121, 145, 155, 201, 252, 18, 122, 225, 163, 177, 117, 221, 68, 236, 171,
-          83, 4, 161, 187, 146, 219, 15, 127, 126, 151, 224, 185, 181, 123, 50, 182, 155, 13, 61, 36, 183, 143, 106,
-          201, 135, 18, 146, 113, 236, 216, 255, 31, 39, 139, 97, 220, 228, 9, 81, 139, 207, 24, 68, 155, 150, 82, 201,
-          161, 50, 52, 12, 162, 112, 50, 154, 185, 29, 187, 75, 72, 15, 220, 201, 77, 132, 86, 109, 146, 14, 64, 94, 35,
-          84, 99, 13, 228, 36, 31, 99, 9, 151, 18, 31, 3, 71, 86, 127, 75, 52, 165, 27, 201, 255, 183, 39, 139, 230, 31,
-          9, 81, 203, 192, 227, 184, 92, 235, 131, 153, 18, 76, 65, 184, 177, 128, 165, 1, 48, 58, 217, 245, 163, 87,
-          72, 98, 84, 243, 24, 212, 109, 89, 22, 95, 26, 174, 225, 84, 247, 182, 123, 206, 205, 143, 73, 84, 98, 252,
-          106, 123, 214, 73, 98, 38, 114, 134, 255, 105, 224, 84, 63, 223, 166, 113, 30, 122, 113, 157, 50, 234, 111,
-          219, 143, 7, 97, 119, 51, 14, 188, 61, 80, 223, 25, 16, 252, 214, 97, 248, 240, 66, 61, 0, 200, 209, 99, 16,
-          33, 227, 83, 134, 4, 216, 0, 71, 249, 26, 17, 0, 32, 67, 110, 193, 132, 44, 114, 187, 155, 95, 58, 78, 184,
-          44, 151, 114, 20, 160, 137, 140, 127, 176, 60, 90, 8, 72, 26, 97, 218, 152, 198, 109, 203, 34, 243, 156, 73,
-          44, 197, 208, 78, 9, 227, 38, 198, 45, 69, 224, 81, 67, 166, 25, 140, 183, 34, 159, 146, 167, 70, 70, 103,
-          137, 229, 19, 186, 69, 6, 102, 23, 160, 7, 104, 95, 167, 75, 229, 243, 228, 127, 248, 59, 207, 76, 55, 17, 3,
-          193, 195, 135, 1, 175, 110, 133, 201, 222, 161, 217, 44, 114, 147, 154, 214, 198, 27, 9, 85, 45, 93, 211, 207,
-          132, 64, 240, 152, 8, 213, 255, 124, 238, 171, 251, 49, 113, 32, 221, 168, 204, 209, 41, 8, 174, 25, 32, 136,
-          230, 14, 127, 196, 193, 212, 118, 68, 231, 24, 0, 197, 202, 16, 5, 41, 1, 68, 46, 171, 12, 187, 249, 177, 76,
-          155, 76, 234, 33, 247, 207, 64, 48, 114, 30, 165, 161, 61, 3, 250, 110, 153, 194, 131, 23, 26, 177, 215, 222,
-          110, 95, 56, 86, 207, 83, 21, 65, 21, 114, 127, 73, 246, 132, 238, 194, 94, 30, 54, 164, 198, 49, 18, 247,
-          114, 126, 172, 95, 160, 6, 193, 230, 250, 4, 143, 180, 54, 211, 180, 12, 209, 210, 168, 113, 94, 78, 79, 74,
-          182, 23, 200, 134, 89, 2, 222, 157, 14, 24, 209, 165, 203, 96, 190, 9, 12, 181, 184, 233, 32, 21, 23, 115,
-          194, 179, 78, 82, 164, 107, 22, 153, 176, 249, 27, 252, 3, 51, 88, 230, 70, 3, 34, 128, 241, 27, 28, 126, 176,
-          152, 30, 29, 111, 171, 22, 69, 147, 252, 100, 38, 182, 24, 180, 103, 206, 114, 234, 142, 72, 86, 168, 155, 68,
-          64, 103, 123, 142, 238, 198, 63, 129, 143, 203, 177, 121, 24, 204, 30, 212, 232, 183, 102, 112, 118, 82, 59,
-          147, 72, 252, 27, 96, 170, 46, 235, 140, 144, 89, 155, 101, 120, 253, 181, 89, 22, 114, 106, 121, 103, 82, 3,
-          68, 141, 29, 29, 191, 127, 134, 144, 210, 114, 116, 68, 5, 0, 124, 143, 163, 73, 214, 160, 140, 238, 243, 254,
-          63, 61, 126, 83, 71, 39, 223, 9, 158, 176, 201, 17, 146, 183, 35, 253, 17, 33, 227, 5, 88, 62, 97, 225, 153,
-          122, 251, 176, 231, 168, 67, 239, 133, 81, 211, 33, 23, 144, 77, 85, 27, 198, 253, 117, 107, 16, 242, 143,
-          193, 44, 118, 114, 93, 15, 233, 225, 98, 67, 213, 37, 28, 217, 232, 132, 19, 166, 58, 212, 33, 30, 1, 133,
-          178, 220, 25, 160, 149, 58, 6, 209, 154, 171, 121, 170, 55, 45, 152, 244, 11, 251, 162, 130, 56, 43, 65, 244,
-          170, 28, 230, 19, 20, 165, 49, 93, 149, 82, 6, 222, 10, 38, 180, 86, 183, 130, 4, 6, 82, 238, 136, 103, 53,
-          70, 107, 73, 156, 15, 180, 194, 244, 225, 158, 146, 104, 190, 76, 76, 163, 224, 14, 107, 75, 132, 156, 158,
-          27, 70, 47, 202, 5, 96, 186, 172, 179, 244, 117, 140, 242, 182, 62, 6, 60, 111, 226, 189, 25, 9, 60, 17, 138,
-          16, 34, 140, 156, 223, 119, 63, 17, 162, 91, 52, 207, 210, 128, 117, 119, 80, 14, 190, 209, 82, 230, 27, 233,
-          9, 180, 155, 178, 245, 123, 0, 118, 102, 95, 193, 70, 254, 178, 146, 141, 244, 51, 144, 144, 54, 249, 207,
-          150, 215, 43, 100, 177, 188, 224, 89, 139, 122, 126, 253, 98, 53, 49, 68, 165, 41, 110, 92, 243, 193, 69, 135,
-          5, 238, 139, 222, 111, 57, 197, 127, 164, 34, 247, 17, 49, 169, 22, 227, 194, 84, 215, 8, 163, 91, 123, 124,
-          227, 29, 232, 58, 69, 180, 73, 209, 143, 81, 84, 151, 195, 87, 134, 72, 172, 6, 14, 254, 115, 18, 61, 155,
-          223, 237, 229, 36, 246, 17, 211, 31, 205, 63, 109, 233, 210, 53, 59, 144, 150, 183, 99, 140, 251, 219, 160,
-          25, 65, 145, 212, 232, 7, 173, 78, 117, 210, 15, 159, 162, 158, 182, 91, 91, 157, 14, 239, 242, 41, 218, 208,
-          195, 65, 135, 30, 106, 21, 39, 60, 40, 231, 255, 167, 14, 246, 6, 121, 144, 11, 118, 28, 48, 210, 80, 204, 49,
-          145, 50, 192, 154, 31, 115, 103, 7, 154, 57, 220, 190, 50, 210, 248, 84, 151, 78, 162, 164, 164, 230, 27, 100,
-          111, 222, 33, 231, 199, 64, 253, 5, 175, 169, 15, 96, 229, 167, 205, 49, 32, 232, 3, 84, 159, 45, 196, 127,
-          58, 155, 195, 70, 101, 231, 56, 101, 223, 162, 200, 207, 151, 194, 138, 243, 161, 78, 217, 166, 148, 153, 12,
-          101, 45, 3, 151, 163, 250, 193, 115, 16, 244, 71, 78, 33, 100, 180, 16, 126, 253, 223, 174, 227, 43, 105, 2,
-          145, 211, 94, 13, 81, 82, 55, 128, 183, 194, 252, 168, 12, 25, 221, 222, 124, 103, 75, 124, 84, 118, 152, 136,
-          254, 127, 66, 98, 253, 127, 33, 20, 145, 215, 234, 39, 123, 222, 171, 35, 97, 253, 214, 81, 118, 0, 151, 105,
-          63, 131, 185, 166, 137, 26, 239, 125, 61, 218, 100, 142, 214, 234, 206, 189, 185, 149, 243, 128, 152, 80, 34,
-          9, 106, 117, 116, 206, 143, 249, 76, 75, 41, 190, 72, 5, 3, 27, 104, 80, 120, 110, 43, 68, 151, 16, 76, 205,
-          255, 91, 29, 55, 167, 155, 71, 28, 106, 31, 108, 191, 246, 153, 24, 19, 29, 250, 237, 167, 157, 112, 45, 179,
-          200, 91, 248, 207, 87, 182, 74, 229, 248, 138, 63, 163, 24, 74, 73, 14, 222, 128, 229, 1, 185, 27, 148, 177,
-          166, 173, 17, 20, 100, 87, 78, 209, 156, 161, 191, 58, 83, 49, 69, 4, 176, 78, 72, 167, 62, 154, 65, 229, 77,
-          83, 64, 105, 232, 230, 182, 120, 201, 96, 162, 237, 178, 20, 152, 234, 91, 49, 122, 132, 201, 219, 171, 190,
-          118, 96, 191, 63, 163, 6, 148, 218, 236, 145, 204, 211, 243, 169, 94, 8, 72, 72, 188, 236, 241, 221, 225, 231,
-          148, 112, 220, 140, 74, 243, 182, 81, 239, 10, 235, 65, 100, 64, 40, 171, 238, 175, 14, 250, 80, 114, 30, 138,
-          96, 219, 110, 209, 221, 221, 106, 42, 249, 200, 99, 252, 150, 40, 204, 68, 69, 236, 143, 34, 203, 85, 45, 221,
-          177, 180, 57, 78, 183, 22, 144, 87, 197, 14, 65, 156, 161, 107, 73, 177, 196, 90, 233, 19, 86, 29, 124, 79,
-          232, 97, 182, 47, 240, 103, 240, 65, 225, 90, 57, 179, 101, 212, 230, 46, 183, 247, 85, 27, 67, 194, 128, 37,
-          45, 179, 58, 72, 254, 77, 130, 211, 90, 152, 55, 165, 96, 176, 132, 41, 19, 4, 51, 114, 40, 230, 71, 124, 157,
-          40, 86, 235, 92, 216, 32, 192, 234, 204, 18, 80, 52, 56, 147, 35, 137, 68, 28, 227, 21, 189, 151, 35, 99, 240,
-          64, 62, 93, 176, 145, 64, 178, 135, 201, 70, 237, 37, 64, 37, 208, 99, 15, 175, 15, 117, 108, 247, 4, 66, 19,
-          162, 32, 17, 1, 45, 7, 21, 142, 241, 246, 73, 38, 211, 22, 170, 103, 215, 130, 33, 239, 48, 137, 165, 81, 23,
-          85, 76, 113, 63, 160, 206, 126, 48, 162, 198, 5, 173, 245, 222, 26, 118, 203, 45, 149, 171, 26, 75, 254, 197,
-          191, 105, 192, 241, 11, 92, 28, 155, 29, 193, 42, 233, 119, 72, 56, 217, 113, 115, 113, 91, 108, 34, 212, 49,
-          174, 50, 10, 21, 252, 120, 148, 126, 196, 197, 75, 104, 130, 124, 57, 162, 132, 147, 181, 68, 217, 112, 30,
-          198, 108, 79, 88, 135, 156, 255, 13, 2, 74, 13, 22, 40, 80, 126, 108, 58, 141, 215, 187, 229, 75, 137, 208,
-          101, 180, 110, 251, 43, 182, 179, 61, 83, 121, 53, 139, 66, 105, 60, 252, 41, 112, 76, 82, 63, 99, 107, 29,
-          93, 34, 138, 241, 38, 58, 175, 178, 194, 211, 207, 210, 66, 85, 116, 122, 242, 102, 43, 146, 41, 242, 188,
-          213, 180, 190, 157, 23, 162, 40, 70, 118, 162, 145, 212, 185, 26, 197, 87, 166, 70, 160, 44, 99, 62, 226, 175,
-          235, 64, 147, 8, 181, 99, 43, 39, 206, 233, 86, 20, 151, 251, 66, 53, 122, 104, 182, 143, 113, 2, 200, 4, 46,
-          237, 39, 52, 143, 214, 170, 63, 132, 106, 133, 234, 220, 47, 52, 47, 218, 221, 32, 188, 172, 43, 41, 196, 183,
-          53, 252, 157, 213, 191, 173, 181, 120, 212, 212, 71, 15, 216, 241, 237, 14, 102, 106, 26, 244, 252, 198, 20,
-          71, 145, 0, 224, 106, 69, 122, 27, 168, 101, 231, 44, 60, 130, 187, 12, 244, 241, 206, 103, 3, 108, 84, 79,
-          40, 200, 176, 232, 87, 191, 199, 31, 202, 184, 15, 10, 128, 77, 2, 55, 244, 198, 57, 80, 24, 255, 65, 177,
-          168, 167, 126, 229, 153, 47, 136, 244, 43, 111, 151, 102, 147, 89, 90, 26, 207, 213, 77, 241, 116, 154, 178,
-          237, 44, 199, 163, 123, 232, 177, 159, 94, 15, 186, 187, 127, 116, 94, 1, 189, 242, 81, 32, 49, 79, 184, 31,
-          226, 118, 78, 52, 56, 126, 231, 141, 13, 37, 229, 156, 52, 215, 22, 6, 177, 97, 183, 168, 1, 205, 65, 13, 122,
-          42, 135, 228, 143, 5, 67, 253, 73, 46, 232, 90, 34, 82, 109, 6, 201, 223, 197, 173, 52, 162, 121, 175, 250,
-          166, 146, 103, 246, 166, 159, 10, 20, 171, 25, 135, 161, 102, 51, 237, 79, 197, 33, 247, 204, 3, 71, 126, 16,
-          196, 13, 158, 50, 85, 248, 214, 125, 17, 91, 255, 174, 102, 16, 59, 90, 67, 214, 53, 89, 227, 102, 62, 153,
-          59, 155, 245, 121, 217, 251, 35, 60, 178, 110, 45, 24, 65, 78, 152, 62, 104, 249, 200, 8, 217, 33, 36, 177,
-          77, 74, 142, 80, 140, 43, 51, 68, 49, 25, 32, 204, 79, 38, 151, 255, 63, 144, 156, 199, 142, 137, 1, 36, 156,
-          233, 86, 99, 236, 212, 168, 56, 167, 138, 141, 207, 121, 80, 179, 170, 63, 4, 77, 201, 189, 191, 62, 248, 9,
-          85, 1, 173, 143, 41, 18, 196, 230, 178, 234, 42, 158, 15, 241, 241, 201, 128, 159, 230, 28, 144, 43, 37, 146,
-          107, 252, 44, 49, 121, 115, 202, 228, 1, 61, 99, 255, 64, 1, 237, 180, 56, 248, 212, 225, 132, 109, 126, 124,
-          69, 63, 172, 50, 26, 251, 15, 190, 235, 236, 108, 39, 42, 47, 97, 120, 167, 30, 133, 197, 147, 210, 126, 188,
-          14, 167, 211, 47, 91, 163, 125, 152, 217, 101, 134, 141, 226, 52, 183, 136, 94, 64, 23, 94, 196, 142, 229,
-          217, 185, 56, 49, 201, 133, 146, 35, 183, 20, 134, 162, 218, 97, 135, 4, 61, 85, 16, 30, 25, 25, 80, 47, 111,
-          31, 120, 139, 63, 149, 112, 14, 254, 46, 23, 127, 3, 224, 106, 78, 129, 236, 79, 160, 24, 59, 120, 125,
-        ])
+        getUInt8ArrayFromHex(
+          '00000006e4b9c00b8c3ca8b3d8cb05fdc36eaeb2ec055ca4230d02931dd88796470d3399f7dadc2e400e2e767f6e97a55b8fbdf2cdb261d36ac8f2ce670ef9ff8b77e3fc236cfa4ca446c9d9f5487be71fe51f64b0cd4c7d75e95d45e8bdbd6fd15445f781dbc932c89539f35e167a8c981c87bada9d7104874362054235dabb6f4f06aa678683d625920c44e0507a944f42df945e645a832fcfc52989c2d1ff4e9d4ffeafd37648098ce401f4ec01a9e3363c2ca95acf7ad061d9943eab01017415bd57d9d6c379919bc9fc127ae1a3b175dd44ecab5304a1bb92db0f7f7e97e0b9b57b32b69b0d3d24b78f6ac987129271ecd8ff1f278b61dce409518bcf18449b9652c9a132340ca270329ab91dbb4b480fdcc94d84566d920e405e2354630de4241f630997121f0347567f4b34a51bc9ffb7278be61f0951cbc0e3b85ceb8399124c41b8b180a501303ad9f5a357486254f318d46d59165f1aaee154f7b67bcecd8f495462fc6a7bd64962267286ff69e0543fdfa6711e7a719d32ea6fdb8f076177330ebc3d50df1910fcd661f8f0423d00c8d1631021e3538604d80047f91a110020436ec1842c72bb9b5f3a4eb82c977214a0898c7fb03c5a08481a61da98c66dcb22f39c492cc5d04e09e326c62d45e05143a6198cb7229f92a746466789e513ba45066617a007685fa74be5f3e47ff83bcf4c371103c1c38701af6e85c9dea1d92c72939ad6c61b09552d5dd3cf8440f09808d5ff7ceeabfb317120dda8ccd12908ae192088e60e7fc4c1d47644e71800c5ca10052901442eab0cbbf9b14c9b4cea21f7cf4030721ea5a13d03fa6e99c283171ab1d7de6e5f3856cf53154115727f49f684eec25e1e36a4c63112f7727eac5fa006c1e6fa048fb436d3b40cd1d2a8715e4e4f4ab617c8865902de9d0e18d1a5cb60be090cb5b8e920151773c2b34e52a46b1699b0f91bfc033358e646032280f11b1c7eb0981e1d6fab164593fc6426b618b467ce72ea8e4856a89b4440677b8eeec63f818fcbb17918cc1ed4e8b7667076523b9348fc1b60aa2eeb8c90599b6578fdb55916726a79675203448d1d1dbf7f8690d272744405007c8fa349d6a08ceef3fe3f3d7e534727df099eb0c91192b723fd1121e305583e61e1997afbb0e7a843ef8551d32117904d551bc6fd756b10f28fc12c76725d0fe9e16243d5251cd9e88413a63ad4211e0185b2dc19a0953a06d19aab79aa372d98f40bfba282382b41f4aa1ce61314a5315d955206de0a26b456b782040652ee886735466b499c0fb4c2f4e19e9268be4c4ca3e00e6b4b849c9e1b462fca0560baacb3f4758cf2b63e063c6fe2bd19093c118a10228c9cdf773f11a25b34cfd2807577500ebed152e61be909b49bb2f57b0076665fc146feb2928df433909036f9cf96d72b64b1bce0598b7a7efd62353144a5296e5cf3c1458705ee8bde6f39c57fa422f71131a916e3c254d708a35b7b7ce31de83a45b449d18f515497c3578648ac060efe73123d9bdfede524f611d31fcd3f6de9d2353b9096b7638cfbdba0194191d4e807ad4e75d20f9fa29eb65b5b9d0eeff229dad0c341871e6a15273c28e7ffa70ef60679900b761c30d250cc319132c09a1f7367079a39dcbe32d2f854974ea2a4a4e61b646fde21e7c740fd05afa90f60e5a7cd3120e803549f2dc47f3a9bc34665e73865dfa2c8cf97c28af3a14ed9a694990c652d0397a3fac17310f4474e2164b4107efddfaee32b690291d35e0d51523780b7c2fca80c19ddde7c674b7c54769888fe7f4262fd7f211491d7ea277bdeab2361fdd651760097693f83b9a6891aef7d3dda648ed6eacebdb995f380985022096a7574ce8ff94c4b29be4805031b6850786e2b4497104ccdff5b1d37a79b471c6a1f6cbff69918131dfaeda79d702db3c85bf8cf57b64ae5f88a3fa3184a490ede80e501b91b94b1a6ad111464574ed19ca1bf3a53314504b04e48a73e9a41e54d534069e8e6b678c960a2edb21498ea5b317a84c9dbabbe7660bf3fa30694daec91ccd3f3a95e084848bcecf1dde1e79470dc8c4af3b651ef0aeb41644028abeeaf0efa50721e8a60db6ed1dddd6a2af9c863fc9628cc4445ec8f22cb552dddb1b4394eb7169057c50e419ca16b49b1c45ae913561d7c4fe861b62ff067f041e15a39b365d4e62eb7f7551b43c280252db33a48fe4d82d35a9837a560b084291304337228e6477c9d2856eb5cd820c0eacc12503438932389441ce315bd972363f0403e5db09140b287c946ed254025d0630faf0f756cf7044213a22011012d07158ef1f64926d316aa67d78221ef3089a55117554c713fa0ce7e30a2c605adf5de1a76cb2d95ab1a4bfec5bf69c0f10b5c1c9b1dc12ae9774838d97173715b6c22d431ae320a15fc78947ec4c54b68827c39a28493b544d9701ec66c4f58879cff0d024a0d1628507e6c3a8dd7bbe54b89d065b46efb2bb6b33d5379358b42693cfc29704c523f636b1d5d228af1263aafb2c2d3cfd24255747af2662b9229f2bcd5b4be9d17a2284676a291d4b91ac557a646a02c633ee2afeb409308b5632b27cee9561497fb42357a68b68f7102c8042eed27348fd6aa3f846a85eadc2f342fdadd20bcac2b29c4b735fc9dd5bfadb578d4d4470fd8f1ed0e666a1af4fcc614479100e06a457a1ba865e72c3c82bb0cf4f1ce67036c544f28c8b0e857bfc71fcab80f0a804d0237f4c6395018ff41b1a8a77ee5992f88f42b6f976693595a1acfd54df1749ab2ed2cc7a37be8b19f5e0fbabb7f745e01bdf25120314fb81fe2764e34387ee78d0d25e59c34d71606b161b7a801cd410d7a2a87e48f0543fd492ee85a22526d06c9dfc5ad34a279affaa69267f6a69f0a14ab1987a16633ed4fc521f7cc03477e10c40d9e3255f8d67d115bffae66103b5a43d63559e3663e993b9bf579d9fb233cb26e2d18414e983e68f9c808d92124b14d4a8e508c2b3344311920cc4f2697ff3f909cc78e8901249ce95663ecd4a838a78a8dcf7950b3aa3f044dc9bdbf3ef8095501ad8f2912c4e6b2ea2a9e0ff1f1c9809fe61c902b25926bfc2c317973cae4013d63ff4001edb438f8d4e1846d7e7c453fac321afb0fbeebec6c272a2f6178a71e85c593d27ebc0ea7d32f5ba37d98d965868de234b7885e40175ec48ee5d9b93831c9859223b71486a2da6187043d55101e1919502f6f1f788b3f95700efe2e177f03e06a4e81ec4fa0183b787d'
+        )
       );
       expect(error).to.equal(null);
     });
   });
 
   describe('initializeTree', () => {
-    it('should generate xmss tree for extendedSeed[5, 146 ...] and seed[0, 0 ...]', () => {
-      const extendedSeed = new Uint8Array([
-        5, 146, 182, 224, 114, 250, 181, 221, 201, 138, 132, 84, 79, 78, 158, 191, 80, 177, 135, 151, 5, 221, 84, 237,
-        94, 152, 84, 18, 184, 211, 20, 10, 9, 204, 252, 12, 222, 114, 131, 220, 167, 111, 147, 207, 143, 68, 70, 228,
-        217, 106, 73,
-      ]);
+    it('should generate xmss tree for extendedSeed[0592...] and seed[0000...]', () => {
+      const extendedSeed = getUInt8ArrayFromHex(
+        '0592b6e072fab5ddc98a84544f4e9ebf50b1879705dd54ed5e985412b8d3140a09ccfc0cde7283dca76f93cf8f4446e4d96a49'
+      );
       const desc = newQRLDescriptorFromExtendedSeed(extendedSeed);
       const seed = new Uint8Array(COMMON.SEED_SIZE);
       const xmssTree = initializeTree(desc, seed);
@@ -1233,60 +649,41 @@ describe('Test cases for [xmss]', function testFunction() {
         h: 4,
         k: 2,
       };
-      const expectedSk = new Uint8Array([
-        0, 0, 0, 0, 237, 163, 19, 201, 85, 145, 160, 35, 165, 179, 127, 54, 28, 7, 165, 117, 58, 146, 211, 208, 66, 116,
-        89, 243, 76, 120, 149, 215, 39, 214, 40, 22, 179, 170, 34, 36, 235, 157, 130, 49, 39, 212, 249, 248, 163, 15,
-        215, 161, 160, 44, 100, 131, 217, 192, 241, 253, 65, 149, 123, 154, 228, 223, 198, 58, 49, 145, 218, 52, 66,
-        104, 98, 130, 179, 213, 22, 15, 37, 207, 22, 42, 81, 127, 210, 19, 31, 131, 251, 242, 105, 138, 88, 249, 196,
-        106, 252, 93, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      ]);
-      const expectedSeed = new Uint8Array([
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      ]);
+      const expectedSk = getUInt8ArrayFromHex(
+        '00000000eda313c95591a023a5b37f361c07a5753a92d3d0427459f34c7895d727d62816b3aa2224eb9d823127d4f9f8a30fd7a1a02c6483d9c0f1fd41957b9ae4dfc63a3191da3442686282b3d5160f25cf162a517fd2131f83fbf2698a58f9c46afc5d0000000000000000000000000000000000000000000000000000000000000000'
+      );
+      const expectedSeed = getUInt8ArrayFromHex(
+        '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+      );
       const expectedBdsState = {
-        stack: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        stack: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         stackOffset: 0,
-        stackLevels: new Uint8Array([0, 0, 0, 0, 0]),
-        auth: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
-        keep: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        stackLevels: getUInt8ArrayFromHex('0000000000'),
+        auth: getUInt8ArrayFromHex(
+          '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
+        keep: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         treeHash: [
           {
             h: 0,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ]),
+            node: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
           },
           {
             h: 1,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ]),
+            node: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
           },
         ],
-        retain: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        retain: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
         nextLeaf: 0,
       };
       const expectedDesc = { hashFunction: 5, signatureType: 0, height: 4, addrFormatType: 9 };
@@ -1310,12 +707,11 @@ describe('Test cases for [xmss]', function testFunction() {
       expect(xmssTree).to.deep.equal(expectedXmssTree);
     });
 
-    it('should generate xmss tree for desc[6, 1 ...] and seed[68, 24 ...]', () => {
+    it('should generate xmss tree for desc[6, 1 ...] and seed[4418...]', () => {
       const desc = newQRLDescriptor(6, HASH_FUNCTION.SHA2_256, 4, 44);
-      const seed = new Uint8Array([
-        68, 24, 114, 231, 214, 43, 119, 145, 112, 232, 156, 22, 88, 162, 41, 27, 245, 171, 90, 221, 2, 91, 82, 83, 10,
-        140, 73, 25, 113, 67, 166, 224, 57, 194, 244, 60, 252, 197, 168, 250, 3, 128, 62, 174, 226, 90, 16, 101,
-      ]);
+      const seed = getUInt8ArrayFromHex(
+        '441872e7d62b779170e89c1658a2291bf5ab5add025b52530a8c49197143a6e039c2f43cfcc5a8fa03803eaee25a1065'
+      );
       const xmssTree = initializeTree(desc, seed);
       const expectedXmssParams = {
         wotsParams: {
@@ -1331,91 +727,55 @@ describe('Test cases for [xmss]', function testFunction() {
         h: 6,
         k: 2,
       };
-      const expectedSk = new Uint8Array([
-        0, 0, 0, 0, 154, 124, 42, 121, 37, 91, 246, 4, 244, 198, 21, 251, 28, 4, 35, 72, 186, 212, 16, 58, 65, 10, 71,
-        199, 179, 243, 41, 255, 130, 228, 229, 218, 103, 150, 133, 159, 31, 169, 114, 23, 101, 118, 205, 2, 69, 93, 244,
-        28, 30, 74, 202, 51, 1, 126, 221, 194, 173, 108, 116, 239, 216, 159, 196, 120, 106, 95, 23, 31, 137, 115, 198,
-        67, 170, 158, 112, 141, 174, 87, 118, 59, 86, 3, 163, 2, 61, 136, 190, 250, 192, 228, 240, 46, 122, 190, 56,
-        114, 241, 68, 91, 104, 2, 87, 5, 51, 74, 254, 235, 95, 98, 146, 115, 119, 21, 107, 20, 228, 162, 151, 209, 61,
-        56, 147, 41, 26, 22, 99, 249, 86,
-      ]);
-      const expectedSeed = new Uint8Array([
-        68, 24, 114, 231, 214, 43, 119, 145, 112, 232, 156, 22, 88, 162, 41, 27, 245, 171, 90, 221, 2, 91, 82, 83, 10,
-        140, 73, 25, 113, 67, 166, 224, 57, 194, 244, 60, 252, 197, 168, 250, 3, 128, 62, 174, 226, 90, 16, 101,
-      ]);
+      const expectedSk = getUInt8ArrayFromHex(
+        '000000009a7c2a79255bf604f4c615fb1c042348bad4103a410a47c7b3f329ff82e4e5da6796859f1fa972176576cd02455df41c1e4aca33017eddc2ad6c74efd89fc4786a5f171f8973c643aa9e708dae57763b5603a3023d88befac0e4f02e7abe3872f1445b68025705334afeeb5f62927377156b14e4a297d13d3893291a1663f956'
+      );
+      const expectedSeed = getUInt8ArrayFromHex(
+        '441872e7d62b779170e89c1658a2291bf5ab5add025b52530a8c49197143a6e039c2f43cfcc5a8fa03803eaee25a1065'
+      );
       const expectedBdsState = {
-        stack: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0,
-        ]),
+        stack: getUInt8ArrayFromHex(
+          '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         stackOffset: 0,
-        stackLevels: new Uint8Array([0, 0, 0, 0, 0, 0, 0]),
-        auth: new Uint8Array([
-          239, 230, 210, 209, 42, 56, 30, 84, 20, 13, 235, 131, 43, 250, 72, 181, 51, 206, 243, 93, 123, 209, 25, 150,
-          167, 6, 75, 142, 33, 38, 69, 194, 168, 194, 64, 40, 41, 216, 105, 51, 189, 5, 177, 90, 47, 46, 17, 168, 225,
-          100, 222, 132, 0, 254, 23, 189, 32, 155, 99, 230, 40, 174, 161, 61, 189, 66, 37, 25, 168, 161, 24, 169, 120,
-          232, 73, 118, 210, 119, 182, 255, 21, 61, 167, 132, 110, 187, 204, 128, 88, 0, 142, 109, 177, 41, 21, 22, 116,
-          167, 87, 236, 3, 135, 23, 201, 192, 47, 182, 75, 216, 10, 165, 42, 44, 96, 199, 228, 40, 144, 7, 4, 224, 78,
-          85, 41, 25, 213, 69, 203, 32, 67, 177, 179, 152, 233, 144, 81, 151, 158, 22, 14, 152, 69, 93, 46, 96, 32, 20,
-          80, 4, 98, 52, 23, 248, 240, 39, 216, 237, 76, 155, 242, 217, 19, 226, 29, 84, 199, 189, 167, 119, 213, 26,
-          119, 168, 146, 145, 136, 136, 115, 144, 15, 21, 161, 135, 214, 35, 91, 91, 64, 21, 14, 185, 124,
-        ]),
-        keep: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        stackLevels: getUInt8ArrayFromHex('00000000000000'),
+        auth: getUInt8ArrayFromHex(
+          'efe6d2d12a381e54140deb832bfa48b533cef35d7bd11996a7064b8e212645c2a8c2402829d86933bd05b15a2f2e11a8e164de8400fe17bd209b63e628aea13dbd422519a8a118a978e84976d277b6ff153da7846ebbcc8058008e6db129151674a757ec038717c9c02fb64bd80aa52a2c60c7e428900704e04e552919d545cb2043b1b398e99051979e160e98455d2e6020145004623417f8f027d8ed4c9bf2d913e21d54c7bda777d51a77a89291888873900f15a187d6235b5b40150eb97c'
+        ),
+        keep: getUInt8ArrayFromHex(
+          '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         treeHash: [
           {
             h: 0,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              212, 34, 252, 232, 11, 222, 231, 173, 225, 184, 171, 42, 182, 23, 71, 49, 140, 167, 65, 38, 202, 170, 88,
-              205, 157, 237, 252, 218, 243, 92, 100, 244,
-            ]),
+            node: getUInt8ArrayFromHex('d422fce80bdee7ade1b8ab2ab61747318ca74126caaa58cd9dedfcdaf35c64f4'),
           },
           {
             h: 1,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              40, 173, 199, 139, 180, 235, 36, 89, 148, 254, 204, 128, 204, 42, 128, 68, 184, 191, 249, 71, 193, 228,
-              96, 251, 96, 141, 46, 252, 208, 145, 20, 47,
-            ]),
+            node: getUInt8ArrayFromHex('28adc78bb4eb245994fecc80cc2a8044b8bff947c1e460fb608d2efcd091142f'),
           },
           {
             h: 2,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              255, 187, 140, 215, 114, 144, 244, 141, 243, 154, 33, 43, 124, 6, 241, 31, 230, 139, 82, 85, 92, 170, 235,
-              19, 68, 194, 205, 197, 158, 31, 199, 126,
-            ]),
+            node: getUInt8ArrayFromHex('ffbb8cd77290f48df39a212b7c06f11fe68b52555caaeb1344c2cdc59e1fc77e'),
           },
           {
             h: 3,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              131, 172, 174, 116, 50, 39, 27, 197, 141, 247, 196, 1, 120, 143, 186, 98, 25, 15, 171, 69, 250, 107, 104,
-              207, 103, 68, 250, 83, 241, 30, 194, 189,
-            ]),
+            node: getUInt8ArrayFromHex('83acae7432271bc58df7c401788fba62190fab45fa6b68cf6744fa53f11ec2bd'),
           },
         ],
-        retain: new Uint8Array([
-          255, 61, 112, 94, 197, 238, 148, 207, 238, 93, 203, 33, 33, 198, 132, 37, 9, 23, 44, 23, 183, 0, 51, 57, 196,
-          172, 42, 240, 237, 183, 242, 131,
-        ]),
+        retain: getUInt8ArrayFromHex('ff3d705ec5ee94cfee5dcb2121c6842509172c17b7003339c4ac2af0edb7f283'),
         nextLeaf: 0,
       };
       const expectedDesc = { hashFunction: 0, signatureType: 4, height: 6, addrFormatType: 44 };
@@ -1441,10 +801,9 @@ describe('Test cases for [xmss]', function testFunction() {
 
     it('should generate xmss tree for desc[4, 2 ...] and seed[112, 104 ...]', () => {
       const desc = newQRLDescriptor(4, HASH_FUNCTION.SHAKE_256, 3, 7);
-      const seed = new Uint8Array([
-        112, 104, 137, 192, 105, 171, 35, 223, 91, 12, 173, 112, 183, 118, 223, 141, 63, 16, 125, 67, 71, 76, 28, 116,
-        25, 53, 100, 29, 214, 232, 245, 214, 150, 86, 22, 197, 20, 54, 96, 252, 21, 40, 57, 42, 8, 71, 0, 35,
-      ]);
+      const seed = getUInt8ArrayFromHex(
+        '706889c069ab23df5b0cad70b776df8d3f107d43474c1c741935641dd6e8f5d6965616c5143660fc1528392a08470023'
+      );
       const xmssTree = initializeTree(desc, seed);
       const expectedXmssParams = {
         wotsParams: {
@@ -1460,66 +819,41 @@ describe('Test cases for [xmss]', function testFunction() {
         h: 4,
         k: 2,
       };
-      const expectedSk = new Uint8Array([
-        0, 0, 0, 0, 39, 135, 83, 241, 136, 93, 226, 7, 200, 120, 210, 139, 188, 172, 34, 191, 3, 66, 54, 212, 158, 222,
-        210, 47, 185, 192, 215, 33, 206, 194, 220, 133, 248, 236, 222, 241, 118, 149, 173, 127, 12, 70, 59, 162, 209,
-        16, 67, 178, 44, 70, 42, 5, 32, 155, 87, 62, 229, 243, 29, 249, 194, 203, 149, 232, 119, 221, 48, 105, 254, 149,
-        240, 2, 209, 189, 121, 124, 213, 82, 179, 75, 127, 116, 166, 212, 101, 174, 36, 158, 198, 146, 110, 121, 163,
-        169, 89, 247, 250, 233, 45, 239, 138, 213, 97, 138, 22, 63, 126, 67, 202, 77, 59, 114, 181, 72, 108, 234, 235,
-        140, 166, 242, 252, 131, 73, 173, 142, 5, 248, 163,
-      ]);
-      const expectedSeed = new Uint8Array([
-        112, 104, 137, 192, 105, 171, 35, 223, 91, 12, 173, 112, 183, 118, 223, 141, 63, 16, 125, 67, 71, 76, 28, 116,
-        25, 53, 100, 29, 214, 232, 245, 214, 150, 86, 22, 197, 20, 54, 96, 252, 21, 40, 57, 42, 8, 71, 0, 35,
-      ]);
+      const expectedSk = getUInt8ArrayFromHex(
+        '00000000278753f1885de207c878d28bbcac22bf034236d49eded22fb9c0d721cec2dc85f8ecdef17695ad7f0c463ba2d11043b22c462a05209b573ee5f31df9c2cb95e877dd3069fe95f002d1bd797cd552b34b7f74a6d465ae249ec6926e79a3a959f7fae92def8ad5618a163f7e43ca4d3b72b5486ceaeb8ca6f2fc8349ad8e05f8a3'
+      );
+      const expectedSeed = getUInt8ArrayFromHex(
+        '706889c069ab23df5b0cad70b776df8d3f107d43474c1c741935641dd6e8f5d6965616c5143660fc1528392a08470023'
+      );
       const expectedBdsState = {
-        stack: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        stack: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         stackOffset: 0,
-        stackLevels: new Uint8Array([0, 0, 0, 0, 0]),
-        auth: new Uint8Array([
-          41, 80, 220, 130, 200, 3, 187, 20, 8, 211, 98, 221, 135, 61, 220, 224, 182, 184, 109, 57, 25, 80, 159, 215,
-          173, 69, 209, 251, 115, 14, 23, 172, 223, 215, 81, 242, 128, 87, 6, 131, 248, 212, 200, 188, 195, 36, 6, 173,
-          0, 53, 33, 114, 117, 198, 181, 160, 85, 67, 29, 152, 170, 0, 108, 167, 225, 147, 58, 161, 22, 11, 69, 141, 76,
-          203, 142, 48, 176, 47, 130, 71, 95, 166, 94, 221, 68, 233, 60, 196, 109, 131, 3, 119, 39, 172, 147, 75, 194,
-          238, 231, 11, 233, 63, 91, 156, 106, 72, 121, 206, 65, 204, 36, 37, 145, 255, 140, 164, 70, 65, 89, 119, 8,
-          125, 99, 159, 51, 158, 228, 116,
-        ]),
-        keep: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        stackLevels: getUInt8ArrayFromHex('0000000000'),
+        auth: getUInt8ArrayFromHex(
+          '2950dc82c803bb1408d362dd873ddce0b6b86d3919509fd7ad45d1fb730e17acdfd751f280570683f8d4c8bcc32406ad0035217275c6b5a055431d98aa006ca7e1933aa1160b458d4ccb8e30b02f82475fa65edd44e93cc46d83037727ac934bc2eee70be93f5b9c6a4879ce41cc242591ff8ca446415977087d639f339ee474'
+        ),
+        keep: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         treeHash: [
           {
             h: 0,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              138, 180, 144, 111, 215, 200, 34, 101, 204, 252, 168, 93, 222, 173, 232, 122, 135, 132, 128, 191, 235, 42,
-              65, 87, 69, 12, 141, 55, 15, 212, 127, 251,
-            ]),
+            node: getUInt8ArrayFromHex('8ab4906fd7c82265ccfca85ddeade87a878480bfeb2a4157450c8d370fd47ffb'),
           },
           {
             h: 1,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              54, 85, 11, 179, 236, 72, 88, 165, 85, 48, 194, 250, 167, 170, 174, 183, 245, 33, 121, 123, 76, 56, 76,
-              66, 62, 197, 48, 7, 76, 182, 193, 45,
-            ]),
+            node: getUInt8ArrayFromHex('36550bb3ec4858a55530c2faa7aaaeb7f521797b4c384c423ec530074cb6c12d'),
           },
         ],
-        retain: new Uint8Array([
-          79, 174, 147, 214, 121, 205, 179, 115, 130, 217, 52, 216, 106, 20, 252, 57, 104, 25, 38, 126, 109, 159, 95,
-          110, 67, 144, 96, 241, 62, 72, 147, 99,
-        ]),
+        retain: getUInt8ArrayFromHex('4fae93d679cdb37382d934d86a14fc396819267e6d9f5f6e439060f13e489363'),
         nextLeaf: 0,
       };
       const expectedDesc = { hashFunction: 2, signatureType: 3, height: 4, addrFormatType: 7 };
@@ -1545,11 +879,10 @@ describe('Test cases for [xmss]', function testFunction() {
   });
 
   describe('newXMSSFromSeed', () => {
-    it('should generate xmss tree for seed[122, 12 ...]', () => {
-      const seed = new Uint8Array([
-        122, 12, 172, 214, 239, 194, 16, 161, 113, 166, 97, 235, 207, 90, 230, 216, 61, 90, 44, 213, 226, 30, 131, 85,
-        96, 36, 106, 37, 115, 169, 158, 236, 17, 171, 235, 77, 50, 235, 94, 42, 21, 222, 35, 87, 151, 221, 190, 37,
-      ]);
+    it('should generate xmss tree for seed[7a0c...]', () => {
+      const seed = getUInt8ArrayFromHex(
+        '7a0cacd6efc210a171a661ebcf5ae6d83d5a2cd5e21e835560246a2573a99eec11abeb4d32eb5e2a15de235797ddbe25'
+      );
       const height = 4;
       const hashFunction = HASH_FUNCTION.SHA2_256;
       const addrFormatType = 4;
@@ -1568,66 +901,41 @@ describe('Test cases for [xmss]', function testFunction() {
         h: 4,
         k: 2,
       };
-      const expectedSk = new Uint8Array([
-        0, 0, 0, 0, 163, 248, 93, 138, 186, 254, 253, 129, 159, 214, 128, 156, 118, 94, 22, 193, 59, 99, 241, 156, 26,
-        25, 79, 55, 225, 55, 254, 9, 83, 190, 135, 69, 3, 80, 157, 48, 170, 62, 23, 53, 244, 72, 50, 104, 91, 40, 151,
-        144, 204, 71, 17, 160, 106, 81, 145, 155, 150, 206, 164, 22, 58, 255, 230, 205, 197, 205, 229, 54, 73, 171, 13,
-        188, 203, 69, 156, 93, 111, 156, 86, 59, 232, 75, 144, 153, 143, 241, 214, 110, 161, 155, 135, 55, 190, 10, 60,
-        218, 215, 52, 54, 110, 1, 225, 202, 29, 120, 166, 51, 57, 2, 183, 26, 148, 213, 173, 37, 211, 19, 150, 110, 15,
-        249, 138, 4, 8, 176, 38, 222, 218,
-      ]);
-      const expectedSeed = new Uint8Array([
-        122, 12, 172, 214, 239, 194, 16, 161, 113, 166, 97, 235, 207, 90, 230, 216, 61, 90, 44, 213, 226, 30, 131, 85,
-        96, 36, 106, 37, 115, 169, 158, 236, 17, 171, 235, 77, 50, 235, 94, 42, 21, 222, 35, 87, 151, 221, 190, 37,
-      ]);
+      const expectedSk = getUInt8ArrayFromHex(
+        '00000000a3f85d8abafefd819fd6809c765e16c13b63f19c1a194f37e137fe0953be874503509d30aa3e1735f44832685b289790cc4711a06a51919b96cea4163affe6cdc5cde53649ab0dbccb459c5d6f9c563be84b90998ff1d66ea19b8737be0a3cdad734366e01e1ca1d78a6333902b71a94d5ad25d313966e0ff98a0408b026deda'
+      );
+      const expectedSeed = getUInt8ArrayFromHex(
+        '7a0cacd6efc210a171a661ebcf5ae6d83d5a2cd5e21e835560246a2573a99eec11abeb4d32eb5e2a15de235797ddbe25'
+      );
       const expectedBdsState = {
-        stack: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        stack: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         stackOffset: 0,
-        stackLevels: new Uint8Array([0, 0, 0, 0, 0]),
-        auth: new Uint8Array([
-          39, 23, 239, 134, 120, 149, 201, 21, 254, 171, 197, 51, 154, 98, 104, 138, 20, 155, 230, 180, 65, 57, 91, 18,
-          48, 248, 15, 30, 126, 205, 124, 236, 224, 181, 74, 105, 162, 146, 113, 15, 138, 156, 43, 222, 199, 95, 71,
-          227, 6, 22, 116, 29, 72, 83, 39, 51, 26, 207, 130, 43, 93, 102, 75, 22, 151, 130, 134, 129, 4, 135, 243, 105,
-          177, 145, 149, 36, 198, 87, 218, 203, 6, 15, 244, 245, 212, 224, 46, 239, 161, 29, 206, 244, 32, 59, 58, 201,
-          214, 30, 57, 161, 147, 153, 86, 6, 221, 238, 0, 255, 118, 212, 204, 17, 225, 173, 236, 95, 199, 170, 181, 110,
-          61, 156, 122, 2, 19, 104, 176, 82,
-        ]),
-        keep: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        stackLevels: getUInt8ArrayFromHex('0000000000'),
+        auth: getUInt8ArrayFromHex(
+          '2717ef867895c915feabc5339a62688a149be6b441395b1230f80f1e7ecd7cece0b54a69a292710f8a9c2bdec75f47e30616741d485327331acf822b5d664b16978286810487f369b1919524c657dacb060ff4f5d4e02eefa11dcef4203b3ac9d61e39a193995606ddee00ff76d4cc11e1adec5fc7aab56e3d9c7a021368b052'
+        ),
+        keep: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         treeHash: [
           {
             h: 0,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              14, 85, 127, 154, 236, 15, 202, 158, 112, 250, 205, 237, 36, 250, 202, 95, 150, 12, 55, 150, 36, 111, 34,
-              158, 42, 244, 101, 254, 248, 84, 84, 130,
-            ]),
+            node: getUInt8ArrayFromHex('0e557f9aec0fca9e70facded24faca5f960c3796246f229e2af465fef8545482'),
           },
           {
             h: 1,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              18, 186, 148, 141, 111, 16, 72, 251, 247, 190, 253, 213, 198, 229, 68, 185, 55, 167, 195, 74, 180, 153,
-              170, 142, 131, 91, 120, 249, 150, 77, 2, 37,
-            ]),
+            node: getUInt8ArrayFromHex('12ba948d6f1048fbf7befdd5c6e544b937a7c34ab499aa8e835b78f9964d0225'),
           },
         ],
-        retain: new Uint8Array([
-          165, 165, 237, 99, 209, 17, 138, 148, 41, 180, 167, 179, 228, 250, 156, 76, 63, 19, 104, 4, 200, 101, 194, 50,
-          87, 160, 90, 166, 19, 119, 202, 229,
-        ]),
+        retain: getUInt8ArrayFromHex('a5a5ed63d1118a9429b4a7b3e4fa9c4c3f136804c865c23257a05aa61377cae5'),
         nextLeaf: 0,
       };
       const expectedDesc = { hashFunction: 0, signatureType: 1, height: 4, addrFormatType: 4 };
@@ -1651,11 +959,10 @@ describe('Test cases for [xmss]', function testFunction() {
       expect(xmssTree).to.deep.equal(expectedXmssTree);
     });
 
-    it('should generate xmss tree for seed[107, 11 ...]', () => {
-      const seed = new Uint8Array([
-        107, 11, 136, 223, 17, 9, 167, 8, 52, 13, 70, 183, 52, 6, 148, 158, 39, 230, 155, 20, 240, 188, 38, 162, 174,
-        154, 34, 158, 83, 70, 225, 88, 132, 207, 21, 105, 155, 89, 7, 247, 172, 118, 81, 64, 19, 122, 221, 199,
-      ]);
+    it('should generate xmss tree for seed[6b0b...]', () => {
+      const seed = getUInt8ArrayFromHex(
+        '6b0b88df1109a708340d46b73406949e27e69b14f0bc26a2ae9a229e5346e15884cf15699b5907f7ac765140137addc7'
+      );
       const height = 6;
       const hashFunction = HASH_FUNCTION.SHAKE_128;
       const addrFormatType = 3;
@@ -1674,91 +981,55 @@ describe('Test cases for [xmss]', function testFunction() {
         h: 6,
         k: 2,
       };
-      const expectedSk = new Uint8Array([
-        0, 0, 0, 0, 150, 178, 143, 132, 233, 120, 243, 203, 98, 249, 23, 78, 218, 209, 24, 234, 53, 38, 3, 30, 27, 171,
-        26, 134, 53, 200, 114, 88, 175, 231, 66, 100, 9, 96, 92, 40, 57, 84, 205, 78, 185, 43, 85, 253, 174, 137, 186,
-        199, 217, 245, 98, 202, 182, 118, 180, 117, 131, 113, 79, 68, 105, 81, 247, 28, 220, 7, 173, 40, 156, 155, 94,
-        175, 144, 142, 134, 8, 78, 240, 29, 190, 209, 36, 187, 230, 19, 184, 137, 138, 149, 48, 168, 247, 172, 158, 200,
-        123, 193, 187, 46, 87, 205, 77, 72, 94, 135, 90, 82, 119, 177, 235, 231, 155, 220, 244, 26, 91, 148, 85, 29,
-        152, 164, 247, 193, 251, 224, 250, 68, 19,
-      ]);
-      const expectedSeed = new Uint8Array([
-        107, 11, 136, 223, 17, 9, 167, 8, 52, 13, 70, 183, 52, 6, 148, 158, 39, 230, 155, 20, 240, 188, 38, 162, 174,
-        154, 34, 158, 83, 70, 225, 88, 132, 207, 21, 105, 155, 89, 7, 247, 172, 118, 81, 64, 19, 122, 221, 199,
-      ]);
+      const expectedSk = getUInt8ArrayFromHex(
+        '0000000096b28f84e978f3cb62f9174edad118ea3526031e1bab1a8635c87258afe7426409605c283954cd4eb92b55fdae89bac7d9f562cab676b47583714f446951f71cdc07ad289c9b5eaf908e86084ef01dbed124bbe613b8898a9530a8f7ac9ec87bc1bb2e57cd4d485e875a5277b1ebe79bdcf41a5b94551d98a4f7c1fbe0fa4413'
+      );
+      const expectedSeed = getUInt8ArrayFromHex(
+        '6b0b88df1109a708340d46b73406949e27e69b14f0bc26a2ae9a229e5346e15884cf15699b5907f7ac765140137addc7'
+      );
       const expectedBdsState = {
-        stack: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0,
-        ]),
+        stack: getUInt8ArrayFromHex(
+          '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         stackOffset: 0,
-        stackLevels: new Uint8Array([0, 0, 0, 0, 0, 0, 0]),
-        auth: new Uint8Array([
-          3, 194, 192, 227, 227, 245, 117, 249, 144, 125, 94, 39, 122, 105, 55, 11, 73, 18, 203, 25, 19, 179, 106, 11,
-          60, 157, 30, 149, 171, 143, 101, 114, 111, 59, 56, 182, 172, 65, 238, 199, 83, 197, 38, 104, 20, 80, 73, 44,
-          25, 56, 171, 44, 198, 209, 12, 146, 232, 105, 94, 172, 11, 165, 148, 156, 106, 91, 48, 27, 208, 98, 139, 158,
-          150, 40, 14, 3, 135, 46, 67, 25, 185, 86, 160, 109, 149, 71, 57, 155, 121, 81, 122, 55, 62, 214, 64, 225, 211,
-          222, 171, 111, 139, 107, 117, 72, 115, 214, 138, 25, 97, 41, 105, 21, 184, 221, 91, 210, 184, 27, 158, 177,
-          204, 188, 135, 168, 199, 41, 98, 53, 15, 178, 163, 27, 190, 151, 47, 112, 223, 99, 31, 138, 80, 168, 110, 118,
-          173, 195, 50, 59, 44, 196, 4, 228, 58, 153, 197, 190, 166, 33, 70, 95, 153, 79, 13, 123, 72, 223, 2, 37, 118,
-          179, 180, 115, 85, 210, 33, 80, 119, 11, 25, 250, 251, 5, 242, 116, 247, 84, 93, 236, 61, 250, 92, 192,
-        ]),
-        keep: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        stackLevels: getUInt8ArrayFromHex('00000000000000'),
+        auth: getUInt8ArrayFromHex(
+          '03c2c0e3e3f575f9907d5e277a69370b4912cb1913b36a0b3c9d1e95ab8f65726f3b38b6ac41eec753c526681450492c1938ab2cc6d10c92e8695eac0ba5949c6a5b301bd0628b9e96280e03872e4319b956a06d9547399b79517a373ed640e1d3deab6f8b6b754873d68a1961296915b8dd5bd2b81b9eb1ccbc87a8c72962350fb2a31bbe972f70df631f8a50a86e76adc3323b2cc404e43a99c5bea621465f994f0d7b48df022576b3b47355d22150770b19fafb05f274f7545dec3dfa5cc0'
+        ),
+        keep: getUInt8ArrayFromHex(
+          '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         treeHash: [
           {
             h: 0,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              244, 76, 32, 3, 174, 246, 165, 149, 85, 120, 5, 182, 134, 50, 42, 46, 55, 188, 119, 139, 32, 179, 185,
-              240, 100, 33, 224, 38, 177, 118, 136, 62,
-            ]),
+            node: getUInt8ArrayFromHex('f44c2003aef6a595557805b686322a2e37bc778b20b3b9f06421e026b176883e'),
           },
           {
             h: 1,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              37, 203, 68, 106, 249, 9, 162, 244, 140, 119, 60, 6, 53, 121, 174, 225, 75, 209, 199, 176, 78, 140, 55,
-              230, 53, 252, 154, 140, 243, 22, 11, 49,
-            ]),
+            node: getUInt8ArrayFromHex('25cb446af909a2f48c773c063579aee14bd1c7b04e8c37e635fc9a8cf3160b31'),
           },
           {
             h: 2,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              153, 165, 71, 53, 180, 219, 213, 197, 184, 209, 133, 151, 194, 10, 193, 177, 10, 234, 127, 109, 176, 164,
-              71, 71, 129, 1, 81, 64, 48, 61, 60, 211,
-            ]),
+            node: getUInt8ArrayFromHex('99a54735b4dbd5c5b8d18597c20ac1b10aea7f6db0a4474781015140303d3cd3'),
           },
           {
             h: 3,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              224, 71, 69, 133, 173, 204, 157, 26, 61, 233, 155, 196, 228, 54, 88, 45, 206, 165, 132, 247, 225, 121,
-              112, 67, 153, 168, 115, 49, 200, 64, 4, 195,
-            ]),
+            node: getUInt8ArrayFromHex('e0474585adcc9d1a3de99bc4e436582dcea584f7e179704399a87331c84004c3'),
           },
         ],
-        retain: new Uint8Array([
-          35, 71, 147, 149, 151, 130, 143, 173, 221, 227, 108, 150, 16, 43, 222, 253, 172, 26, 189, 34, 196, 248, 81,
-          52, 229, 254, 141, 175, 46, 199, 30, 8,
-        ]),
+        retain: getUInt8ArrayFromHex('2347939597828faddde36c96102bdefdac1abd22c4f85134e5fe8daf2ec71e08'),
         nextLeaf: 0,
       };
       const expectedDesc = { hashFunction: 1, signatureType: 1, height: 6, addrFormatType: 3 };
@@ -1784,12 +1055,10 @@ describe('Test cases for [xmss]', function testFunction() {
   });
 
   describe('newXMSSFromExtendedSeed', () => {
-    it('should generate xmss tree for extendedSeed[214, 194 ...]', () => {
-      const extendedSeed = new Uint8Array([
-        214, 194, 166, 208, 12, 19, 66, 136, 10, 70, 2, 11, 194, 117, 223, 80, 115, 176, 220, 223, 5, 105, 238, 186,
-        102, 21, 34, 20, 242, 103, 8, 210, 212, 21, 85, 234, 167, 59, 19, 225, 9, 17, 49, 51, 0, 158, 70, 214, 108, 85,
-        175,
-      ]);
+    it('should generate xmss tree for extendedSeed[d6c2...]', () => {
+      const extendedSeed = getUInt8ArrayFromHex(
+        'd6c2a6d00c1342880a46020bc275df5073b0dcdf0569eeba66152214f26708d2d41555eaa73b13e109113133009e46d66c55af'
+      );
       const xmssTree = newXMSSFromExtendedSeed(extendedSeed);
       const expectedXmssParams = {
         wotsParams: {
@@ -1805,60 +1074,41 @@ describe('Test cases for [xmss]', function testFunction() {
         h: 4,
         k: 2,
       };
-      const expectedSk = new Uint8Array([
-        0, 0, 0, 0, 76, 200, 159, 241, 89, 59, 24, 197, 174, 65, 210, 144, 235, 195, 150, 124, 138, 113, 75, 34, 143,
-        30, 141, 35, 142, 22, 247, 240, 38, 10, 111, 175, 75, 10, 150, 235, 154, 111, 135, 53, 166, 223, 200, 146, 170,
-        63, 73, 200, 95, 145, 52, 87, 65, 118, 183, 231, 208, 118, 223, 174, 23, 214, 117, 125, 91, 29, 99, 142, 39,
-        242, 26, 197, 139, 26, 234, 136, 11, 174, 61, 89, 230, 40, 210, 127, 38, 84, 171, 208, 182, 193, 182, 52, 74,
-        225, 50, 195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      ]);
-      const expectedSeed = new Uint8Array([
-        208, 12, 19, 66, 136, 10, 70, 2, 11, 194, 117, 223, 80, 115, 176, 220, 223, 5, 105, 238, 186, 102, 21, 34, 20,
-        242, 103, 8, 210, 212, 21, 85, 234, 167, 59, 19, 225, 9, 17, 49, 51, 0, 158, 70, 214, 108, 85, 175,
-      ]);
+      const expectedSk = getUInt8ArrayFromHex(
+        '000000004cc89ff1593b18c5ae41d290ebc3967c8a714b228f1e8d238e16f7f0260a6faf4b0a96eb9a6f8735a6dfc892aa3f49c85f9134574176b7e7d076dfae17d6757d5b1d638e27f21ac58b1aea880bae3d59e628d27f2654abd0b6c1b6344ae132c30000000000000000000000000000000000000000000000000000000000000000'
+      );
+      const expectedSeed = getUInt8ArrayFromHex(
+        'd00c1342880a46020bc275df5073b0dcdf0569eeba66152214f26708d2d41555eaa73b13e109113133009e46d66c55af'
+      );
       const expectedBdsState = {
-        stack: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        stack: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         stackOffset: 0,
-        stackLevels: new Uint8Array([0, 0, 0, 0, 0]),
-        auth: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
-        keep: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        stackLevels: getUInt8ArrayFromHex('0000000000'),
+        auth: getUInt8ArrayFromHex(
+          '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
+        keep: getUInt8ArrayFromHex(
+          '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         treeHash: [
           {
             h: 0,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ]),
+            node: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
           },
           {
             h: 1,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ]),
+            node: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
           },
         ],
-        retain: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        retain: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
         nextLeaf: 0,
       };
       const expectedDesc = { hashFunction: 6, signatureType: 13, height: 4, addrFormatType: 12 };
@@ -1882,12 +1132,10 @@ describe('Test cases for [xmss]', function testFunction() {
       expect(xmssTree).to.deep.equal(expectedXmssTree);
     });
 
-    it('should generate xmss tree for extendedSeed[184, 179 ...]', () => {
-      const extendedSeed = new Uint8Array([
-        184, 179, 172, 206, 173, 95, 229, 42, 104, 198, 74, 183, 196, 51, 147, 126, 200, 172, 30, 224, 248, 240, 36,
-        250, 252, 58, 45, 66, 252, 41, 126, 29, 58, 90, 176, 180, 147, 126, 198, 154, 6, 130, 232, 28, 62, 24, 43, 50,
-        158, 217, 228,
-      ]);
+    it('should generate xmss tree for extendedSeed[b8b3...]', () => {
+      const extendedSeed = getUInt8ArrayFromHex(
+        'b8b3accead5fe52a68c64ab7c433937ec8ac1ee0f8f024fafc3a2d42fc297e1d3a5ab0b4937ec69a0682e81c3e182b329ed9e4'
+      );
       const xmssTree = newXMSSFromExtendedSeed(extendedSeed);
       const expectedXmssParams = {
         wotsParams: {
@@ -1903,83 +1151,55 @@ describe('Test cases for [xmss]', function testFunction() {
         h: 6,
         k: 2,
       };
-      const expectedSk = new Uint8Array([
-        0, 0, 0, 0, 171, 188, 99, 188, 157, 216, 137, 54, 83, 153, 230, 71, 16, 220, 222, 55, 49, 208, 81, 194, 210, 3,
-        113, 98, 171, 116, 198, 153, 233, 129, 139, 200, 188, 96, 151, 144, 72, 209, 75, 167, 160, 255, 144, 234, 182,
-        93, 110, 175, 29, 219, 31, 141, 248, 11, 185, 233, 156, 115, 198, 167, 250, 195, 39, 5, 124, 181, 255, 157, 62,
-        40, 32, 194, 40, 252, 181, 40, 170, 152, 83, 106, 16, 192, 251, 238, 74, 211, 167, 179, 37, 196, 118, 9, 175,
-        28, 66, 91, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      ]);
-      const expectedSeed = new Uint8Array([
-        206, 173, 95, 229, 42, 104, 198, 74, 183, 196, 51, 147, 126, 200, 172, 30, 224, 248, 240, 36, 250, 252, 58, 45,
-        66, 252, 41, 126, 29, 58, 90, 176, 180, 147, 126, 198, 154, 6, 130, 232, 28, 62, 24, 43, 50, 158, 217, 228,
-      ]);
+      const expectedSk = getUInt8ArrayFromHex(
+        '00000000abbc63bc9dd889365399e64710dcde3731d051c2d2037162ab74c699e9818bc8bc60979048d14ba7a0ff90eab65d6eaf1ddb1f8df80bb9e99c73c6a7fac327057cb5ff9d3e2820c228fcb528aa98536a10c0fbee4ad3a7b325c47609af1c425b0000000000000000000000000000000000000000000000000000000000000000'
+      );
+      const expectedSeed = getUInt8ArrayFromHex(
+        'cead5fe52a68c64ab7c433937ec8ac1ee0f8f024fafc3a2d42fc297e1d3a5ab0b4937ec69a0682e81c3e182b329ed9e4'
+      );
       const expectedBdsState = {
-        stack: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0,
-        ]),
+        stack: getUInt8ArrayFromHex(
+          '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         stackOffset: 0,
-        stackLevels: new Uint8Array([0, 0, 0, 0, 0, 0, 0]),
-        auth: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0,
-        ]),
-        keep: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        stackLevels: getUInt8ArrayFromHex('00000000000000'),
+        auth: getUInt8ArrayFromHex(
+          '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
+        keep: getUInt8ArrayFromHex(
+          '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+        ),
         treeHash: [
           {
             h: 0,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ]),
+            node: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
           },
           {
             h: 1,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ]),
+            node: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
           },
           {
             h: 2,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ]),
+            node: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
           },
           {
             h: 3,
             nextIdx: 0,
             stackUsage: 0,
             completed: 1,
-            node: new Uint8Array([
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ]),
+            node: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
           },
         ],
-        retain: new Uint8Array([
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]),
+        retain: getUInt8ArrayFromHex('0000000000000000000000000000000000000000000000000000000000000000'),
         nextLeaf: 0,
       };
       const expectedDesc = { hashFunction: 8, signatureType: 11, height: 6, addrFormatType: 11 };
@@ -2082,18 +1302,14 @@ describe('Test cases for [xmss]', function testFunction() {
     });
 
     it('should return false if the XMSS address is not valid', () => {
-      const address = new Uint8Array([
-        15, 9, 188, 38, 176, 247, 18, 10, 157, 30, 40, 170, 223, 143, 111, 82, 114, 69, 36, 223,
-      ]);
+      const address = getUInt8ArrayFromHex('0f09bc26b0f7120a9d1e28aadf8f6f52724524df');
       const isValid = isValidXMSSAddress(address);
 
       expect(isValid).to.equal(false);
     });
 
     it('should return true if the XMSS address is valid', () => {
-      const address = new Uint8Array([
-        19, 9, 188, 38, 176, 247, 18, 10, 157, 30, 40, 170, 223, 143, 111, 82, 114, 69, 36, 223,
-      ]);
+      const address = getUInt8ArrayFromHex('1309bc26b0f7120a9d1e28aadf8f6f52724524df');
       const isValid = isValidXMSSAddress(address);
 
       expect(isValid).to.equal(true);
@@ -2103,21 +1319,16 @@ describe('Test cases for [xmss]', function testFunction() {
   describe('wotsPKFromSig', () => {
     it('should throw an error if the size of addr is not ADDRESS_SIZE', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_128;
-      const pk = new Uint8Array([
-        165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25, 118, 250, 164, 49, 97, 80, 110, 136, 69, 247, 3, 146, 207,
-        36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25,
-      ]);
-      const sig = new Uint8Array([72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111]);
-      const msg = new Uint8Array([
-        61, 243, 176, 203, 127, 133, 233, 25, 109, 1, 201, 235, 81, 249, 23, 178, 182, 57, 38, 172,
-      ]);
+      const pk = getUInt8ArrayFromHex(
+        'a59ee432f2fdc2fc06d51976faa43161506e8845f70392cf2423b7eff8a59ee432f2fdc2fc06d519'
+      );
+      const sig = getUInt8ArrayFromHex('480b7a02c286425053b2714448c423f8246b6f');
+      const msg = getUInt8ArrayFromHex('3df3b0cb7f85e9196d01c9eb51f917b2b63926ac');
       const w = 256;
       const n = 2;
       const wotsParams = newWOTSParams(n, w);
-      const pubSeed = new Uint8Array([
-        153, 10, 199, 15, 28, 116, 160, 242, 215, 94, 157, 222, 142, 6, 176, 48, 62, 34, 61, 177, 77, 32, 194, 135, 193,
-      ]);
-      const addr = new Uint32Array([55, 244, 142, 154, 21, 253]);
+      const pubSeed = getUInt8ArrayFromHex('990ac70f1c74a0f2d75e9dde8e06b0303e223db14d20c287c1');
+      const addr = getUInt8ArrayFromHex('37f48e9a15fd');
 
       expect(() => wotsPKFromSig(hashFunction, pk, sig, msg, wotsParams, pubSeed, addr)).to.throw(
         'addr should be an array of size 8'
@@ -2126,46 +1337,34 @@ describe('Test cases for [xmss]', function testFunction() {
 
     it('should generate wotsPK from Sig', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_128;
-      const pk = new Uint8Array([
-        110, 136, 69, 247, 3, 146, 207, 36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25, 118,
-        250, 164, 49, 97, 80, 110, 136, 69, 247, 3, 146, 207, 36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194,
-        252, 6, 213, 25, 118, 250, 164, 49, 97, 80,
-      ]);
-      const sig = new Uint8Array([
-        178, 113, 68, 72, 196, 35, 248, 36, 107, 111, 249, 170, 72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72,
-        196, 35, 248, 36, 107, 111, 249, 170, 72, 11, 122, 2, 194, 134, 66, 80, 83,
-      ]);
-      const msg = new Uint8Array([
-        66, 43, 184, 26, 80, 97, 191, 144, 187, 154, 78, 61, 243, 176, 203, 127, 133, 233, 25, 109, 1, 201, 235, 81,
-        249, 23, 178, 182, 57, 38, 172, 11, 211, 49, 249, 57,
-      ]);
+      const pk = getUInt8ArrayFromHex(
+        '6e8845f70392cf2423b7eff8a59ee432f2fdc2fc06d51976faa43161506e8845f70392cf2423b7eff8a59ee432f2fdc2fc06d51976faa4316150'
+      );
+      const sig = getUInt8ArrayFromHex(
+        'b2714448c423f8246b6ff9aa480b7a02c286425053b2714448c423f8246b6ff9aa480b7a02c286425053'
+      );
+      const msg = getUInt8ArrayFromHex('422bb81a5061bf90bb9a4e3df3b0cb7f85e9196d01c9eb51f917b2b63926ac0bd331f939');
       const w = 6;
       const n = 2;
       const wotsParams = newWOTSParams(n, w);
-      const pubSeed = new Uint8Array([
-        115, 226, 128, 227, 18, 58, 118, 34, 86, 153, 10, 199, 15, 28, 116, 160, 242, 215, 94, 157, 222, 142, 6, 176,
-        48, 62, 34, 61, 177, 77, 32, 194, 135, 193, 1, 241, 133, 87, 127, 230, 61, 71, 221, 100, 186, 48, 195,
-      ]);
-      const addr = new Uint32Array([55, 244, 142, 154, 34, 201, 21, 253]);
-      const expectedPk = new Uint8Array([
-        60, 70, 4, 131, 19, 190, 73, 103, 145, 148, 92, 224, 143, 176, 5, 93, 115, 176, 9, 231, 133, 102, 25, 118, 250,
-        164, 49, 97, 80, 110, 136, 69, 247, 3, 146, 207, 36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194, 252,
-        6, 213, 25, 118, 250, 164, 49, 97, 80,
-      ]);
-      const expectedSig = new Uint8Array([
-        178, 113, 68, 72, 196, 35, 248, 36, 107, 111, 249, 170, 72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72,
-        196, 35, 248, 36, 107, 111, 249, 170, 72, 11, 122, 2, 194, 134, 66, 80, 83,
-      ]);
-      const expectedMsg = new Uint8Array([
-        66, 43, 184, 26, 80, 97, 191, 144, 187, 154, 78, 61, 243, 176, 203, 127, 133, 233, 25, 109, 1, 201, 235, 81,
-        249, 23, 178, 182, 57, 38, 172, 11, 211, 49, 249, 57,
-      ]);
+      const pubSeed = getUInt8ArrayFromHex(
+        '73e280e3123a762256990ac70f1c74a0f2d75e9dde8e06b0303e223db14d20c287c101f185577fe63d47dd64ba30c3'
+      );
+      const addr = getUInt8ArrayFromHex('37f48e9a22c915fd');
+      const expectedPk = getUInt8ArrayFromHex(
+        '3c46048313be496791945ce08fb0055d73b009e785661976faa43161506e8845f70392cf2423b7eff8a59ee432f2fdc2fc06d51976faa4316150'
+      );
+      const expectedSig = getUInt8ArrayFromHex(
+        'b2714448c423f8246b6ff9aa480b7a02c286425053b2714448c423f8246b6ff9aa480b7a02c286425053'
+      );
+      const expectedMsg = getUInt8ArrayFromHex(
+        '422bb81a5061bf90bb9a4e3df3b0cb7f85e9196d01c9eb51f917b2b63926ac0bd331f939'
+      );
       const expectedWotsParams = newWOTSParams(n, w);
-      const expectedPubSeed = new Uint8Array([
-        115, 226, 128, 227, 18, 58, 118, 34, 86, 153, 10, 199, 15, 28, 116, 160, 242, 215, 94, 157, 222, 142, 6, 176,
-        48, 62, 34, 61, 177, 77, 32, 194, 135, 193, 1, 241, 133, 87, 127, 230, 61, 71, 221, 100, 186, 48, 195,
-      ]);
-      const expectedAddr = new Uint32Array([55, 244, 142, 154, 34, 10, 4, 1]);
+      const expectedPubSeed = getUInt8ArrayFromHex(
+        '73e280e3123a762256990ac70f1c74a0f2d75e9dde8e06b0303e223db14d20c287c101f185577fe63d47dd64ba30c3'
+      );
+      const expectedAddr = getUInt8ArrayFromHex('37f48e9a220a0401');
       wotsPKFromSig(hashFunction, pk, sig, msg, wotsParams, pubSeed, addr);
 
       expect(pk).to.deep.equal(expectedPk);
@@ -2180,63 +1379,40 @@ describe('Test cases for [xmss]', function testFunction() {
   describe('validateAuthPath', () => {
     it('should throw an error if the size of addr is invalid', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_128;
-      const root = new Uint8Array([
-        165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25, 118, 250, 164, 49, 97, 80, 110, 136, 69, 247, 3, 146, 207,
-        36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25,
-      ]);
-      const leaf = new Uint8Array([72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111]);
+      const root = getUInt8ArrayFromHex(
+        'a59ee432f2fdc2fc06d51976faa43161506e8845f70392cf2423b7eff8a59ee432f2fdc2fc06d519'
+      );
+      const leaf = getUInt8ArrayFromHex('480b7a02c286425053b2714448c423f8246b6f');
       const leafIdx = 8;
-      const authPath = new Uint8Array([
-        153, 10, 199, 15, 28, 116, 160, 242, 215, 94, 157, 222, 142, 6, 176, 48, 62, 34, 61, 177, 77, 32, 194, 135, 193,
-      ]);
+      const authPath = getUInt8ArrayFromHex('990ac70f1c74a0f2d75e9dde8e06b0303e223db14d20c287c1');
       const n = 4;
       const h = 3;
-      const pubSeed = new Uint8Array([
-        72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111,
-      ]);
-      const addr = new Uint32Array([55, 244, 142, 154, 21, 253]);
+      const pubSeed = getUInt8ArrayFromHex('480b7a02c286425053b2714448c423f8246b6f');
+      const addr = getUInt8ArrayFromHex('37f48e9a15fd');
 
       expect(() => validateAuthPath(hashFunction, root, leaf, leafIdx, authPath, n, h, pubSeed, addr)).to.throw(
         'addr should be an array of size 8'
       );
     });
 
-    it('should validate the auth path, with root[78, 250, ...]', () => {
+    it('should validate the auth path, with root[4efa...]', () => {
       const hashFunction = HASH_FUNCTION.SHA2_256;
-      const root = new Uint8Array([
-        78, 250, 70, 63, 99, 141, 132, 172, 208, 156, 21, 75, 217, 195, 115, 14, 114, 217, 104, 7, 54, 234, 192, 56,
-        235, 218, 108, 32, 78, 6, 44, 176, 138, 71, 143,
-      ]);
-      const leaf = new Uint8Array([
-        115, 17, 209, 47, 163, 128, 150, 242, 28, 95, 243, 241, 198, 243, 46, 234, 70, 160, 58, 190, 28, 219, 73,
-      ]);
+      const root = getUInt8ArrayFromHex('4efa463f638d84acd09c154bd9c3730e72d9680736eac038ebda6c204e062cb08a478f');
+      const leaf = getUInt8ArrayFromHex('7311d12fa38096f21c5ff3f1c6f32eea46a03abe1cdb49');
       const leafIdx = 3;
-      const authPath = new Uint8Array([
-        19, 216, 144, 186, 1, 160, 31, 215, 167, 253, 179, 88, 155, 153, 172, 136, 12, 140, 130, 124, 214, 223, 203, 60,
-        134, 143, 92, 30, 115, 107, 180,
-      ]);
+      const authPath = getUInt8ArrayFromHex('13d890ba01a01fd7a7fdb3589b99ac880c8c827cd6dfcb3c868f5c1e736bb4');
       const n = 1;
       const h = 3;
-      const pubSeed = new Uint8Array([
-        0, 220, 223, 17, 5, 222, 0, 168, 105, 111, 226, 113, 221, 14, 147, 9, 154, 145, 199, 93, 0, 238,
-      ]);
-      const addr = new Uint32Array([49, 51, 40, 62, 133, 88, 250, 135]);
-      const expectedRoot = new Uint8Array([
-        48, 250, 70, 63, 99, 141, 132, 172, 208, 156, 21, 75, 217, 195, 115, 14, 114, 217, 104, 7, 54, 234, 192, 56,
-        235, 218, 108, 32, 78, 6, 44, 176, 138, 71, 143,
-      ]);
-      const expectedLeaf = new Uint8Array([
-        115, 17, 209, 47, 163, 128, 150, 242, 28, 95, 243, 241, 198, 243, 46, 234, 70, 160, 58, 190, 28, 219, 73,
-      ]);
+      const pubSeed = getUInt8ArrayFromHex('00dcdf1105de00a8696fe271dd0e93099a91c75d00ee');
+      const addr = getUInt8ArrayFromHex('3133283e8558fa87');
+      const expectedRoot = getUInt8ArrayFromHex(
+        '30fa463f638d84acd09c154bd9c3730e72d9680736eac038ebda6c204e062cb08a478f'
+      );
+      const expectedLeaf = getUInt8ArrayFromHex('7311d12fa38096f21c5ff3f1c6f32eea46a03abe1cdb49');
       const expectedLeafIdx = 3;
-      const expectedAuthPath = new Uint8Array([
-        19, 216, 144, 186, 1, 160, 31, 215, 167, 253, 179, 88, 155, 153, 172, 136, 12, 140, 130, 124, 214, 223, 203, 60,
-        134, 143, 92, 30, 115, 107, 180,
-      ]);
-      const expectedPubSeed = new Uint8Array([
-        0, 220, 223, 17, 5, 222, 0, 168, 105, 111, 226, 113, 221, 14, 147, 9, 154, 145, 199, 93, 0, 238,
-      ]);
-      const expectedAddr = new Uint32Array([49, 51, 40, 62, 133, 2, 0, 2]);
+      const expectedAuthPath = getUInt8ArrayFromHex('13d890ba01a01fd7a7fdb3589b99ac880c8c827cd6dfcb3c868f5c1e736bb4');
+      const expectedPubSeed = getUInt8ArrayFromHex('00dcdf1105de00a8696fe271dd0e93099a91c75d00ee');
+      const expectedAddr = getUInt8ArrayFromHex('3133283e85020002');
       validateAuthPath(hashFunction, root, leaf, leafIdx, authPath, n, h, pubSeed, addr);
 
       expect(root).to.deep.equal(expectedRoot);
@@ -2247,38 +1423,26 @@ describe('Test cases for [xmss]', function testFunction() {
       expect(addr).to.deep.equal(expectedAddr);
     });
 
-    it('should validate the auth path, with root[165, 158, ...]', () => {
+    it('should validate the auth path, with root[a59e...]', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_128;
-      const root = new Uint8Array([
-        165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25, 118, 250, 164, 49, 97, 80, 110, 136, 69, 247, 3, 146, 207,
-        36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25,
-      ]);
-      const leaf = new Uint8Array([72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111]);
+      const root = getUInt8ArrayFromHex(
+        'a59ee432f2fdc2fc06d51976faa43161506e8845f70392cf2423b7eff8a59ee432f2fdc2fc06d519'
+      );
+      const leaf = getUInt8ArrayFromHex('480b7a02c286425053b2714448c423f8246b6f');
       const leafIdx = 8;
-      const authPath = new Uint8Array([
-        153, 10, 199, 15, 28, 116, 160, 242, 215, 94, 157, 222, 142, 6, 176, 48, 62, 34, 61, 177, 77, 32, 194, 135, 193,
-      ]);
+      const authPath = getUInt8ArrayFromHex('990ac70f1c74a0f2d75e9dde8e06b0303e223db14d20c287c1');
       const n = 4;
       const h = 3;
-      const pubSeed = new Uint8Array([
-        72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111,
-      ]);
-      const addr = new Uint32Array([55, 244, 142, 154, 21, 253, 23, 22]);
-      const expectedRoot = new Uint8Array([
-        187, 204, 89, 173, 242, 253, 194, 252, 6, 213, 25, 118, 250, 164, 49, 97, 80, 110, 136, 69, 247, 3, 146, 207,
-        36, 35, 183, 239, 248, 165, 158, 228, 50, 242, 253, 194, 252, 6, 213, 25,
-      ]);
-      const expectedLeaf = new Uint8Array([
-        72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111,
-      ]);
+      const pubSeed = getUInt8ArrayFromHex('480b7a02c286425053b2714448c423f8246b6f');
+      const addr = getUInt8ArrayFromHex('37f48e9a15fd1716');
+      const expectedRoot = getUInt8ArrayFromHex(
+        'bbcc59adf2fdc2fc06d51976faa43161506e8845f70392cf2423b7eff8a59ee432f2fdc2fc06d519'
+      );
+      const expectedLeaf = getUInt8ArrayFromHex('480b7a02c286425053b2714448c423f8246b6f');
       const expectedLeafIdx = 8;
-      const expectedAuthPath = new Uint8Array([
-        153, 10, 199, 15, 28, 116, 160, 242, 215, 94, 157, 222, 142, 6, 176, 48, 62, 34, 61, 177, 77, 32, 194, 135, 193,
-      ]);
-      const expectedPubSeed = new Uint8Array([
-        72, 11, 122, 2, 194, 134, 66, 80, 83, 178, 113, 68, 72, 196, 35, 248, 36, 107, 111,
-      ]);
-      const expectedAddr = new Uint32Array([55, 244, 142, 154, 21, 2, 1, 2]);
+      const expectedAuthPath = getUInt8ArrayFromHex('990ac70f1c74a0f2d75e9dde8e06b0303e223db14d20c287c1');
+      const expectedPubSeed = getUInt8ArrayFromHex('480b7a02c286425053b2714448c423f8246b6f');
+      const expectedAddr = getUInt8ArrayFromHex('37f48e9a15020102');
       validateAuthPath(hashFunction, root, leaf, leafIdx, authPath, n, h, pubSeed, addr);
 
       expect(root).to.deep.equal(expectedRoot);
@@ -2289,46 +1453,26 @@ describe('Test cases for [xmss]', function testFunction() {
       expect(addr).to.deep.equal(expectedAddr);
     });
 
-    it('should validate the auth path, with root[242, 253, ...]', () => {
+    it('should validate the auth path, with root[f2fd...]', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_256;
-      const root = new Uint8Array([
-        242, 253, 161, 141, 113, 22, 58, 125, 155, 246, 204, 198, 75, 157, 156, 107, 14, 87, 136, 41, 230, 61, 23, 3,
-        41, 131, 14, 143, 21, 112, 20, 244, 76, 232, 4, 22, 233, 252, 181, 185, 249, 33, 7, 135, 170,
-      ]);
-      const leaf = new Uint8Array([
-        57, 23, 101, 48, 12, 35, 35, 61, 177, 21, 247, 211, 3, 77, 236, 64, 74, 153, 162, 170, 239, 13, 212, 75, 213,
-        145, 232, 226, 45, 129, 43, 121, 62,
-      ]);
+      const root = getUInt8ArrayFromHex(
+        'f2fda18d71163a7d9bf6ccc64b9d9c6b0e578829e63d170329830e8f157014f44ce80416e9fcb5b9f9210787aa'
+      );
+      const leaf = getUInt8ArrayFromHex('391765300c23233db115f7d3034dec404a99a2aaef0dd44bd591e8e22d812b793e');
       const leafIdx = 3;
-      const authPath = new Uint8Array([
-        161, 5, 16, 51, 32, 114, 18, 253, 222, 190, 225, 78, 51, 177, 162, 230, 52, 228, 179, 182, 112, 226, 204, 147,
-        105, 31, 171, 199, 190, 57,
-      ]);
+      const authPath = getUInt8ArrayFromHex('a1051033207212fddebee14e33b1a2e634e4b3b670e2cc93691fabc7be39');
       const n = 3;
       const h = 8;
-      const pubSeed = new Uint8Array([
-        113, 155, 25, 235, 205, 167, 182, 173, 215, 103, 149, 83, 213, 40, 112, 138, 191, 137, 147, 214, 233, 49, 78,
-        24, 83, 161,
-      ]);
-      const addr = new Uint32Array([97, 244, 34, 40, 55, 242, 120, 189]);
-      const expectedRoot = new Uint8Array([
-        248, 67, 152, 141, 113, 22, 58, 125, 155, 246, 204, 198, 75, 157, 156, 107, 14, 87, 136, 41, 230, 61, 23, 3, 41,
-        131, 14, 143, 21, 112, 20, 244, 76, 232, 4, 22, 233, 252, 181, 185, 249, 33, 7, 135, 170,
-      ]);
-      const expectedLeaf = new Uint8Array([
-        57, 23, 101, 48, 12, 35, 35, 61, 177, 21, 247, 211, 3, 77, 236, 64, 74, 153, 162, 170, 239, 13, 212, 75, 213,
-        145, 232, 226, 45, 129, 43, 121, 62,
-      ]);
+      const pubSeed = getUInt8ArrayFromHex('719b19ebcda7b6add7679553d528708abf8993d6e9314e1853a1');
+      const addr = getUInt8ArrayFromHex('61f4222837f278bd');
+      const expectedRoot = getUInt8ArrayFromHex(
+        'f843988d71163a7d9bf6ccc64b9d9c6b0e578829e63d170329830e8f157014f44ce80416e9fcb5b9f9210787aa'
+      );
+      const expectedLeaf = getUInt8ArrayFromHex('391765300c23233db115f7d3034dec404a99a2aaef0dd44bd591e8e22d812b793e');
       const expectedLeafIdx = 3;
-      const expectedAuthPath = new Uint8Array([
-        161, 5, 16, 51, 32, 114, 18, 253, 222, 190, 225, 78, 51, 177, 162, 230, 52, 228, 179, 182, 112, 226, 204, 147,
-        105, 31, 171, 199, 190, 57,
-      ]);
-      const expectedPubSeed = new Uint8Array([
-        113, 155, 25, 235, 205, 167, 182, 173, 215, 103, 149, 83, 213, 40, 112, 138, 191, 137, 147, 214, 233, 49, 78,
-        24, 83, 161,
-      ]);
-      const expectedAddr = new Uint32Array([97, 244, 34, 40, 55, 7, 0, 2]);
+      const expectedAuthPath = getUInt8ArrayFromHex('a1051033207212fddebee14e33b1a2e634e4b3b670e2cc93691fabc7be39');
+      const expectedPubSeed = getUInt8ArrayFromHex('719b19ebcda7b6add7679553d528708abf8993d6e9314e1853a1');
+      const expectedAddr = getUInt8ArrayFromHex('61f4222837070002');
       validateAuthPath(hashFunction, root, leaf, leafIdx, authPath, n, h, pubSeed, addr);
 
       expect(root).to.deep.equal(expectedRoot);
@@ -2341,35 +1485,23 @@ describe('Test cases for [xmss]', function testFunction() {
   });
 
   describe('xmssVerifySig', () => {
-    it('should verify the signature, with msg[243, 69, ...]', () => {
+    it('should verify the signature, with msg[f345...]', () => {
       const hashFunction = HASH_FUNCTION.SHA2_256;
       const w = 6;
       const n = 2;
       const wotsParams = newWOTSParams(n, w);
-      const msg = new Uint8Array([
-        243, 69, 76, 252, 128, 221, 3, 39, 216, 83, 71, 93, 134, 189, 249, 171, 240, 48, 74, 172, 227, 154, 139, 188,
-        246, 64, 246, 164, 105, 197, 8,
-      ]);
-      const sigMsg = new Uint8Array([
-        141, 120, 101, 151, 185, 141, 48, 164, 38, 179, 167, 132, 167, 69, 159, 89, 141, 251, 168, 227, 55, 148, 190,
-        149, 22, 74, 153, 229, 140, 42, 65, 75, 152, 29, 68, 64, 32, 187, 116,
-      ]);
-      const pk = new Uint8Array([
-        253, 118, 163, 90, 246, 15, 92, 4, 5, 126, 88, 118, 94, 30, 85, 37, 204, 137, 200, 149, 165, 143, 15, 10,
-      ]);
+      const msg = getUInt8ArrayFromHex('f3454cfc80dd0327d853475d86bdf9abf0304aace39a8bbcf640f6a469c508');
+      const sigMsg = getUInt8ArrayFromHex(
+        '8d786597b98d30a426b3a784a7459f598dfba8e33794be95164a99e58c2a414b981d444020bb74'
+      );
+      const pk = getUInt8ArrayFromHex('fd76a35af60f5c04057e58765e1e5525cc89c895a58f0f0a');
       const h = 5;
       const expectedWotsParams = newWOTSParams(n, w);
-      const expectedMsg = new Uint8Array([
-        243, 69, 76, 252, 128, 221, 3, 39, 216, 83, 71, 93, 134, 189, 249, 171, 240, 48, 74, 172, 227, 154, 139, 188,
-        246, 64, 246, 164, 105, 197, 8,
-      ]);
-      const expectedSigMsg = new Uint8Array([
-        141, 120, 101, 151, 185, 141, 48, 164, 38, 179, 167, 132, 167, 69, 159, 89, 141, 251, 168, 227, 55, 148, 190,
-        149, 22, 74, 153, 229, 140, 42, 65, 75, 152, 29, 68, 64, 32, 187, 116,
-      ]);
-      const expectedPk = new Uint8Array([
-        253, 118, 163, 90, 246, 15, 92, 4, 5, 126, 88, 118, 94, 30, 85, 37, 204, 137, 200, 149, 165, 143, 15, 10,
-      ]);
+      const expectedMsg = getUInt8ArrayFromHex('f3454cfc80dd0327d853475d86bdf9abf0304aace39a8bbcf640f6a469c508');
+      const expectedSigMsg = getUInt8ArrayFromHex(
+        '8d786597b98d30a426b3a784a7459f598dfba8e33794be95164a99e58c2a414b981d444020bb74'
+      );
+      const expectedPk = getUInt8ArrayFromHex('fd76a35af60f5c04057e58765e1e5525cc89c895a58f0f0a');
       xmssVerifySig(hashFunction, wotsParams, msg, sigMsg, pk, h);
 
       expect(wotsParams).to.deep.equal(expectedWotsParams);
@@ -2378,39 +1510,27 @@ describe('Test cases for [xmss]', function testFunction() {
       expect(pk).to.deep.equal(expectedPk);
     });
 
-    it('should verify the signature, with msg[84, 81, ...]', () => {
+    it('should verify the signature, with msg[5451...]', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_128;
       const w = 16;
       const n = 2;
       const wotsParams = newWOTSParams(n, w);
-      const msg = new Uint8Array([
-        84, 81, 198, 44, 76, 75, 138, 203, 107, 82, 30, 172, 179, 69, 170, 231, 226, 245, 20, 18, 37, 244, 229, 199, 37,
-        196, 139, 7, 128, 54, 209, 214, 57, 231, 229, 209, 27, 198, 160, 208, 121, 215, 234, 176, 111, 3, 124, 247, 86,
-        76, 81,
-      ]);
-      const sigMsg = new Uint8Array([
-        80, 144, 150, 104, 156, 148, 165, 237, 145, 51, 23, 143, 33, 141, 80, 193, 102, 88, 45, 163, 156, 105, 113, 2,
-        166, 102, 69, 94, 165, 96, 48, 169, 95, 208, 182, 119, 1, 108, 234, 40, 192, 225, 39, 121, 165, 81, 146,
-      ]);
-      const pk = new Uint8Array([
-        57, 183, 46, 211, 8, 149, 91, 133, 136, 215, 102, 124, 139, 249, 46, 230, 1, 209, 94, 116, 47, 233, 88, 239,
-        204, 104,
-      ]);
+      const msg = getUInt8ArrayFromHex(
+        '5451c62c4c4b8acb6b521eacb345aae7e2f5141225f4e5c725c48b078036d1d639e7e5d11bc6a0d079d7eab06f037cf7564c51'
+      );
+      const sigMsg = getUInt8ArrayFromHex(
+        '509096689c94a5ed9133178f218d50c166582da39c697102a666455ea56030a95fd0b677016cea28c0e12779a55192'
+      );
+      const pk = getUInt8ArrayFromHex('39b72ed308955b8588d7667c8bf92ee601d15e742fe958efcc68');
       const h = 3;
       const expectedWotsParams = newWOTSParams(n, w);
-      const expectedMsg = new Uint8Array([
-        84, 81, 198, 44, 76, 75, 138, 203, 107, 82, 30, 172, 179, 69, 170, 231, 226, 245, 20, 18, 37, 244, 229, 199, 37,
-        196, 139, 7, 128, 54, 209, 214, 57, 231, 229, 209, 27, 198, 160, 208, 121, 215, 234, 176, 111, 3, 124, 247, 86,
-        76, 81,
-      ]);
-      const expectedSigMsg = new Uint8Array([
-        80, 144, 150, 104, 156, 148, 165, 237, 145, 51, 23, 143, 33, 141, 80, 193, 102, 88, 45, 163, 156, 105, 113, 2,
-        166, 102, 69, 94, 165, 96, 48, 169, 95, 208, 182, 119, 1, 108, 234, 40, 192, 225, 39, 121, 165, 81, 146,
-      ]);
-      const expectedPk = new Uint8Array([
-        57, 183, 46, 211, 8, 149, 91, 133, 136, 215, 102, 124, 139, 249, 46, 230, 1, 209, 94, 116, 47, 233, 88, 239,
-        204, 104,
-      ]);
+      const expectedMsg = getUInt8ArrayFromHex(
+        '5451c62c4c4b8acb6b521eacb345aae7e2f5141225f4e5c725c48b078036d1d639e7e5d11bc6a0d079d7eab06f037cf7564c51'
+      );
+      const expectedSigMsg = getUInt8ArrayFromHex(
+        '509096689c94a5ed9133178f218d50c166582da39c697102a666455ea56030a95fd0b677016cea28c0e12779a55192'
+      );
+      const expectedPk = getUInt8ArrayFromHex('39b72ed308955b8588d7667c8bf92ee601d15e742fe958efcc68');
       xmssVerifySig(hashFunction, wotsParams, msg, sigMsg, pk, h);
 
       expect(wotsParams).to.deep.equal(expectedWotsParams);
@@ -2419,37 +1539,27 @@ describe('Test cases for [xmss]', function testFunction() {
       expect(pk).to.deep.equal(expectedPk);
     });
 
-    it('should verify the signature, with msg[60, 57, ...]', () => {
+    it('should verify the signature, with msg[3c39...]', () => {
       const hashFunction = HASH_FUNCTION.SHAKE_256;
       const w = 16;
       const n = 2;
       const wotsParams = newWOTSParams(n, w);
-      const msg = new Uint8Array([
-        60, 57, 30, 80, 61, 1, 12, 97, 127, 15, 137, 81, 68, 130, 231, 7, 108, 181, 112, 148, 220, 229, 83, 154, 228,
-        126, 144, 59, 225, 42, 187, 130, 204, 128, 169, 45, 61, 191, 179,
-      ]);
-      const sigMsg = new Uint8Array([
-        0, 69, 1, 245, 176, 211, 160, 179, 181, 146, 70, 21, 63, 226, 235, 118, 190, 43, 90, 91, 177, 105, 211, 59, 36,
-        119, 138, 58, 220, 51, 129, 139, 153, 194, 86, 213, 178, 247, 26, 157, 182, 14, 81, 45, 146, 91, 159, 122, 236,
-      ]);
-      const pk = new Uint8Array([
-        175, 196, 4, 252, 210, 104, 178, 156, 200, 40, 214, 233, 253, 83, 95, 250, 229, 76, 219, 109, 1, 0, 6, 70, 106,
-        140, 244, 204, 73, 173, 248, 103, 70, 58, 170,
-      ]);
+      const msg = getUInt8ArrayFromHex(
+        '3c391e503d010c617f0f89514482e7076cb57094dce5539ae47e903be12abb82cc80a92d3dbfb3'
+      );
+      const sigMsg = getUInt8ArrayFromHex(
+        '004501f5b0d3a0b3b59246153fe2eb76be2b5a5bb169d33b24778a3adc33818b99c256d5b2f71a9db60e512d925b9f7aec'
+      );
+      const pk = getUInt8ArrayFromHex('afc404fcd268b29cc828d6e9fd535ffae54cdb6d010006466a8cf4cc49adf867463aaa');
       const h = 7;
       const expectedWotsParams = newWOTSParams(n, w);
-      const expectedMsg = new Uint8Array([
-        60, 57, 30, 80, 61, 1, 12, 97, 127, 15, 137, 81, 68, 130, 231, 7, 108, 181, 112, 148, 220, 229, 83, 154, 228,
-        126, 144, 59, 225, 42, 187, 130, 204, 128, 169, 45, 61, 191, 179,
-      ]);
-      const expectedSigMsg = new Uint8Array([
-        0, 69, 1, 245, 176, 211, 160, 179, 181, 146, 70, 21, 63, 226, 235, 118, 190, 43, 90, 91, 177, 105, 211, 59, 36,
-        119, 138, 58, 220, 51, 129, 139, 153, 194, 86, 213, 178, 247, 26, 157, 182, 14, 81, 45, 146, 91, 159, 122, 236,
-      ]);
-      const expectedPk = new Uint8Array([
-        175, 196, 4, 252, 210, 104, 178, 156, 200, 40, 214, 233, 253, 83, 95, 250, 229, 76, 219, 109, 1, 0, 6, 70, 106,
-        140, 244, 204, 73, 173, 248, 103, 70, 58, 170,
-      ]);
+      const expectedMsg = getUInt8ArrayFromHex(
+        '3c391e503d010c617f0f89514482e7076cb57094dce5539ae47e903be12abb82cc80a92d3dbfb3'
+      );
+      const expectedSigMsg = getUInt8ArrayFromHex(
+        '004501f5b0d3a0b3b59246153fe2eb76be2b5a5bb169d33b24778a3adc33818b99c256d5b2f71a9db60e512d925b9f7aec'
+      );
+      const expectedPk = getUInt8ArrayFromHex('afc404fcd268b29cc828d6e9fd535ffae54cdb6d010006466a8cf4cc49adf867463aaa');
       xmssVerifySig(hashFunction, wotsParams, msg, sigMsg, pk, h);
 
       expect(wotsParams).to.deep.equal(expectedWotsParams);
@@ -2461,20 +1571,13 @@ describe('Test cases for [xmss]', function testFunction() {
 
   describe('verifyWithCustomWOTSParamW', () => {
     it('should throw an error if the size of extendedPk is not EXTENDED_PK_SIZE', () => {
-      const message = new Uint8Array([
-        127, 156, 159, 181, 86, 106, 219, 117, 204, 25, 106, 39, 47, 185, 101, 14, 123, 84, 111, 44, 150, 64,
-      ]);
-      const signature = new Uint8Array([
-        81, 42, 132, 24, 155, 220, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103,
-        23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167,
-        205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108,
-        103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64,
-      ]);
-      const extendedPk = new Uint8Array([
-        41, 104, 66, 85, 122, 71, 132, 67, 72, 89, 62, 246, 165, 166, 234, 22, 166, 92, 175, 70, 189, 211, 69, 31, 198,
-        54, 141, 91, 175, 194, 128, 162, 184, 64, 3, 111, 39, 117, 169, 150, 122, 19, 190, 35, 235, 11, 194, 206, 89,
-        55, 172, 235, 61, 196, 55, 152, 34, 170, 206,
-      ]);
+      const message = getUInt8ArrayFromHex('7f9c9fb5566adb75cc196a272fb9650e7b546f2c9640');
+      const signature = getUInt8ArrayFromHex(
+        '512a84189bdcba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b7463280240'
+      );
+      const extendedPk = getUInt8ArrayFromHex(
+        '296842557a47844348593ef6a5a6ea16a65caf46bdd3451fc6368d5bafc280a2b840036f2775a9967a13be23eb0bc2ce5937aceb3dc4379822aace'
+      );
       const wotsParamW = 256;
 
       expect(() => verifyWithCustomWOTSParamW(message, signature, extendedPk, wotsParamW)).to.throw(
@@ -2483,21 +1586,13 @@ describe('Test cases for [xmss]', function testFunction() {
     });
 
     it('should throw an error if the signature type is not valid', () => {
-      const message = new Uint8Array([
-        119, 52, 21, 170, 216, 230, 81, 127, 156, 159, 181, 86, 106, 219, 117, 204, 25, 106, 39, 47, 185, 101, 14, 123,
-        84, 111, 44, 150, 64,
-      ]);
-      const signature = new Uint8Array([
-        13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224,
-        235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29,
-        108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23,
-        224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32,
-      ]);
-      const extendedPk = new Uint8Array([
-        11, 136, 40, 63, 194, 41, 104, 66, 85, 122, 71, 132, 67, 72, 89, 62, 246, 165, 166, 234, 22, 166, 92, 175, 70,
-        189, 211, 69, 31, 198, 54, 141, 91, 175, 194, 128, 162, 184, 64, 3, 111, 39, 117, 169, 150, 122, 19, 190, 35,
-        235, 11, 194, 206, 89, 55, 172, 235, 61, 196, 55, 152, 34, 170, 206, 114, 224, 211,
-      ]);
+      const message = getUInt8ArrayFromHex('773415aad8e6517f9c9fb5566adb75cc196a272fb9650e7b546f2c9640');
+      const signature = getUInt8ArrayFromHex(
+        '0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620'
+      );
+      const extendedPk = getUInt8ArrayFromHex(
+        '0b88283fc2296842557a47844348593ef6a5a6ea16a65caf46bdd3451fc6368d5bafc280a2b840036f2775a9967a13be23eb0bc2ce5937aceb3dc4379822aace72e0d3'
+      );
       const wotsParamW = 256;
 
       expect(() => verifyWithCustomWOTSParamW(message, signature, extendedPk, wotsParamW)).to.throw(
@@ -2505,120 +1600,22 @@ describe('Test cases for [xmss]', function testFunction() {
       );
     });
 
-    it('should verify with custom wots paramW, with message[119, 52, ...] signature[13, 64, ...]', () => {
-      const message = new Uint8Array([
-        119, 52, 21, 170, 216, 230, 81, 127, 156, 159, 181, 86, 106, 219, 117, 204, 25, 106, 39, 47, 185, 101, 14, 123,
-        84, 111, 44, 150, 64,
-      ]);
-      const signature = new Uint8Array([
-        13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224,
-        235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29,
-        108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23,
-        224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205,
-        139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103,
-        23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2,
-        64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29,
-        108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23,
-        224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64,
-        94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108,
-        103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238,
-        167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29,
-        108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99,
-        40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64,
-        94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239,
-        103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40,
-        2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94,
-        29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32,
-        236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2,
-        64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147,
-        27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99,
-        40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220,
-        130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27,
-        116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40,
-        2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60,
-        230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99,
-        40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235,
-        186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27,
-        116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24,
-        155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186,
-        147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116,
-        99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216,
-        20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27,
-        116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224,
-        235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186,
-        147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42,
-        132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224,
-        235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29,
-        108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64,
-        37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186,
-        147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103,
-        23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235,
-        186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108,
-        103, 23, 224, 99, 40, 29, 108, 103, 23, 224, 99, 40, 2, 64, 94, 29, 108, 103, 99, 40, 2, 64, 94, 29, 108, 103,
-        23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108,
-      ]);
-      const extendedPk = new Uint8Array([
-        19, 136, 40, 63, 194, 41, 104, 66, 85, 122, 71, 132, 67, 72, 89, 62, 246, 165, 166, 234, 22, 166, 92, 175, 70,
-        189, 211, 69, 31, 198, 54, 141, 91, 175, 194, 128, 162, 184, 64, 3, 111, 39, 117, 169, 150, 122, 19, 190, 35,
-        235, 11, 194, 206, 89, 55, 172, 235, 61, 196, 55, 152, 34, 170, 206, 114, 224, 211,
-      ]);
+    it('should verify with custom wots paramW, with message[7734...] signature[0d40...]', () => {
+      const message = getUInt8ArrayFromHex('773415aad8e6517f9c9fb5566adb75cc196a272fb9650e7b546f2c9640');
+      const signature = getUInt8ArrayFromHex(
+        '0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c74632802405e1d6c6717e063281d6c6717e0632802405e1d6c67632802405e1d6c6717e0ebba931b74632802405e1d6c'
+      );
+      const extendedPk = getUInt8ArrayFromHex(
+        '1388283fc2296842557a47844348593ef6a5a6ea16a65caf46bdd3451fc6368d5bafc280a2b840036f2775a9967a13be23eb0bc2ce5937aceb3dc4379822aace72e0d3'
+      );
       const wotsParamW = 256;
-      const expectedMessage = new Uint8Array([
-        119, 52, 21, 170, 216, 230, 81, 127, 156, 159, 181, 86, 106, 219, 117, 204, 25, 106, 39, 47, 185, 101, 14, 123,
-        84, 111, 44, 150, 64,
-      ]);
-      const expectedSignature = new Uint8Array([
-        13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224,
-        235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29,
-        108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23,
-        224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205,
-        139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103,
-        23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2,
-        64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29,
-        108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23,
-        224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64,
-        94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108,
-        103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238,
-        167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29,
-        108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99,
-        40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64,
-        94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239,
-        103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40,
-        2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94,
-        29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32,
-        236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2,
-        64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147,
-        27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99,
-        40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220,
-        130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27,
-        116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40,
-        2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60,
-        230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99,
-        40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235,
-        186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27,
-        116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24,
-        155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186,
-        147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116,
-        99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216,
-        20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27,
-        116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224,
-        235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186,
-        147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42,
-        132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224,
-        235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29,
-        108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64,
-        37, 216, 20, 60, 230, 32, 236, 238, 167, 205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186,
-        147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 103,
-        23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103, 23, 224, 235,
-        186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108,
-        103, 23, 224, 99, 40, 29, 108, 103, 23, 224, 99, 40, 2, 64, 94, 29, 108, 103, 99, 40, 2, 64, 94, 29, 108, 103,
-        23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108,
-      ]);
-      const expectedExtendedPk = new Uint8Array([
-        19, 136, 40, 63, 194, 41, 104, 66, 85, 122, 71, 132, 67, 72, 89, 62, 246, 165, 166, 234, 22, 166, 92, 175, 70,
-        189, 211, 69, 31, 198, 54, 141, 91, 175, 194, 128, 162, 184, 64, 3, 111, 39, 117, 169, 150, 122, 19, 190, 35,
-        235, 11, 194, 206, 89, 55, 172, 235, 61, 196, 55, 152, 34, 170, 206, 114, 224, 211,
-      ]);
+      const expectedMessage = getUInt8ArrayFromHex('773415aad8e6517f9c9fb5566adb75cc196a272fb9650e7b546f2c9640');
+      const expectedSignature = getUInt8ArrayFromHex(
+        '0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c74632802405e1d6c74632802405e1d6c6717e063281d6c6717e0632802405e1d6c67632802405e1d6c6717e0ebba931b74632802405e1d6c'
+      );
+      const expectedExtendedPk = getUInt8ArrayFromHex(
+        '1388283fc2296842557a47844348593ef6a5a6ea16a65caf46bdd3451fc6368d5bafc280a2b840036f2775a9967a13be23eb0bc2ce5937aceb3dc4379822aace72e0d3'
+      );
       const expectedResult = false;
       const result = verifyWithCustomWOTSParamW(message, signature, extendedPk, wotsParamW);
 
@@ -2631,20 +1628,13 @@ describe('Test cases for [xmss]', function testFunction() {
 
   describe('verify', () => {
     it('should throw an error if the size of extendedPk is not EXTENDED_PK_SIZE', () => {
-      const message = new Uint8Array([
-        127, 156, 159, 181, 86, 106, 219, 117, 204, 25, 106, 39, 47, 185, 101, 14, 123, 84, 111, 44, 150, 64,
-      ]);
-      const signature = new Uint8Array([
-        81, 42, 132, 24, 155, 220, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 116, 99, 40, 2, 64, 94, 29, 108, 103,
-        23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108, 13, 64, 37, 216, 20, 60, 230, 32, 236, 238, 167,
-        205, 139, 81, 42, 132, 24, 155, 220, 130, 239, 103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64, 94, 29, 108,
-        103, 23, 224, 235, 186, 147, 27, 116, 99, 40, 2, 64,
-      ]);
-      const extendedPk = new Uint8Array([
-        41, 104, 66, 85, 122, 71, 132, 67, 72, 89, 62, 246, 165, 166, 234, 22, 166, 92, 175, 70, 189, 211, 69, 31, 198,
-        54, 141, 91, 175, 194, 128, 162, 184, 64, 3, 111, 39, 117, 169, 150, 122, 19, 190, 35, 235, 11, 194, 206, 89,
-        55, 172, 235, 61, 196, 55, 152, 34, 170, 206,
-      ]);
+      const message = getUInt8ArrayFromHex('7f9c9fb5566adb75cc196a272fb9650e7b546f2c9640');
+      const signature = getUInt8ArrayFromHex(
+        '512a84189bdcba931b74632802405e1d6c74632802405e1d6c6717e0ebba931b74632802405e1d6c0d4025d8143ce620eceea7cd8b512a84189bdc82ef6717e0ebba931b74632802405e1d6c6717e0ebba931b7463280240'
+      );
+      const extendedPk = getUInt8ArrayFromHex(
+        '296842557a47844348593ef6a5a6ea16a65caf46bdd3451fc6368d5bafc280a2b840036f2775a9967a13be23eb0bc2ce5937aceb3dc4379822aace'
+      );
 
       expect(() => verify(message, signature, extendedPk)).to.throw(
         `extendedPK should be an array of size ${CONSTANTS.EXTENDED_PK_SIZE}`
@@ -2652,111 +1642,15 @@ describe('Test cases for [xmss]', function testFunction() {
     });
 
     it('should verify, with message[] signature[]', () => {
-      const message = new Uint8Array([
-        24, 207, 191, 85, 124, 113, 251, 86, 160, 250, 88, 237, 163, 196, 72, 77, 215, 3, 160, 208, 112, 99, 98, 230,
-        47, 227, 214, 169, 213, 68, 18, 83, 63, 196, 125, 207, 46, 200, 114, 80, 187, 35, 83, 63, 168, 28, 129, 38, 132,
-        108, 105, 47, 226, 135, 182, 237, 231, 71, 208, 45, 247, 14, 71,
-      ]);
-      const signature = new Uint8Array([
-        52, 15, 61, 198, 191, 147, 36, 158, 128, 93, 55, 81, 166, 58, 39, 213, 11, 80, 184, 56, 138, 225, 25, 239, 42,
-        66, 246, 98, 118, 232, 195, 151, 248, 75, 224, 102, 112, 54, 47, 182, 47, 31, 67, 222, 67, 242, 48, 67, 36, 190,
-        84, 229, 61, 68, 220, 218, 108, 241, 35, 183, 41, 157, 179, 117, 115, 129, 159, 91, 123, 119, 176, 181, 195,
-        121, 130, 74, 32, 28, 108, 247, 31, 131, 137, 189, 169, 169, 42, 114, 179, 217, 50, 162, 87, 39, 70, 240, 196,
-        18, 240, 59, 11, 83, 179, 0, 98, 34, 16, 67, 19, 252, 233, 171, 161, 68, 97, 83, 115, 49, 40, 218, 60, 66, 18,
-        118, 98, 160, 148, 71, 78, 253, 152, 112, 16, 150, 88, 242, 247, 194, 65, 148, 62, 144, 137, 70, 119, 236, 208,
-        231, 36, 112, 19, 133, 244, 201, 188, 224, 172, 211, 13, 201, 78, 67, 110, 238, 70, 134, 206, 139, 121, 213, 32,
-        69, 108, 217, 71, 224, 226, 115, 49, 228, 188, 89, 171, 251, 64, 153, 177, 67, 14, 159, 248, 20, 64, 27, 169,
-        230, 46, 50, 27, 150, 52, 211, 47, 36, 150, 134, 16, 227, 176, 185, 143, 128, 156, 189, 193, 34, 117, 47, 78,
-        165, 52, 53, 102, 14, 176, 172, 140, 92, 6, 214, 240, 9, 80, 149, 184, 110, 6, 156, 39, 148, 70, 108, 23, 51, 4,
-        237, 74, 82, 196, 223, 46, 75, 229, 223, 13, 49, 104, 108, 246, 191, 226, 156, 19, 197, 130, 224, 186, 173, 212,
-        147, 225, 59, 250, 239, 85, 222, 9, 173, 219, 173, 156, 3, 74, 116, 189, 122, 231, 57, 206, 124, 78, 220, 22,
-        225, 70, 186, 190, 82, 174, 235, 247, 163, 197, 87, 128, 124, 180, 190, 63, 23, 61, 104, 56, 251, 43, 189, 112,
-        225, 242, 177, 250, 22, 238, 69, 164, 60, 167, 155, 245, 80, 45, 124, 202, 176, 99, 80, 117, 150, 206, 243, 172,
-        177, 244, 239, 126, 234, 246, 226, 105, 133, 187, 144, 148, 76, 149, 0, 162, 8, 70, 66, 2, 94, 88, 43, 172, 162,
-        240, 81, 9, 154, 26, 107, 233, 154, 199, 91, 13, 178, 58, 219, 24, 107, 193, 150, 155, 194, 6, 8, 30, 242, 72,
-        131, 48, 123, 138, 3, 133, 228, 221, 137, 6, 4, 87, 54, 28, 152, 246, 117, 89, 208, 144, 52, 82, 164, 89, 93,
-        144, 50, 41, 121, 37, 115, 241, 216, 100, 16, 88, 130, 73, 120, 59, 164, 199, 195, 57, 152, 91, 241, 88, 112,
-        207, 208, 20, 37, 3, 178, 98, 56, 207, 114, 148, 36, 28, 229, 175, 243, 233, 85, 177, 139, 46, 152, 78, 165, 86,
-        129, 68, 150, 196, 122, 66, 244, 91, 134, 44, 168, 158, 23, 156, 48, 9, 45, 246, 196, 151, 199, 152, 227, 74,
-        83, 61, 204, 189, 198, 82, 8, 103, 236, 95, 36, 187, 145, 110, 114, 26, 69, 235, 183, 159, 203, 18, 30, 175,
-        136, 142, 125, 92, 92, 84, 224, 31, 7, 92, 90, 222, 251, 142, 119, 16, 241, 143, 140, 163, 124, 156, 110, 30,
-        214, 112, 60, 107, 224, 106, 149, 3, 171, 116, 134, 250, 221, 104, 180, 184, 149, 96, 187, 94, 128, 140, 63, 22,
-        176, 13, 103, 157, 248, 243, 64, 101, 24, 200, 34, 240, 1, 3, 194, 130, 14, 101, 89, 11, 160, 41, 158, 82, 62,
-        26, 111, 79, 79, 68, 228, 50, 74, 207, 229, 145, 117, 187, 116, 6, 133, 211, 127, 194, 130, 69, 19, 224, 159,
-        69, 30, 248, 31, 144, 233, 98, 59, 114, 85, 72, 161, 163, 204, 224, 239, 211, 243, 100, 140, 53, 150, 201, 1,
-        205, 236, 205, 48, 193, 217, 189, 222, 69, 253, 150, 226, 81, 55, 210, 92, 249, 59, 121, 218, 196, 219, 94, 14,
-        80, 157, 70, 151, 242, 172, 151, 1, 16, 13, 239, 217, 81, 143, 250, 7, 210, 164, 160, 16, 109, 162, 28, 149, 16,
-        222, 3, 151, 226, 172, 240, 137, 15, 152, 147, 150, 29, 149, 179, 151, 252, 57, 174, 123, 77, 138, 130, 176, 50,
-        229, 40, 74, 124, 23, 49, 106, 159, 221, 214, 63, 172, 115, 54, 232, 107, 58, 102, 109, 0, 85, 151, 138, 124,
-        40, 88, 195, 164, 43, 201, 189, 236, 22, 116, 94, 125, 157, 194, 247, 136, 234, 13, 129, 193, 75, 159, 35, 227,
-        128, 51, 159, 31, 226, 243, 92, 41, 73, 150, 207, 141, 183, 149, 214, 120, 104, 183, 162, 2, 98, 140, 248, 223,
-        89, 221, 146, 189, 96, 241, 91, 100, 188, 179, 150, 25, 119, 231, 110, 25, 30, 191, 206, 39, 151, 61, 50, 55,
-        97, 127, 54, 202, 193, 19, 104, 105, 79, 104, 65, 107, 225, 168, 183, 114, 205, 194, 124, 86, 153, 150, 251, 95,
-        95, 172, 89, 181, 128, 150, 152, 49, 120, 236, 81, 15, 114, 80, 138, 116, 96, 116, 87, 127, 196, 234, 143, 111,
-        20, 62, 213, 168, 104, 100, 43, 78, 77, 238, 38, 246, 252, 219, 57, 109, 97, 79, 97, 103, 246, 28, 221, 102,
-        106, 78, 51, 29, 235, 63, 95, 103, 241, 233, 165, 31, 153, 253, 80, 186, 44, 223, 185, 48, 35, 39, 85, 35, 196,
-        122, 145, 217, 45, 58, 76, 214, 151, 102, 54, 144, 78, 98, 142, 21, 231, 46, 210, 132, 217, 181, 207, 30, 164,
-        225, 248, 22, 163, 153, 243, 238, 209, 92, 106, 214, 127, 109, 72, 93, 27, 210, 86, 182, 56, 84, 80, 224, 85,
-        115, 197, 85, 95, 13, 202, 248, 119, 192, 129, 239, 139, 4, 54, 47, 155, 30, 116, 239, 216, 177, 240, 227, 248,
-        109, 26, 69, 174, 26, 64, 190, 190, 241, 238, 173, 105, 218, 159, 34, 103, 153, 3, 136, 128, 81, 7, 121, 246,
-        245, 49, 180, 27, 151, 22, 157, 93, 41, 23, 214, 228, 24, 49, 134, 85, 191, 67, 121, 199, 108, 192, 140, 177,
-        99, 46, 120, 13, 85, 41, 28, 149, 50, 163, 90, 211, 155, 154, 127, 223, 144, 232, 164, 242, 171, 23, 118, 184,
-        125, 195, 48, 171, 35, 168, 88, 71, 88, 82, 83, 20, 33, 107, 26, 191, 132, 19, 100, 240, 163, 129, 242, 242,
-        224, 200, 207, 252, 142, 13, 138, 59, 152, 140, 225, 127, 145, 224, 210, 208, 106, 59, 190, 180, 111, 218, 244,
-        214, 53, 227, 253, 110, 52, 247, 25, 250, 105, 207, 60, 225, 94, 177, 113, 0, 193, 232, 243, 213, 103, 19, 101,
-        157, 44, 89, 243, 224, 241, 218, 94, 70, 148, 190, 212, 130, 81, 172, 252, 96, 158, 70, 209, 121, 230, 217, 42,
-        12, 90, 134, 168, 179, 97, 234, 143, 143, 156, 77, 96, 250, 23, 11, 50, 216, 6, 199, 81, 8, 5, 219, 229, 244,
-        179, 225, 221, 206, 163, 229, 133, 55, 89, 114, 100, 219, 201, 77, 26, 24, 145, 131, 67, 92, 72, 206, 44, 79,
-        162, 231, 68, 148, 73, 51, 245, 97, 60, 47, 210, 138, 99, 215, 80, 234, 104, 74, 229, 238, 164, 150, 40, 253,
-        186, 207, 166, 174, 49, 221, 189, 72, 236, 163, 183, 121, 195, 110, 85, 158, 105, 191, 89, 39, 7, 59, 73, 4,
-        201, 215, 253, 146, 227, 237, 137, 71, 77, 185, 158, 13, 190, 94, 244, 73, 211, 81, 36, 53, 58, 10, 167, 42,
-        185, 120, 34, 117, 27, 85, 20, 213, 62, 234, 143, 202, 175, 69, 122, 35, 59, 153, 189, 38, 216, 15, 172, 78, 79,
-        229, 144, 240, 64, 129, 160, 78, 228, 252, 171, 154, 81, 103, 173, 14, 83, 175, 97, 170, 96, 163, 134, 170, 144,
-        80, 75, 26, 54, 162, 65, 248, 221, 99, 81, 63, 26, 222, 234, 160, 169, 173, 199, 3, 24, 37, 105, 239, 122, 74,
-        219, 161, 185, 68, 152, 133, 94, 88, 33, 85, 168, 154, 200, 210, 110, 224, 225, 201, 218, 40, 131, 156, 66, 147,
-        50, 214, 66, 129, 115, 110, 156, 226, 7, 123, 38, 32, 78, 1, 99, 128, 117, 151, 199, 237, 22, 16, 91, 211, 14,
-        122, 159, 120, 80, 97, 239, 79, 52, 41, 166, 122, 196, 58, 247, 108, 61, 76, 179, 192, 79, 60, 40, 187, 164,
-        207, 148, 0, 207, 233, 240, 161, 30, 192, 75, 70, 180, 0, 110, 137, 246, 129, 130, 200, 18, 135, 141, 190, 81,
-        40, 21, 231, 232, 53, 118, 29, 12, 69, 253, 46, 69, 5, 169, 64, 151, 76, 212, 12, 44, 195, 208, 187, 64, 89,
-        246, 15, 175, 33, 42, 218, 7, 98, 211, 80, 217, 182, 91, 248, 241, 220, 171, 195, 212, 90, 102, 86, 4, 199, 50,
-        108, 163, 249, 92, 33, 211, 128, 206, 172, 215, 128, 7, 2, 155, 42, 1, 135, 42, 178, 81, 11, 167, 99, 75, 103,
-        38, 194, 230, 97, 117, 140, 184, 67, 51, 27, 128, 120, 20, 191, 65, 157, 207, 69, 36, 1, 195, 60, 249, 25, 1,
-        40, 126, 13, 20, 17, 126, 113, 5, 138, 163, 70, 186, 234, 247, 167, 159, 5, 61, 180, 202, 92, 191, 150, 34, 168,
-        22, 1, 37, 137, 81, 83, 107, 226, 173, 238, 23, 166, 86, 121, 39, 19, 139, 237, 8, 37, 71, 239, 182, 222, 61, 6,
-        153, 11, 252, 127, 132, 39, 51, 202, 76, 110, 27, 227, 35, 1, 249, 128, 104, 106, 214, 73, 148, 42, 127, 14,
-        180, 144, 191, 179, 77, 150, 160, 45, 10, 99, 156, 214, 29, 4, 135, 40, 55, 33, 176, 232, 203, 194, 241, 69,
-        140, 46, 219, 83, 1, 229, 96, 43, 214, 5, 95, 201, 35, 104, 189, 98, 65, 160, 32, 212, 17, 242, 116, 118, 164,
-        237, 162, 126, 120, 3, 4, 56, 177, 230, 229, 109, 154, 21, 173, 191, 222, 74, 106, 137, 83, 87, 240, 151, 80,
-        46, 122, 16, 161, 60, 24, 145, 106, 120, 137, 7, 80, 24, 134, 248, 240, 12, 196, 247, 141, 22, 87, 110, 157,
-        136, 107, 243, 72, 79, 133, 203, 244, 241, 65, 193, 143, 36, 11, 3, 167, 253, 127, 126, 55, 238, 21, 231, 165,
-        234, 69, 4, 5, 7, 81, 92, 103, 222, 30, 85, 87, 22, 5, 134, 216, 78, 82, 214, 159, 183, 89, 238, 224, 36, 218,
-        133, 46, 171, 77, 198, 17, 71, 50, 17, 234, 48, 223, 167, 46, 239, 111, 69, 148, 212, 239, 242, 211, 44, 148,
-        24, 6, 163, 226, 213, 103, 15, 227, 185, 226, 229, 240, 186, 102, 203, 85, 220, 154, 243, 245, 34, 112, 144,
-        159, 1, 224, 159, 143, 106, 55, 23, 99, 225, 162, 130, 165, 186, 114, 105, 207, 104, 223, 128, 162, 168, 203,
-        139, 239, 33, 35, 46, 87, 237, 114, 145, 48, 85, 202, 78, 181, 208, 222, 83, 174, 45, 206, 81, 100, 247, 17, 57,
-        101, 81, 159, 9, 57, 5, 140, 205, 100, 140, 55, 77, 212, 46, 8, 11, 152, 96, 218, 46, 220, 102, 232, 197, 160,
-        154, 192, 154, 9, 142, 163, 107, 134, 132, 133, 125, 40, 137, 78, 52, 23, 125, 87, 129, 32, 105, 70, 59, 242,
-        204, 238, 8, 12, 64, 252, 12, 239, 124, 52, 164, 108, 28, 67, 115, 133, 198, 45, 217, 72, 171, 26, 155, 234, 63,
-        136, 250, 199, 240, 101, 224, 69, 129, 60, 177, 202, 110, 154, 121, 128, 32, 131, 112, 185, 113, 150, 244, 45,
-        65, 243, 10, 114, 191, 136, 9, 14, 24, 18, 13, 138, 75, 185, 149, 202, 230, 0, 54, 121, 77, 47, 63, 96, 88, 112,
-        143, 98, 146, 47, 95, 183, 194, 73, 9, 5, 89, 233, 34, 129, 99, 234, 247, 142, 200, 83, 32, 200, 231, 141, 197,
-        235, 211, 77, 138, 137, 23, 190, 202, 202, 39, 140, 234, 84, 142, 37, 187, 98, 20, 11, 64, 135, 16, 201, 217,
-        200, 14, 246, 71, 76, 71, 138, 182, 3, 100, 131, 226, 186, 111, 109, 1, 228, 43, 229, 74, 252, 253, 55, 206, 34,
-        155, 165, 74, 150, 224, 10, 23, 118, 5, 167, 28, 135, 60, 195, 156, 191, 162, 17, 6, 224, 172, 194, 140, 111,
-        189, 176, 115, 176, 182, 247, 173, 3, 236, 81, 78, 247, 155, 137, 123, 246, 12, 24, 164, 138, 13, 73, 202, 134,
-        82, 17, 53, 19, 65, 205, 57, 106, 135, 61, 39, 31, 39, 240, 237, 118, 91, 93, 219, 33, 11, 224, 74, 178, 64, 46,
-        141, 126, 218, 65, 45, 122, 183, 35, 38, 213, 35, 12, 63, 154, 99, 197, 6, 214, 244, 15, 224, 44, 138, 55, 87,
-        55, 50, 90, 56, 77, 110, 149, 142, 225, 117, 179, 249, 155, 195, 247, 116, 200, 194, 58, 236, 200, 166, 31, 242,
-        42, 88, 86, 65, 43, 49, 99, 139, 193, 54, 125, 93, 7, 67, 243, 251, 33, 183, 113, 149, 18, 137, 94, 17, 148,
-        160, 12, 24, 207, 125, 99, 56, 227, 153, 175, 124, 53, 190, 14, 179, 89, 241, 226, 155, 67, 168, 241, 35, 230,
-        226, 142, 216, 108, 24, 101, 223, 212, 122, 26, 252, 44, 220, 162, 179, 68, 45, 29, 233, 0, 63, 16, 18, 115, 75,
-        156, 118,
-      ]);
-      const extendedPk = new Uint8Array([
-        19, 57, 86, 162, 50, 207, 45, 236, 190, 247, 114, 46, 225, 33, 104, 165, 180, 168, 212, 30, 91, 172, 203, 87,
-        119, 84, 13, 211, 28, 22, 138, 117, 197, 52, 188, 176, 155, 87, 7, 183, 104, 41, 164, 20, 222, 109, 119, 236,
-        248, 12, 143, 195, 113, 218, 124, 190, 96, 117, 218, 162, 137, 229, 50, 117, 87, 218, 249,
-      ]);
+      const message = getUInt8ArrayFromHex(
+        '18cfbf557c71fb56a0fa58eda3c4484dd703a0d0706362e62fe3d6a9d54412533fc47dcf2ec87250bb23533fa81c8126846c692fe287b6ede747d02df70e47'
+      );
+      const signature = getUInt8ArrayFromHex(
+        '340f3dc6bf93249e805d3751a63a27d50b50b8388ae119ef2a42f66276e8c397f84be06670362fb62f1f43de43f2304324be54e53d44dcda6cf123b7299db37573819f5b7b77b0b5c379824a201c6cf71f8389bda9a92a72b3d932a2572746f0c412f03b0b53b3006222104313fce9aba1446153733128da3c42127662a094474efd9870109658f2f7c241943e90894677ecd0e724701385f4c9bce0acd30dc94e436eee4686ce8b79d520456cd947e0e27331e4bc59abfb4099b1430e9ff814401ba9e62e321b9634d32f24968610e3b0b98f809cbdc122752f4ea53435660eb0ac8c5c06d6f0095095b86e069c2794466c173304ed4a52c4df2e4be5df0d31686cf6bfe29c13c582e0baadd493e13bfaef55de09addbad9c034a74bd7ae739ce7c4edc16e146babe52aeebf7a3c557807cb4be3f173d6838fb2bbd70e1f2b1fa16ee45a43ca79bf5502d7ccab063507596cef3acb1f4ef7eeaf6e26985bb90944c9500a2084642025e582baca2f051099a1a6be99ac75b0db23adb186bc1969bc206081ef24883307b8a0385e4dd89060457361c98f67559d0903452a4595d903229792573f1d86410588249783ba4c7c339985bf15870cfd0142503b26238cf7294241ce5aff3e955b18b2e984ea556814496c47a42f45b862ca89e179c30092df6c497c798e34a533dccbdc6520867ec5f24bb916e721a45ebb79fcb121eaf888e7d5c5c54e01f075c5adefb8e7710f18f8ca37c9c6e1ed6703c6be06a9503ab7486fadd68b4b89560bb5e808c3f16b00d679df8f3406518c822f00103c2820e65590ba0299e523e1a6f4f4f44e4324acfe59175bb740685d37fc2824513e09f451ef81f90e9623b725548a1a3cce0efd3f3648c3596c901cdeccd30c1d9bdde45fd96e25137d25cf93b79dac4db5e0e509d4697f2ac9701100defd9518ffa07d2a4a0106da21c9510de0397e2acf0890f9893961d95b397fc39ae7b4d8a82b032e5284a7c17316a9fddd63fac7336e86b3a666d0055978a7c2858c3a42bc9bdec16745e7d9dc2f788ea0d81c14b9f23e380339f1fe2f35c294996cf8db795d67868b7a202628cf8df59dd92bd60f15b64bcb3961977e76e191ebfce27973d3237617f36cac11368694f68416be1a8b772cdc27c569996fb5f5fac59b58096983178ec510f72508a746074577fc4ea8f6f143ed5a868642b4e4dee26f6fcdb396d614f6167f61cdd666a4e331deb3f5f67f1e9a51f99fd50ba2cdfb93023275523c47a91d92d3a4cd6976636904e628e15e72ed284d9b5cf1ea4e1f816a399f3eed15c6ad67f6d485d1bd256b6385450e05573c5555f0dcaf877c081ef8b04362f9b1e74efd8b1f0e3f86d1a45ae1a40bebef1eead69da9f226799038880510779f6f531b41b97169d5d2917d6e418318655bf4379c76cc08cb1632e780d55291c9532a35ad39b9a7fdf90e8a4f2ab1776b87dc330ab23a8584758525314216b1abf841364f0a381f2f2e0c8cffc8e0d8a3b988ce17f91e0d2d06a3bbeb46fdaf4d635e3fd6e34f719fa69cf3ce15eb17100c1e8f3d56713659d2c59f3e0f1da5e4694bed48251acfc609e46d179e6d92a0c5a86a8b361ea8f8f9c4d60fa170b32d806c7510805dbe5f4b3e1ddcea3e58537597264dbc94d1a189183435c48ce2c4fa2e744944933f5613c2fd28a63d750ea684ae5eea49628fdbacfa6ae31ddbd48eca3b779c36e559e69bf5927073b4904c9d7fd92e3ed89474db99e0dbe5ef449d35124353a0aa72ab97822751b5514d53eea8fcaaf457a233b99bd26d80fac4e4fe590f04081a04ee4fcab9a5167ad0e53af61aa60a386aa90504b1a36a241f8dd63513f1adeeaa0a9adc703182569ef7a4adba1b94498855e582155a89ac8d26ee0e1c9da28839c429332d64281736e9ce2077b26204e0163807597c7ed16105bd30e7a9f785061ef4f3429a67ac43af76c3d4cb3c04f3c28bba4cf9400cfe9f0a11ec04b46b4006e89f68182c812878dbe512815e7e835761d0c45fd2e4505a940974cd40c2cc3d0bb4059f60faf212ada0762d350d9b65bf8f1dcabc3d45a665604c7326ca3f95c21d380ceacd78007029b2a01872ab2510ba7634b6726c2e661758cb843331b807814bf419dcf452401c33cf91901287e0d14117e71058aa346baeaf7a79f053db4ca5cbf9622a81601258951536be2adee17a6567927138bed082547efb6de3d06990bfc7f842733ca4c6e1be32301f980686ad649942a7f0eb490bfb34d96a02d0a639cd61d0487283721b0e8cbc2f1458c2edb5301e5602bd6055fc92368bd6241a020d411f27476a4eda27e78030438b1e6e56d9a15adbfde4a6a895357f097502e7a10a13c18916a788907501886f8f00cc4f78d16576e9d886bf3484f85cbf4f141c18f240b03a7fd7f7e37ee15e7a5ea45040507515c67de1e5557160586d84e52d69fb759eee024da852eab4dc611473211ea30dfa72eef6f4594d4eff2d32c941806a3e2d5670fe3b9e2e5f0ba66cb55dc9af3f52270909f01e09f8f6a371763e1a282a5ba7269cf68df80a2a8cb8bef21232e57ed72913055ca4eb5d0de53ae2dce5164f7113965519f0939058ccd648c374dd42e080b9860da2edc66e8c5a09ac09a098ea36b8684857d28894e34177d57812069463bf2ccee080c40fc0cef7c34a46c1c437385c62dd948ab1a9bea3f88fac7f065e045813cb1ca6e9a7980208370b97196f42d41f30a72bf88090e18120d8a4bb995cae60036794d2f3f6058708f62922f5fb7c249090559e9228163eaf78ec85320c8e78dc5ebd34d8a8917becaca278cea548e25bb62140b408710c9d9c80ef6474c478ab6036483e2ba6f6d01e42be54afcfd37ce229ba54a96e00a177605a71c873cc39cbfa21106e0acc28c6fbdb073b0b6f7ad03ec514ef79b897bf60c18a48a0d49ca865211351341cd396a873d271f27f0ed765b5ddb210be04ab2402e8d7eda412d7ab72326d5230c3f9a63c506d6f40fe02c8a375737325a384d6e958ee175b3f99bc3f774c8c23aecc8a61ff22a5856412b31638bc1367d5d0743f3fb21b7719512895e1194a00c18cf7d6338e399af7c35be0eb359f1e29b43a8f123e6e28ed86c1865dfd47a1afc2cdca2b3442d1de9003f1012734b9c76'
+      );
+      const extendedPk = getUInt8ArrayFromHex(
+        '133956a232cf2decbef7722ee12168a5b4a8d41e5baccb5777540dd31c168a75c534bcb09b5707b76829a414de6d77ecf80c8fc371da7cbe6075daa289e5327557daf9'
+      );
       const expectedResult = false;
       const result = verify(message, signature, extendedPk);
 
@@ -2769,7 +1663,7 @@ describe('Additional test cases for [xmss]', function testFunction() {
   this.timeout(0);
 
   it('TestXMSSGetAddress', () => {
-    const [height] = new Uint8Array([4]);
+    const [height] = [getUInt8ArrayFromHex('04')];
 
     const seed = new Uint8Array(COMMON.SEED_SIZE);
     const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
@@ -2782,7 +1676,7 @@ describe('Additional test cases for [xmss]', function testFunction() {
   });
 
   it('TestIsValidXMSSAddress', () => {
-    const [height] = new Uint8Array([4]);
+    const [height] = [getUInt8ArrayFromHex('04')];
 
     const seed = new Uint8Array(COMMON.SEED_SIZE);
     const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
@@ -2812,7 +1706,7 @@ describe('Additional test cases for [xmss]', function testFunction() {
   });
 
   it('TestXMSSGetMnemonic', () => {
-    const [height] = new Uint8Array([4]);
+    const [height] = [getUInt8ArrayFromHex('04')];
 
     const seed = new Uint8Array(COMMON.SEED_SIZE);
     const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
@@ -2825,7 +1719,7 @@ describe('Additional test cases for [xmss]', function testFunction() {
   });
 
   it('TestXMSSGetExtendedSeed', () => {
-    const [height] = new Uint8Array([4]);
+    const [height] = [getUInt8ArrayFromHex('04')];
 
     const seed = new Uint8Array(COMMON.SEED_SIZE);
     const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
@@ -2839,7 +1733,7 @@ describe('Additional test cases for [xmss]', function testFunction() {
   });
 
   it('TestXMSSCreationHeight4', () => {
-    const [height] = new Uint8Array([4]);
+    const [height] = [getUInt8ArrayFromHex('04')];
 
     const seed = new Uint8Array(COMMON.SEED_SIZE);
     const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
@@ -2870,7 +1764,7 @@ describe('Additional test cases for [xmss]', function testFunction() {
   });
 
   it('TestXMSSCreationHeight6', () => {
-    const [height] = new Uint8Array([6]);
+    const [height] = [getUInt8ArrayFromHex('06')];
 
     const seed = new Uint8Array(COMMON.SEED_SIZE);
     const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
@@ -2901,7 +1795,7 @@ describe('Additional test cases for [xmss]', function testFunction() {
   });
 
   it('TestXMSS', () => {
-    const [height] = new Uint8Array([4]);
+    const [height] = getUInt8ArrayFromHex('04');
 
     const seed = new Uint8Array(COMMON.SEED_SIZE);
     const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, COMMON.SHA256_2X);
@@ -2956,7 +1850,7 @@ describe('Additional test cases for [xmss]', function testFunction() {
   });
 
   it('TestXMSSChangeIndexTooHigh', () => {
-    const [height] = new Uint8Array([4]);
+    const [height] = [getUInt8ArrayFromHex('04')];
     const seed = new Uint8Array(COMMON.SEED_SIZE);
     const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, 16);
 
@@ -2964,7 +1858,7 @@ describe('Additional test cases for [xmss]', function testFunction() {
   });
 
   it('TestXMSSChangeIndexHigh', () => {
-    const [height] = new Uint8Array([4]);
+    const [height] = [getUInt8ArrayFromHex('04')];
     const seed = new Uint8Array(COMMON.SEED_SIZE);
     const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, 16);
 
@@ -2972,7 +1866,7 @@ describe('Additional test cases for [xmss]', function testFunction() {
   });
 
   it('TestXMSSChangeIndexLimit', () => {
-    const [height] = new Uint8Array([4]);
+    const [height] = [getUInt8ArrayFromHex('04')];
     const seed = new Uint8Array(COMMON.SEED_SIZE);
     const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, 16);
     xmss.setIndex(15);
@@ -2982,7 +1876,7 @@ describe('Additional test cases for [xmss]', function testFunction() {
   });
 
   it('TestXMSSChangeIndex', () => {
-    const [height] = new Uint8Array([4]);
+    const [height] = [getUInt8ArrayFromHex('04')];
     const seed = new Uint8Array(COMMON.SEED_SIZE);
     const xmss = newXMSSFromSeed(seed, height, HASH_FUNCTION.SHAKE_128, 16);
     xmss.setIndex(0);
