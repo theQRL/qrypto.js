@@ -8,7 +8,6 @@ import {
   newQRLDescriptorFromExtendedSeed,
   newTreeHashInst,
   newWOTSParams,
-  newXMSSParams,
 } from '../src/classes.js';
 import { COMMON, CONSTANTS, HASH_FUNCTION } from '../src/constants.js';
 import { getUInt32ArrayFromHex, getUInt8ArrayFromHex } from './utility/testUtility.js';
@@ -195,22 +194,6 @@ describe('Test cases for [classes]', () => {
       expect(wotsParams.w).to.equal(256);
       expect(wotsParams.logW).to.equal(8);
       expect(wotsParams.keySize).to.equal(63);
-    });
-  });
-
-  describe('newXMSSParams', () => {
-    it('should create a WOTSParams instance', () => {
-      const n = 2;
-      const h = 4;
-      const w = 6;
-      const k = 8;
-      const xmssParams = newXMSSParams(n, h, w, k);
-
-      expect(Object.getOwnPropertyNames(xmssParams)).to.deep.equal(['wotsParams', 'n', 'h', 'k']);
-      expect(xmssParams.wotsParams).to.deep.equal(newWOTSParams(n, w));
-      expect(xmssParams.n).to.equal(n);
-      expect(xmssParams.h).to.equal(h);
-      expect(xmssParams.k).to.equal(k);
     });
   });
 

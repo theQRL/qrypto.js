@@ -38,36 +38,3 @@ export const getUIntArrayFromHex = (hexString, variant) => {
 export const getUInt8ArrayFromHex = (hexString) => getUIntArrayFromHex(hexString, UINT[8]);
 
 export const getUInt32ArrayFromHex = (hexString) => getUIntArrayFromHex(hexString, UINT[32]);
-
-/**
- * @param {Uint8Array | Uint32Array} uIntArray
- * @param {keyof typeof UINT} variant
- * @returns {string}
- */
-export const getHexFromUIntArray = (uIntArray, variant) => {
-  let charSize;
-  switch (variant) {
-    case UINT[32]:
-      charSize = 8;
-      break;
-    default:
-      charSize = 2;
-      break;
-  }
-  const hexString = Array.from(uIntArray)
-    .map((byte) => byte.toString(16).padStart(charSize, '0'))
-    .join('');
-
-  return hexString;
-};
-
-/**
- * @param {Uint8Array | Uint32Array} uIntArray
- * @param {keyof typeof UINT} variant
- * @returns {Uint8Array | Uint32Array}
- */
-export const getRecreatedUIntArray = (uIntArray, variant) => {
-  const hexString = getHexFromUIntArray(uIntArray, variant);
-  const recreatedUIntArray = getUIntArrayFromHex(hexString, variant);
-  return recreatedUIntArray;
-};

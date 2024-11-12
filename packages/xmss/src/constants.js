@@ -19,7 +19,6 @@ export const COMMON = Object.freeze({
   ADDRESS_SIZE: 20,
   SEED_SIZE: 48,
   EXTENDED_SEED_SIZE: 51,
-  XMSS_SIG: 1,
   SHA256_2X: 0,
 });
 
