@@ -247,6 +247,8 @@ export function cryptoSign(msg, sk, randomizedSigning, ctx = DEFAULT_CTX) {
 }
 
 export function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
+  if (!(pk instanceof Uint8Array) || pk.length !== CryptoPublicKeyBytes) return false;
+  if (!(sig instanceof Uint8Array) || sig.length !== CryptoBytes) return false;
   if (ctx.length > 255) return false;
   let i;
   const buf = new Uint8Array(K * PolyW1PackedBytes);
@@ -277,16 +279,21 @@ export function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
     return false;
   }
 
-  /* Compute CRH(H(rho, t1), msg) */
+  /* Compute mu = SHAKE256(tr || pre || m) with tr = SHAKE256(pk) */
   let state = new SHAKE(256);
-  let outputLength = SeedBytes;
-  state.update(pk.slice(0, CryptoPublicKeyBytes));
-  mu.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
-
+  let outputLength = TRBytes;
+  state.update(pk);
+  const tr = new Uint8Array(state.digest({ buffer: Buffer.alloc(outputLength) }));
+  const pre = new Uint8Array(2 + ctx.length); 
+  pre[0] = 0;
+  pre[1] = ctx.length;
+  pre.set(ctx, 2);
+  
   state = new SHAKE(256);
   outputLength = CRHBytes;
-  state.update(Buffer.from(mu.slice(0, SeedBytes), 'hex'));
-  state.update(Buffer.from(m, 'hex'));
+  state.update(tr);
+  state.update(pre);
+  state.update(m);
   mu.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
 
   /* Matrix-vector multiplication; compute Az - c2^dt1 */
