@@ -111,10 +111,10 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
   polyVecKPower2round(t1, t0, t1);
   packPk(pk, rho, t1);
 
-  // Compute tr = SHAKE256(pk) (65 bytes) and write secret key
+  // Compute tr = SHAKE256(pk) (64 bytes) and write secret key
   const hasher = new SHAKE(256);
   outputLength = TRBytes;
-  hasher.update(Bufffer.from(pk));
+  hasher.update(Buffer.from(pk, 'hex'));
   const tr = new Uint8Array(hasher.digest({ buffer: Buffer.alloc(outputLength) }));
   packSk(sk, rho, tr, key, t0, s1, s2);
 
@@ -151,20 +151,22 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
   
   // pre = 0x00 || len(ctx) || ctx
   const pre = new Uint8Array(2 + ctx.length);
-  pre[0] = 0; pre[1] = ctx.length; pre.set(ctx, 2);
+  pre[0] = 0; 
+  pre[1] = ctx.length; 
+  pre.set(ctx, 2);
   // mu = SHAKE256(tr || pre || m)
   state = new SHAKE(256);
   let outputLength = CRHBytes;
-  state.update(tr);
-  state.update(pre);
-  state.update(mu)
+  state.update(Buffer.from(tr, 'hex'));
+  state.update(Buffer.from(pre, 'hex'));
+  state.update(Buffer.from(m, 'hex'));
   const mu = new Uint8Array(state.digest({ buffer: Buffer.alloc(outputLength) }))
   // rhoPrime = SHAKE256(key || rnd || mu)
   const rnd = randomizedSigning ? randomBytes(RNDBytes) : new Uint8Array(RNDBytes);
   state = new SHAKE(256);
-  state.update(key);
-  state.update(rnd);
-  state.update(mu);
+  state.update(Buffer.from(key, 'hex'));
+  state.update(Buffer.from(rnd, 'hex'));
+  state.update(Buffer.from(mu, 'hex'));
   rhoPrime.set(state.digest({ buffer: Buffer.alloc(CRHBytes) }));
 
   polyVecMatrixExpand(mat, rho);
@@ -190,8 +192,8 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
     // ctilde = SHAKE256(mu || w1_packed) (64 bytes)
     state = new SHAKE(256);
     outputLength = CTILDEBytes;
-    state.update(mu);
-    state.update(sig.slice(0, K * PolyW1PackedBytes));
+    state.update(Buffer.from(mu, 'hex'));
+    state.update(Buffer.from(sig.slice(0, K * PolyW1PackedBytes)), 'hex');
     const ctilde = new Uint8Array(state.digest({ buffer: Buffer.alloc(outputLength) }));
 
     polyChallenge(cp, ctilde);
@@ -247,8 +249,6 @@ export function cryptoSign(msg, sk, randomizedSigning, ctx = DEFAULT_CTX) {
 }
 
 export function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
-  if (!(pk instanceof Uint8Array) || pk.length !== CryptoPublicKeyBytes) return false;
-  if (!(sig instanceof Uint8Array) || sig.length !== CryptoBytes) return false;
   if (ctx.length > 255) return false;
   let i;
   const buf = new Uint8Array(K * PolyW1PackedBytes);
@@ -291,9 +291,9 @@ export function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
   
   state = new SHAKE(256);
   outputLength = CRHBytes;
-  state.update(tr);
-  state.update(pre);
-  state.update(m);
+  state.update(Buffer.from(tr, 'hex'));
+  state.update(Buffer.from(pre, 'hex'));
+  state.update(Buffer.from(m, 'hex'));
   mu.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
 
   /* Matrix-vector multiplication; compute Az - c2^dt1 */
@@ -320,8 +320,8 @@ export function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
   /* Call random oracle and verify challenge */
   state = new SHAKE(256);
   outputLength = CTILDEBytes;
-  state.update(mu);
-  state.update(buf);
+  state.update(Buffer.from(mu, 'hex'));
+  state.update(Buffer.from(buf, 'hex'));
   c2.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
 
   for (i = 0; i < CTILDEBytes; ++i) if (c[i] !== c2[i]) return false;

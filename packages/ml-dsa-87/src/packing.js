@@ -142,7 +142,7 @@ export function packSig(sigP, ctilde, z, h) {
 
 export function unpackSig(cP, z, hP, sig) {
   let sigOffset = 0;
-  const c = cP;
+  const c = cP; // ctilde
   const h = hP;
   for (let i = 0; i < CTILDEBytes; ++i) {
     c[i] = sig[i];
