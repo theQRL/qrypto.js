@@ -47,7 +47,7 @@ export function packSk(skp, rho, tr, key, t0, s1, s2) {
   let skOffset = 0;
   const sk = skp;
   for (let i = 0; i < SeedBytes; ++i) {
-    sk[skOffset + i] = rho[i];
+    sk[i] = rho[i];
   }
   skOffset += SeedBytes;
 
@@ -82,7 +82,7 @@ export function unpackSk(rhoP, trP, keyP, t0, s1, s2, sk) {
   const tr = trP;
   const key = keyP;
   for (let i = 0; i < SeedBytes; ++i) {
-    rho[i] = sk[skOffset + i];
+    rho[i] = sk[i];
   }
   skOffset += SeedBytes;
 
