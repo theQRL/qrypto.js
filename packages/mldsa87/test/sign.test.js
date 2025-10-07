@@ -56,13 +56,18 @@ describe('cryptoSignKeypair with null seed generates pk/sk', () => {
 
 describe('cryptoSign', () => {
   for (let i = 0; i < TEST_VECTORS.length; i++) {
-    it(`should return the expected signature message ${i}`, () => {
-      const vector = TEST_VECTORS[i];
-      const msg = Buffer.from(vector.msg, 'hex');
-      const sk = Buffer.from(vector.derivedSK, 'hex');
-      const ctx = Buffer.from(vector.ctx, 'hex');
+    const vector = TEST_VECTORS[i];
+    const msg = Buffer.from(vector.msg, 'hex');
+    const sk = Buffer.from(vector.derivedSK, 'hex');
 
+    it(`should return the expected signature message ${i}`, () => {
+      const ctx = Buffer.from(vector.ctx, 'hex');
       const sigMessage = cryptoSign(msg, sk, false, ctx);
+      expect(Buffer.from(sigMessage, 'binary').toString('hex')).to.equal(vector.derivedSig + vector.msg);
+    });
+
+    it(`should return the expected signature message with default context ${i}`, () => {
+      const sigMessage = cryptoSign(msg, sk, false);
       expect(Buffer.from(sigMessage, 'binary').toString('hex')).to.equal(vector.derivedSig + vector.msg);
     });
   }
@@ -70,11 +75,17 @@ describe('cryptoSign', () => {
 
 describe('cryptoSignOpen', () => {
   for (let i = 0; i < TEST_VECTORS.length; i++) {
+    const vector = TEST_VECTORS[i];
+    const sigMessage = Buffer.from(vector.derivedSig + vector.msg, 'hex');
+    const pk = Buffer.from(vector.derivedPK, 'hex');
+    
     it(`should return the expected message ${i}`, () => {
-      const vector = TEST_VECTORS[i];
-      const sigMessage = Buffer.from(vector.derivedSig + vector.msg, 'hex');
-      const pk = Buffer.from(vector.derivedPK, 'hex');
+      const ctx = Buffer.from(vector.ctx, 'hex');
+      const openedMessage = cryptoSignOpen(sigMessage, pk, ctx);
+      expect(Buffer.from(openedMessage, 'binary').toString('hex')).to.equal(vector.msg);
+    });
 
+    it(`should return the expected message with default context ${i}`, () => {
       const openedMessage = cryptoSignOpen(sigMessage, pk);
       expect(Buffer.from(openedMessage, 'binary').toString('hex')).to.equal(vector.msg);
     });
@@ -83,12 +94,16 @@ describe('cryptoSignOpen', () => {
 
 describe('cryptoSignVerify', () => {
   for (let i = 0; i < TEST_VECTORS.length; i++) {
+    const vector = TEST_VECTORS[i];
+    const sig = Buffer.from(vector.derivedSig, 'hex');
+    const msg = Buffer.from(vector.msg, 'hex');
+    const pk = Buffer.from(vector.derivedPK, 'hex');
+    
     it(`should return true ${i}`, () => {
-      const vector = TEST_VECTORS[i];
-      const sig = Buffer.from(vector.derivedSig, 'hex');
-      const msg = Buffer.from(vector.msg, 'hex');
-      const pk = Buffer.from(vector.derivedPK, 'hex');
-
+      const ctx = Buffer.from(vector.ctx, 'hex');
+      expect(cryptoSignVerify(sig, msg, pk, ctx)).to.equal(true);
+    });
+    it(`should return true with default context ${i}`, () => {
       expect(cryptoSignVerify(sig, msg, pk)).to.equal(true);
     });
   }
@@ -100,9 +115,10 @@ describe('cryptoSignSignature', () => {
     const sk = Buffer.from('00', 'hex');
     const msg = Buffer.from(v0.msg, 'hex');
     const sig = Buffer.alloc(CryptoBytes);
+    const ctx = Buffer.from(v0.ctx, 'hex');
 
     expect(() => {
-      cryptoSignSignature(sig, msg, sk, false);
+      cryptoSignSignature(sig, msg, sk, false, ctx);
     }).to.throw('invalid sk length');
   });
 });
