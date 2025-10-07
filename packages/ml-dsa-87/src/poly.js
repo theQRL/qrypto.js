@@ -24,7 +24,7 @@ import {
   shake256SqueezeBlocks,
 } from './fips202.js';
 
-import { dilithiumShake128StreamInit, dilithiumShake256StreamInit } from './symmetric-shake.js';
+import { mldsaShake128StreamInit, mldsaShake256StreamInit } from './symmetric-shake.js';
 import { invNTTToMont, ntt } from './ntt.js';
 import { cAddQ, montgomeryReduce, reduce32 } from './reduce.js';
 import { decompose, makeHint, power2round, useHint } from './rounding.js';
@@ -148,7 +148,7 @@ export function polyUniform(a, seed, nonce) {
   const buf = new Uint8Array(PolyUniformNBlocks * Stream128BlockBytes + 2);
 
   const state = new KeccakState();
-  dilithiumShake128StreamInit(state, seed, nonce);
+  mldsaShake128StreamInit(state, seed, nonce);
   shake128SqueezeBlocks(buf, off, PolyUniformNBlocks, state);
 
   let ctr = rejUniform(a.coeffs, 0, N, buf, bufLen);
@@ -194,7 +194,7 @@ export function polyUniformEta(a, seed, nonce) {
   const buf = new Uint8Array(bufLen);
 
   const state = new KeccakState();
-  dilithiumShake256StreamInit(state, seed, nonce);
+  mldsaShake256StreamInit(state, seed, nonce);
   shake256SqueezeBlocks(buf, 0, PolyUniformETANBlocks, state);
 
   ctr = rejEta(a.coeffs, 0, N, buf, bufLen);
@@ -226,7 +226,7 @@ export function polyUniformGamma1(a, seed, nonce) {
   const buf = new Uint8Array(PolyUniformGamma1NBlocks * Stream256BlockBytes);
 
   const state = new KeccakState();
-  dilithiumShake256StreamInit(state, seed, nonce);
+  mldsaShake256StreamInit(state, seed, nonce);
   shake256SqueezeBlocks(buf, 0, PolyUniformGamma1NBlocks, state);
   polyZUnpack(a, buf, 0);
 }

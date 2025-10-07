@@ -8,7 +8,7 @@ import {
 } from './fips202.js';
 import { CRHBytes, SeedBytes } from './const.js';
 
-export function dilithiumShake128StreamInit(state, seed, nonce) {
+export function mldsaShake128StreamInit(state, seed, nonce) {
   if (seed.length !== SeedBytes) {
     throw new Error(`invalid seed length ${seed.length} | expected ${SeedBytes}`);
   }
@@ -22,7 +22,7 @@ export function dilithiumShake128StreamInit(state, seed, nonce) {
   shake128Finalize(state);
 }
 
-export function dilithiumShake256StreamInit(state, seed, nonce) {
+export function mldsaShake256StreamInit(state, seed, nonce) {
   if (seed.length !== CRHBytes) {
     throw new Error(`invalid seed length ${seed.length} | expected ${CRHBytes}`);
   }

@@ -82,7 +82,7 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
   const state = new SHAKE(256);
   let outputLength = 2 * SeedBytes + CRHBytes;
   state.update(seed);
-  state.update(Uint8Array.from([K, L]));
+  state.update(Buffer.from([K, L]));
   const seedBuf = state.digest({ buffer: Buffer.alloc(outputLength) });
   const rho = seedBuf.slice(0, SeedBytes);
   const rhoPrime = seedBuf.slice(SeedBytes, SeedBytes + CRHBytes);
