@@ -122,7 +122,7 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
 }
 
 export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT_CTX) {
-  if (ctx.length > 255) throw new Error(`invalid context length: ${ctx.length} (max 255)`)
+  if (ctx.length > 255) throw new Error(`invalid context length: ${ctx.length} (max 255)`);
   if (sk.length !== CryptoSecretKeyBytes) {
     throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
   }
@@ -130,7 +130,7 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
   const rho = new Uint8Array(SeedBytes);
   const tr = new Uint8Array(TRBytes);
   const key = new Uint8Array(SeedBytes);
-  let rhoPrime = new Uint8Array(CRHBytes);
+  const rhoPrime = new Uint8Array(CRHBytes);
   let nonce = 0;
   let state = null;
   const mat = Array(K)
@@ -148,11 +148,11 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
   const cp = new Poly();
 
   unpackSk(rho, tr, key, t0, s1, s2, sk);
-  
+
   // pre = 0x00 || len(ctx) || ctx
   const pre = new Uint8Array(2 + ctx.length);
-  pre[0] = 0; 
-  pre[1] = ctx.length; 
+  pre[0] = 0;
+  pre[1] = ctx.length;
   pre.set(ctx, 2);
   // mu = SHAKE256(tr || pre || m)
   state = new SHAKE(256);
@@ -160,7 +160,7 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
   state.update(Buffer.from(tr, 'hex'));
   state.update(Buffer.from(pre, 'hex'));
   state.update(Buffer.from(m, 'hex'));
-  const mu = new Uint8Array(state.digest({ buffer: Buffer.alloc(outputLength) }))
+  const mu = new Uint8Array(state.digest({ buffer: Buffer.alloc(outputLength) }));
 
   // rhoPrime = SHAKE256(key || rnd || mu)
   const rnd = randomizedSigning ? randomBytes(RNDBytes) : new Uint8Array(RNDBytes);
@@ -285,11 +285,11 @@ export function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
   let outputLength = TRBytes;
   state.update(pk);
   const tr = new Uint8Array(state.digest({ buffer: Buffer.alloc(outputLength) }));
-  const pre = new Uint8Array(2 + ctx.length); 
+  const pre = new Uint8Array(2 + ctx.length);
   pre[0] = 0;
   pre[1] = ctx.length;
   pre.set(ctx, 2);
-  
+
   state = new SHAKE(256);
   outputLength = CRHBytes;
   state.update(Buffer.from(tr, 'hex'));

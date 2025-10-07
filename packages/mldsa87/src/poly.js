@@ -7,7 +7,6 @@ import {
   PolyUniformGamma1NBlocks,
   PolyUniformNBlocks,
   Q,
-  SeedBytes,
   Shake256Rate,
   Stream128BlockBytes,
   Stream256BlockBytes,

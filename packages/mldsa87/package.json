@@ -1,5 +1,5 @@
 {
-  "name": "@theqrl/ml-dsa-87",
+  "name": "@theqrl/mldsa87",
   "version": "0.1.0",
   "description": "ML-DSA-87 cryptography",
   "keywords": [
@@ -27,7 +27,7 @@
   },
   "scripts": {
     "test": "../../node_modules/mocha/bin/mocha.js",
-    "build": "rollup src/index.js --file ./dist/cjs/ml-dsa-87.js --format cjs && rollup src/index.js --file ./dist/mjs/ml-dsa-87.js --format esm && ./fixup",
+    "build": "rollup src/index.js --file ./dist/cjs/mldsa87.js --format cjs && rollup src/index.js --file ./dist/mjs/mldsa87.js --format esm && ./fixup",
     "lint-check": "eslint 'src/**/*.js' 'test/**/*.js'",
     "lint": "eslint --fix 'src/**/*.js' 'test/**/*.js'",
     "report-coverage": "c8 --reporter=text-lcov npm run test > coverage.lcov"
@@ -37,8 +37,8 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/mjs/ml-dsa-87.js",
-      "require": "./dist/cjs/ml-dsa-87.js"
+      "import": "./dist/mjs/mldsa87.js",
+      "require": "./dist/cjs/mldsa87.js"
     }
   },
   "type": "module",
