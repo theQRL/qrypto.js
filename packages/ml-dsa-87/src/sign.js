@@ -161,6 +161,7 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
   state.update(Buffer.from(pre, 'hex'));
   state.update(Buffer.from(m, 'hex'));
   const mu = new Uint8Array(state.digest({ buffer: Buffer.alloc(outputLength) }))
+
   // rhoPrime = SHAKE256(key || rnd || mu)
   const rnd = randomizedSigning ? randomBytes(RNDBytes) : new Uint8Array(RNDBytes);
   state = new SHAKE(256);

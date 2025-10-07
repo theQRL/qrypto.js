@@ -241,7 +241,7 @@ export function polyChallenge(cP, seed) {
 
   const state = new KeccakState();
   shake256Init(state);
-  shake256Absorb(state, seed.slice(0, SeedBytes));
+  shake256Absorb(state, seed);
   shake256Finalize(state);
   shake256SqueezeBlocks(buf, 0, 1, state);
 
