@@ -1,0 +1,62 @@
+{
+  "name": "@theqrl/mldsa87",
+  "version": "0.1.0",
+  "description": "ML-DSA-87 cryptography",
+  "keywords": [
+    "ml-dsa",
+    "post-quantum",
+    "cryptography"
+  ],
+  "author": "QRL contributors <info@theqrl.org> (https://theqrl.org)",
+  "homepage": "https://github.com/theQRL/qrypto.js#readme",
+  "license": "MIT",
+  "main": "src/index.js",
+  "directories": {
+    "lib": "src",
+    "test": "test"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/theQRL/qrypto.js.git"
+  },
+  "scripts": {
+    "test": "../../node_modules/mocha/bin/mocha.js",
+    "build": "rollup src/index.js --file ./dist/cjs/mldsa87.js --format cjs && rollup src/index.js --file ./dist/mjs/mldsa87.js --format esm && ./fixup",
+    "lint-check": "eslint 'src/**/*.js' 'test/**/*.js'",
+    "lint": "eslint --fix 'src/**/*.js' 'test/**/*.js'",
+    "report-coverage": "c8 --reporter=text-lcov npm run test > coverage.lcov"
+  },
+  "bugs": {
+    "url": "https://github.com/theQRL/qrypto.js/issues"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/mjs/mldsa87.js",
+      "require": "./dist/cjs/mldsa87.js"
+    }
+  },
+  "type": "module",
+  "devDependencies": {
+    "c8": "^9.1.0",
+    "chai": "^5.0.0",
+    "codecov": "^3.8.3",
+    "eslint": "^8.56.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-prettier": "^5.1.3",
+    "mocha": "^10.2.0",
+    "prettier": "^3.2.4",
+    "rollup": "^4.9.5"
+  },
+  "dependencies": {
+    "randombytes": "^2.1.0",
+    "sha3": "^2.1.4"
+  }
+}
