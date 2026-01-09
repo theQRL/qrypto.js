@@ -7,27 +7,30 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  coverage:
     if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && !contains( github.event.head_commit.message, 'Merge pull request')) }}
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [18.x]
-
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v6
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '20.x'
       - run: npm ci
       - run: npm test
       - run: npm run report-coverage
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
+      - name: Upload dilithium5 coverage to Codecov
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./packages/dilithium5/coverage.lcov
           flags: dilithium5
+          fail_ci_if_error: true
+      - name: Upload mldsa87 coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/mldsa87/coverage.lcov
+          flags: mldsa87
           fail_ci_if_error: true

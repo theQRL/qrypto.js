@@ -8,6 +8,7 @@ import {
   PolyT1PackedBytes,
   PolyZPackedBytes,
   SeedBytes,
+  TRBytes,
 } from './const.js';
 import {
   polyEtaPack,
@@ -54,10 +55,10 @@ export function packSk(skp, rho, tr, key, t0, s1, s2) {
   }
   skOffset += SeedBytes;
 
-  for (let i = 0; i < SeedBytes; ++i) {
+  for (let i = 0; i < TRBytes; ++i) {
     sk[skOffset + i] = tr[i];
   }
-  skOffset += SeedBytes;
+  skOffset += TRBytes;
 
   for (let i = 0; i < L; ++i) {
     polyEtaPack(sk, skOffset + i * PolyETAPackedBytes, s1.vec[i]);
@@ -89,10 +90,10 @@ export function unpackSk(rhoP, trP, keyP, t0, s1, s2, sk) {
   }
   skOffset += SeedBytes;
 
-  for (let i = 0; i < SeedBytes; ++i) {
+  for (let i = 0; i < TRBytes; ++i) {
     tr[i] = sk[skOffset + i];
   }
-  skOffset += SeedBytes;
+  skOffset += TRBytes;
 
   for (let i = 0; i < L; ++i) {
     polyEtaUnpack(s1.vec[i], sk, skOffset + i * PolyETAPackedBytes);

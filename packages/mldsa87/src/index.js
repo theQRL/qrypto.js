@@ -8,3 +8,4 @@ export * from './symmetric-shake.js';
 export * from './ntt.js';
 export * from './fips202.js';
 export * from './sign.js';
+export * from './utils.js';

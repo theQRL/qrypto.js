@@ -1,0 +1,212 @@
+name: Cross-Implementation Verification
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  dilithium5-cross-verify:
+    name: Dilithium5 Cross-Verification (qrypto.js ↔ go-qrllib)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout qrypto.js
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.x'
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.23.x'
+
+      - name: Install qrypto.js dependencies
+        run: npm ci
+
+      - name: Clone go-qrllib
+        run: |
+          git clone --depth 1 https://github.com/theQRL/go-qrllib.git /tmp/go-qrllib
+          cd /tmp/go-qrllib
+          echo "go-qrllib commit: $(git rev-parse --short HEAD)"
+
+      - name: Generate qrypto.js Dilithium5 signature
+        run: node .github/cross-verify/dilithium5_sign.js
+
+      - name: Verify qrypto.js signature with go-qrllib
+        run: |
+          echo "=== Verifying qrypto.js signature with go-qrllib ==="
+          go run .github/cross-verify/dilithium5_verify.go
+          echo "✓ qrypto.js → go-qrllib: PASSED"
+
+      - name: Generate go-qrllib Dilithium5 signature
+        run: |
+          cd /tmp/go-qrllib
+          go run $GITHUB_WORKSPACE/.github/cross-verify/dilithium5_sign_goqrllib.go
+
+      - name: Verify go-qrllib signature with qrypto.js
+        run: |
+          echo "=== Verifying go-qrllib signature with qrypto.js ==="
+          node .github/cross-verify/dilithium5_verify.js
+          echo "✓ go-qrllib → qrypto.js: PASSED"
+
+  mldsa87-cross-verify:
+    name: ML-DSA-87 Cross-Verification (qrypto.js ↔ go-qrllib)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout qrypto.js
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.x'
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.23.x'
+
+      - name: Install qrypto.js dependencies
+        run: npm ci
+
+      - name: Clone go-qrllib
+        run: |
+          git clone --depth 1 https://github.com/theQRL/go-qrllib.git /tmp/go-qrllib
+          cd /tmp/go-qrllib
+          echo "go-qrllib commit: $(git rev-parse --short HEAD)"
+
+      - name: Generate qrypto.js ML-DSA-87 signature
+        run: node .github/cross-verify/mldsa87_sign.js
+
+      - name: Verify qrypto.js signature with go-qrllib
+        run: |
+          echo "=== Verifying qrypto.js ML-DSA-87 signature with go-qrllib ==="
+          go run .github/cross-verify/mldsa87_verify.go
+          echo "✓ qrypto.js → go-qrllib: PASSED"
+
+      - name: Generate go-qrllib ML-DSA-87 signature
+        run: |
+          cd /tmp/go-qrllib
+          go run $GITHUB_WORKSPACE/.github/cross-verify/mldsa87_sign_goqrllib.go
+
+      - name: Verify go-qrllib signature with qrypto.js
+        run: |
+          echo "=== Verifying go-qrllib ML-DSA-87 signature with qrypto.js ==="
+          node .github/cross-verify/mldsa87_verify.js
+          echo "✓ go-qrllib → qrypto.js: PASSED"
+
+  dilithium5-pqcrystals:
+    name: Dilithium5 Cross-Verification (qrypto.js ↔ pq-crystals)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout qrypto.js
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.x'
+
+      - name: Install qrypto.js dependencies
+        run: npm ci
+
+      - name: Clone pq-crystals Dilithium (Round 3)
+        run: |
+          git clone https://github.com/pq-crystals/dilithium.git /tmp/dilithium-ref
+          cd /tmp/dilithium-ref
+          git checkout ac743d5  # Round 3 (pre-FIPS)
+          echo "Reference commit: $(git rev-parse --short HEAD)"
+
+      - name: Generate qrypto.js Dilithium5 signature
+        run: node .github/cross-verify/dilithium5_sign.js
+
+      - name: Compile pq-crystals reference verifier
+        run: |
+          cd /tmp/dilithium-ref/ref
+          gcc -o /tmp/verify_dilithium5 -DDILITHIUM_MODE=5 \
+            $GITHUB_WORKSPACE/.github/cross-verify/dilithium5_verify_ref.c \
+            sign.c packing.c polyvec.c poly.c ntt.c reduce.c \
+            rounding.c symmetric-shake.c fips202.c randombytes.c -I. -O2
+
+      - name: Verify qrypto.js signature with pq-crystals reference
+        run: |
+          echo "=== Verifying qrypto.js Dilithium5 signature with pq-crystals reference ==="
+          /tmp/verify_dilithium5
+          echo "✓ qrypto.js → pq-crystals: PASSED"
+
+      - name: Compile pq-crystals reference signer
+        run: |
+          cd /tmp/dilithium-ref/ref
+          gcc -o /tmp/sign_dilithium5_ref -DDILITHIUM_MODE=5 \
+            $GITHUB_WORKSPACE/.github/cross-verify/dilithium5_sign_ref.c \
+            sign.c packing.c polyvec.c poly.c ntt.c reduce.c \
+            rounding.c symmetric-shake.c fips202.c randombytes.c -I. -O2
+
+      - name: Generate pq-crystals reference signature
+        run: /tmp/sign_dilithium5_ref
+
+      - name: Verify pq-crystals signature with qrypto.js
+        run: |
+          echo "=== Verifying pq-crystals Dilithium5 signature with qrypto.js ==="
+          node .github/cross-verify/dilithium5_verify_pqcrystals.js
+          echo "✓ pq-crystals → qrypto.js: PASSED"
+
+  mldsa87-pqcrystals:
+    name: ML-DSA-87 Cross-Verification (qrypto.js ↔ pq-crystals)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout qrypto.js
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.x'
+
+      - name: Install qrypto.js dependencies
+        run: npm ci
+
+      - name: Clone pq-crystals Dilithium (FIPS 204 / ML-DSA)
+        run: |
+          git clone --depth 1 https://github.com/pq-crystals/dilithium.git /tmp/mldsa-ref
+          cd /tmp/mldsa-ref
+          echo "Reference commit: $(git rev-parse --short HEAD)"
+
+      - name: Generate qrypto.js ML-DSA-87 signature
+        run: node .github/cross-verify/mldsa87_sign.js
+
+      - name: Compile pq-crystals reference verifier
+        run: |
+          cd /tmp/mldsa-ref/ref
+          gcc -o /tmp/verify_mldsa87 -DDILITHIUM_MODE=5 \
+            $GITHUB_WORKSPACE/.github/cross-verify/mldsa87_verify_ref.c \
+            sign.c packing.c polyvec.c poly.c ntt.c reduce.c \
+            rounding.c symmetric-shake.c fips202.c randombytes.c -I. -O2
+
+      - name: Verify qrypto.js signature with pq-crystals reference
+        run: |
+          echo "=== Verifying qrypto.js ML-DSA-87 signature with pq-crystals reference ==="
+          /tmp/verify_mldsa87
+          echo "✓ qrypto.js → pq-crystals: PASSED"
+
+      - name: Compile pq-crystals reference signer
+        run: |
+          cd /tmp/mldsa-ref/ref
+          gcc -o /tmp/sign_mldsa87_ref -DDILITHIUM_MODE=5 \
+            $GITHUB_WORKSPACE/.github/cross-verify/mldsa87_sign_ref.c \
+            sign.c packing.c polyvec.c poly.c ntt.c reduce.c \
+            rounding.c symmetric-shake.c fips202.c randombytes.c -I. -O2
+
+      - name: Generate pq-crystals reference signature
+        run: /tmp/sign_mldsa87_ref
+
+      - name: Verify pq-crystals signature with qrypto.js
+        run: |
+          echo "=== Verifying pq-crystals ML-DSA-87 signature with qrypto.js ==="
+          node .github/cross-verify/mldsa87_verify_pqcrystals.js
+          echo "✓ pq-crystals → qrypto.js: PASSED"

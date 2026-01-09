@@ -1,5 +1,5 @@
-import pkg from 'randombytes'; // eslint-disable-line import/no-extraneous-dependencies
-import { SHAKE } from 'sha3'; // eslint-disable-line import/no-extraneous-dependencies
+import pkg from 'randombytes';
+import { shake256 } from '@noble/hashes/sha3';
 
 import {
   PolyVecK,
@@ -51,9 +51,47 @@ import { Poly, polyChallenge, polyNTT } from './poly.js';
 import { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } from './packing.js';
 
 const randomBytes = pkg;
-// Default signing context
+
+/**
+ * Default signing context ("ZOND" in ASCII).
+ * Used for domain separation per FIPS 204.
+ * @constant {Uint8Array}
+ */
 const DEFAULT_CTX = new Uint8Array([0x5a, 0x4f, 0x4e, 0x44]); // "ZOND"
 
+/**
+ * Convert hex string to Uint8Array
+ * @param {string} hex - Hex-encoded string
+ * @returns {Uint8Array} Decoded bytes
+ * @private
+ */
+function hexToBytes(hex) {
+  const len = hex.length / 2;
+  const result = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    result[i] = parseInt(hex.substr(i * 2, 2), 16);
+  }
+  return result;
+}
+
+/**
+ * Generate an ML-DSA-87 key pair.
+ *
+ * Key generation follows FIPS 204, using domain separator [K, L] during
+ * seed expansion to ensure algorithm binding.
+ *
+ * @param {Uint8Array|null} passedSeed - Optional 32-byte seed for deterministic key generation.
+ *   Pass null for random key generation.
+ * @param {Uint8Array} pk - Output buffer for public key (must be CryptoPublicKeyBytes = 2592 bytes)
+ * @param {Uint8Array} sk - Output buffer for secret key (must be CryptoSecretKeyBytes = 4896 bytes)
+ * @returns {Uint8Array} The seed used for key generation (useful when passedSeed is null)
+ * @throws {Error} If pk/sk buffers are null or wrong size, or if seed is wrong size
+ *
+ * @example
+ * const pk = new Uint8Array(CryptoPublicKeyBytes);
+ * const sk = new Uint8Array(CryptoSecretKeyBytes);
+ * const seed = cryptoSignKeypair(null, pk, sk);
+ */
 export function cryptoSignKeypair(passedSeed, pk, sk) {
   try {
     if (pk.length !== CryptoPublicKeyBytes) {
@@ -69,8 +107,15 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
       throw new Error(`${e.message}`);
     }
   }
-  // eslint-disable-next-line no-unused-vars
-  const mat = new Array(K).fill().map((_) => new PolyVecL());
+
+  // Validate seed length if provided
+  if (passedSeed !== null && passedSeed !== undefined) {
+    if (passedSeed.length !== SeedBytes) {
+      throw new Error(`invalid seed length ${passedSeed.length} | Expected length ${SeedBytes}`);
+    }
+  }
+
+  const mat = new Array(K).fill().map(() => new PolyVecL());
   const s1 = new PolyVecL();
   const s2 = new PolyVecK();
   const t1 = new PolyVecK();
@@ -79,11 +124,9 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
   // Expand seed -> rho(32), rhoPrime(64), key(32) with domain sep [K, L]
   const seed = passedSeed || randomBytes(SeedBytes);
 
-  const state = new SHAKE(256);
-  let outputLength = 2 * SeedBytes + CRHBytes;
-  state.update(seed);
-  state.update(Buffer.from([K, L]));
-  const seedBuf = state.digest({ buffer: Buffer.alloc(outputLength) });
+  const outputLength = 2 * SeedBytes + CRHBytes;
+  const domainSep = new Uint8Array([K, L]);
+  const seedBuf = shake256.create({}).update(seed).update(domainSep).xof(outputLength);
   const rho = seedBuf.slice(0, SeedBytes);
   const rhoPrime = seedBuf.slice(SeedBytes, SeedBytes + CRHBytes);
   const key = seedBuf.slice(SeedBytes + CRHBytes);
@@ -112,15 +155,34 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
   packPk(pk, rho, t1);
 
   // Compute tr = SHAKE256(pk) (64 bytes) and write secret key
-  const hasher = new SHAKE(256);
-  outputLength = TRBytes;
-  hasher.update(Buffer.from(pk, 'hex'));
-  const tr = new Uint8Array(hasher.digest({ buffer: Buffer.alloc(outputLength) }));
+  const tr = shake256.create({}).update(pk).xof(TRBytes);
   packSk(sk, rho, tr, key, t0, s1, s2);
 
   return seed;
 }
 
+/**
+ * Create a detached signature for a message with optional context.
+ *
+ * Uses the ML-DSA-87 (FIPS 204) signing algorithm with rejection sampling.
+ * The context parameter provides domain separation as required by FIPS 204.
+ *
+ * @param {Uint8Array} sig - Output buffer for signature (must be at least CryptoBytes = 4627 bytes)
+ * @param {string|Uint8Array} m - Message to sign (hex string or Uint8Array)
+ * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
+ * @param {boolean} randomizedSigning - If true, use random nonce for hedged signing.
+ *   If false, use deterministic nonce derived from message and key.
+ * @param {Uint8Array} [ctx=DEFAULT_CTX] - Context string for domain separation (max 255 bytes).
+ *   Defaults to "ZOND" for QRL compatibility.
+ * @returns {number} 0 on success
+ * @throws {Error} If sk is wrong size or context exceeds 255 bytes
+ *
+ * @example
+ * const sig = new Uint8Array(CryptoBytes);
+ * cryptoSignSignature(sig, message, sk, false);
+ * // Or with custom context:
+ * cryptoSignSignature(sig, message, sk, false, new Uint8Array([0x01, 0x02]));
+ */
 export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT_CTX) {
   if (ctx.length > 255) throw new Error(`invalid context length: ${ctx.length} (max 255)`);
   if (sk.length !== CryptoSecretKeyBytes) {
@@ -130,13 +192,11 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
   const rho = new Uint8Array(SeedBytes);
   const tr = new Uint8Array(TRBytes);
   const key = new Uint8Array(SeedBytes);
-  const rhoPrime = new Uint8Array(CRHBytes);
+  let rhoPrime = new Uint8Array(CRHBytes);
   let nonce = 0;
-  let state = null;
   const mat = Array(K)
     .fill()
-    // eslint-disable-next-line no-unused-vars
-    .map((_) => new PolyVecL());
+    .map(() => new PolyVecL());
   const s1 = new PolyVecL();
   const y = new PolyVecL();
   const z = new PolyVecL();
@@ -154,28 +214,22 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
   pre[0] = 0;
   pre[1] = ctx.length;
   pre.set(ctx, 2);
+
+  // Convert hex message to bytes
+  const mBytes = typeof m === 'string' ? hexToBytes(m) : m;
+
   // mu = SHAKE256(tr || pre || m)
-  state = new SHAKE(256);
-  let outputLength = CRHBytes;
-  state.update(Buffer.from(tr, 'hex'));
-  state.update(Buffer.from(pre, 'hex'));
-  state.update(Buffer.from(m, 'hex'));
-  const mu = new Uint8Array(state.digest({ buffer: Buffer.alloc(outputLength) }));
+  const mu = shake256.create({}).update(tr).update(pre).update(mBytes).xof(CRHBytes);
 
   // rhoPrime = SHAKE256(key || rnd || mu)
   const rnd = randomizedSigning ? randomBytes(RNDBytes) : new Uint8Array(RNDBytes);
-  state = new SHAKE(256);
-  state.update(Buffer.from(key, 'hex'));
-  state.update(Buffer.from(rnd, 'hex'));
-  state.update(Buffer.from(mu, 'hex'));
-  rhoPrime.set(state.digest({ buffer: Buffer.alloc(CRHBytes) }));
+  rhoPrime = shake256.create({}).update(key).update(rnd).update(mu).xof(CRHBytes);
 
   polyVecMatrixExpand(mat, rho);
   polyVecLNTT(s1);
   polyVecKNTT(s2);
   polyVecKNTT(t0);
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     polyVecLUniformGamma1(y, rhoPrime, nonce++);
     // Matrix-vector multiplication
@@ -191,11 +245,11 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
     polyVecKPackW1(sig, w1);
 
     // ctilde = SHAKE256(mu || w1_packed) (64 bytes)
-    state = new SHAKE(256);
-    outputLength = CTILDEBytes;
-    state.update(Buffer.from(mu, 'hex'));
-    state.update(Buffer.from(sig.slice(0, K * PolyW1PackedBytes)), 'hex');
-    const ctilde = new Uint8Array(state.digest({ buffer: Buffer.alloc(outputLength) }));
+    const ctilde = shake256
+      .create({})
+      .update(mu)
+      .update(sig.slice(0, K * PolyW1PackedBytes))
+      .xof(CTILDEBytes);
 
     polyChallenge(cp, ctilde);
     polyNTT(cp);
@@ -206,7 +260,7 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
     polyVecLAdd(z, z, y);
     polyVecLReduce(z);
     if (polyVecLChkNorm(z, GAMMA1 - BETA) !== 0) {
-      continue; // eslint-disable-line no-continue
+      continue;
     }
 
     polyVecKPointWisePolyMontgomery(h, cp, s2);
@@ -214,20 +268,20 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
     polyVecKSub(w0, w0, h);
     polyVecKReduce(w0);
     if (polyVecKChkNorm(w0, GAMMA2 - BETA) !== 0) {
-      continue; // eslint-disable-line no-continue
+      continue;
     }
 
     polyVecKPointWisePolyMontgomery(h, cp, t0);
     polyVecKInvNTTToMont(h);
     polyVecKReduce(h);
     if (polyVecKChkNorm(h, GAMMA2) !== 0) {
-      continue; // eslint-disable-line no-continue
+      continue;
     }
 
     polyVecKAdd(w0, w0, h);
     const n = polyVecKMakeHint(h, w0, w1);
     if (n > OMEGA) {
-      continue; // eslint-disable-line no-continue
+      continue;
     }
 
     packSig(sig, ctilde, z, h);
@@ -235,6 +289,24 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
   }
 }
 
+/**
+ * Sign a message, returning signature concatenated with message.
+ *
+ * This is the combined sign operation that produces a "signed message" containing
+ * both the signature and the original message (signature || message).
+ *
+ * @param {Uint8Array} msg - Message to sign
+ * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
+ * @param {boolean} randomizedSigning - If true, use random nonce; if false, deterministic
+ * @param {Uint8Array} [ctx=DEFAULT_CTX] - Context string for domain separation (max 255 bytes).
+ *   Defaults to "ZOND" for QRL compatibility.
+ * @returns {Uint8Array} Signed message (CryptoBytes + msg.length bytes)
+ * @throws {Error} If signing fails
+ *
+ * @example
+ * const signedMsg = cryptoSign(message, sk, false);
+ * // signedMsg contains: signature (4627 bytes) || message
+ */
 export function cryptoSign(msg, sk, randomizedSigning, ctx = DEFAULT_CTX) {
   const sm = new Uint8Array(CryptoBytes + msg.length);
   const mLen = msg.length;
@@ -249,6 +321,25 @@ export function cryptoSign(msg, sk, randomizedSigning, ctx = DEFAULT_CTX) {
   return sm;
 }
 
+/**
+ * Verify a detached signature with optional context.
+ *
+ * Performs constant-time verification to prevent timing side-channel attacks.
+ * The context must match the one used during signing.
+ *
+ * @param {Uint8Array} sig - Signature to verify (must be CryptoBytes = 4627 bytes)
+ * @param {string|Uint8Array} m - Message that was signed (hex string or Uint8Array)
+ * @param {Uint8Array} pk - Public key (must be CryptoPublicKeyBytes = 2592 bytes)
+ * @param {Uint8Array} [ctx=DEFAULT_CTX] - Context string used during signing (max 255 bytes).
+ *   Defaults to "ZOND" for QRL compatibility.
+ * @returns {boolean} true if signature is valid, false otherwise
+ *
+ * @example
+ * const isValid = cryptoSignVerify(signature, message, pk);
+ * if (!isValid) {
+ *   throw new Error('Invalid signature');
+ * }
+ */
 export function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
   if (ctx.length > 255) return false;
   let i;
@@ -258,8 +349,7 @@ export function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
   const c = new Uint8Array(CTILDEBytes);
   const c2 = new Uint8Array(CTILDEBytes);
   const cp = new Poly();
-  // eslint-disable-next-line no-unused-vars
-  const mat = new Array(K).fill().map((_) => new PolyVecL());
+  const mat = new Array(K).fill().map(() => new PolyVecL());
   const z = new PolyVecL();
   const t1 = new PolyVecK();
   const w1 = new PolyVecK();
@@ -281,21 +371,17 @@ export function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
   }
 
   /* Compute mu = SHAKE256(tr || pre || m) with tr = SHAKE256(pk) */
-  let state = new SHAKE(256);
-  let outputLength = TRBytes;
-  state.update(pk);
-  const tr = new Uint8Array(state.digest({ buffer: Buffer.alloc(outputLength) }));
+  const tr = shake256.create({}).update(pk).xof(TRBytes);
+
   const pre = new Uint8Array(2 + ctx.length);
   pre[0] = 0;
   pre[1] = ctx.length;
   pre.set(ctx, 2);
 
-  state = new SHAKE(256);
-  outputLength = CRHBytes;
-  state.update(Buffer.from(tr, 'hex'));
-  state.update(Buffer.from(pre, 'hex'));
-  state.update(Buffer.from(m, 'hex'));
-  mu.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
+  // Convert hex message to bytes
+  const mBytes = typeof m === 'string' ? hexToBytes(m) : m;
+  const muFull = shake256.create({}).update(tr).update(pre).update(mBytes).xof(CRHBytes);
+  mu.set(muFull);
 
   /* Matrix-vector multiplication; compute Az - c2^dt1 */
   polyChallenge(cp, c);
@@ -319,16 +405,35 @@ export function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
   polyVecKPackW1(buf, w1);
 
   /* Call random oracle and verify challenge */
-  state = new SHAKE(256);
-  outputLength = CTILDEBytes;
-  state.update(Buffer.from(mu, 'hex'));
-  state.update(Buffer.from(buf, 'hex'));
-  c2.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
+  const c2Hash = shake256.create({}).update(mu).update(buf).xof(CTILDEBytes);
+  c2.set(c2Hash);
 
-  for (i = 0; i < CTILDEBytes; ++i) if (c[i] !== c2[i]) return false;
-  return true;
+  // Constant-time comparison to prevent timing attacks
+  let diff = 0;
+  for (i = 0; i < CTILDEBytes; ++i) {
+    diff |= c[i] ^ c2[i];
+  }
+  return diff === 0;
 }
 
+/**
+ * Open a signed message (verify and extract message).
+ *
+ * This is the counterpart to cryptoSign(). It verifies the signature and
+ * extracts the original message from a signed message.
+ *
+ * @param {Uint8Array} sm - Signed message (signature || message)
+ * @param {Uint8Array} pk - Public key (must be CryptoPublicKeyBytes = 2592 bytes)
+ * @param {Uint8Array} [ctx=DEFAULT_CTX] - Context string used during signing (max 255 bytes).
+ *   Defaults to "ZOND" for QRL compatibility.
+ * @returns {Uint8Array|undefined} The original message if valid, undefined if verification fails
+ *
+ * @example
+ * const message = cryptoSignOpen(signedMsg, pk);
+ * if (message === undefined) {
+ *   throw new Error('Invalid signature');
+ * }
+ */
 export function cryptoSignOpen(sm, pk, ctx = DEFAULT_CTX) {
   if (sm.length < CryptoBytes) {
     return undefined;

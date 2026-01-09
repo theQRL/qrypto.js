@@ -78,7 +78,7 @@ describe('cryptoSignOpen', () => {
     const vector = TEST_VECTORS[i];
     const sigMessage = Buffer.from(vector.derivedSig + vector.msg, 'hex');
     const pk = Buffer.from(vector.derivedPK, 'hex');
-    
+
     it(`should return the expected message ${i}`, () => {
       const ctx = Buffer.from(vector.ctx, 'hex');
       const openedMessage = cryptoSignOpen(sigMessage, pk, ctx);
@@ -98,7 +98,7 @@ describe('cryptoSignVerify', () => {
     const sig = Buffer.from(vector.derivedSig, 'hex');
     const msg = Buffer.from(vector.msg, 'hex');
     const pk = Buffer.from(vector.derivedPK, 'hex');
-    
+
     it(`should return true ${i}`, () => {
       const ctx = Buffer.from(vector.ctx, 'hex');
       expect(cryptoSignVerify(sig, msg, pk, ctx)).to.equal(true);

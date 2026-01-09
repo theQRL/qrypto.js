@@ -51,7 +51,7 @@ export function polyVecMatrixExpand(mat, rho) {
 
 export function polyVecMatrixPointWiseMontgomery(t, mat, v) {
   for (let i = 0; i < K; ++i) {
-    polyVecLPointWiseAccMontgomery(t.vec[i], mat[i], v); // eslint-disable-line no-use-before-define
+    polyVecLPointWiseAccMontgomery(t.vec[i], mat[i], v);
   }
 }
 

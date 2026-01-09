@@ -5,6 +5,7 @@ export const Stream256BlockBytes = Shake256Rate;
 
 export const SeedBytes = 32;
 export const CRHBytes = 64;
+export const TRBytes = 64;
 export const N = 256;
 export const Q = 8380417;
 export const QInv = 58728449;
@@ -28,7 +29,7 @@ export const PolyW1PackedBytes = 128;
 
 export const CryptoPublicKeyBytes = SeedBytes + K * PolyT1PackedBytes;
 export const CryptoSecretKeyBytes =
-  3 * SeedBytes + L * PolyETAPackedBytes + K * PolyETAPackedBytes + K * PolyT0PackedBytes;
+  2 * SeedBytes + TRBytes + L * PolyETAPackedBytes + K * PolyETAPackedBytes + K * PolyT0PackedBytes;
 export const CryptoBytes = SeedBytes + L * PolyZPackedBytes + PolyVecHPackedBytes;
 
 export const PolyUniformNBlocks = Math.floor((768 + Stream128BlockBytes - 1) / Stream128BlockBytes);
