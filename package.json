@@ -3,6 +3,10 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "build": "turbo run build",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo run build && changeset publish",
     "test": "FORCE_COLOR=1 turbo test",
     "lint": "turbo lint-check",
     "report-coverage": "turbo report-coverage"
@@ -11,6 +15,7 @@
     "packages/*"
   ],
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "turbo": "^1.11.3"
   }
 }
