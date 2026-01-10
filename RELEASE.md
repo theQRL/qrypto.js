@@ -58,30 +58,24 @@ git push origin main --tags
 
 ## Trusted Publishing (OIDC)
 
-This repo uses [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/) with OIDC for secure, tokenless publishing.
+This repo uses [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/) with OIDC - no npm tokens required.
 
-**Setup on npmjs.com (for each package):**
-1. Go to package settings → Trusted Publishers
-2. Add GitHub Actions publisher:
-   - Organization: `theQRL`
-   - Repository: `qrypto.js`
-   - Workflow: `test.yml`
-   - Environment: `npm-publish`
+**Setup on npmjs.com (required for each package):**
 
-Configure this for both `@theqrl/mldsa87` and `@theqrl/dilithium5`.
+1. Go to npmjs.com → package → Settings → Publishing access
+2. Add Trusted Publisher with:
+   - **Owner:** `theQRL`
+   - **Repository:** `qrypto.js`
+   - **Workflow:** `test.yml`
+   - **Environment:** `npm-publish`
 
-**Benefits:**
-- No long-lived NPM_TOKEN to manage/rotate/leak
-- Short-lived, workflow-specific OIDC credentials
-- Automatic provenance attestations
-- Cryptographic trust chain
+Configure for both `@theqrl/mldsa87` and `@theqrl/dilithium5`.
 
 **GitHub Environment:**
-Create an environment called `npm-publish` in repository settings (Settings → Environments).
+Create environment `npm-publish` in repo Settings → Environments.
 
-## Required Secrets
-
-- `GITHUB_TOKEN` - Automatically provided by GitHub Actions (no manual setup)
+**Required Secrets:**
+- `GITHUB_TOKEN` - Automatically provided (no setup needed)
 
 ## Configuration
 
