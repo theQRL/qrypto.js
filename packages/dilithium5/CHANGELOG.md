@@ -1,3 +1,10 @@
+## @theqrl/dilithium5 [1.0.1](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.0.0...@theqrl/dilithium5@1.0.1) (2026-01-10)
+
+
+### Bug Fixes
+
+* trigger release ([e72b0c5](https://github.com/theQRL/qrypto.js/commit/e72b0c562af19737ba7981af965bc03c8dcba272))
+
 # @theqrl/dilithium5 1.0.0 (2026-01-10)
 
 
