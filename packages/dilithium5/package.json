@@ -11,12 +11,14 @@
   "homepage": "https://github.com/theQRL/qrypto.js#readme",
   "license": "MIT",
   "main": "src/index.js",
+  "types": "src/index.d.ts",
   "directories": {
     "lib": "src",
     "test": "test"
   },
   "files": [
-    "dist"
+    "dist",
+    "src/index.d.ts"
   ],
   "publishConfig": {
     "access": "public"
@@ -26,7 +28,7 @@
     "url": "git+https://github.com/theQRL/qrypto.js.git"
   },
   "scripts": {
-    "test": "../../node_modules/mocha/bin/mocha.js",
+    "test": "../../node_modules/mocha/bin/mocha.js --timeout 10000",
     "build": "rollup src/index.js --file ./dist/cjs/dilithium5.js --format cjs && rollup src/index.js --file ./dist/mjs/dilithium5.js --format esm && ./fixup",
     "lint-check": "eslint 'src/**/*.js' 'test/**/*.js'",
     "lint": "eslint --fix 'src/**/*.js' 'test/**/*.js'",
@@ -56,7 +58,7 @@
     "rollup": "^4.9.5"
   },
   "dependencies": {
-    "randombytes": "^2.1.0",
-    "sha3": "^2.1.4"
+    "@noble/hashes": "^1.7.1",
+    "randombytes": "^2.1.0"
   }
 }

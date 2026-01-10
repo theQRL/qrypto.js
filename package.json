@@ -1,8 +1,10 @@
 {
   "name": "root",
+  "type": "module",
   "private": true,
   "scripts": {
     "test": "FORCE_COLOR=1 turbo test",
+    "lint": "turbo lint-check",
     "report-coverage": "turbo report-coverage"
   },
   "workspaces": [

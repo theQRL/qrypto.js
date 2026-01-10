@@ -343,7 +343,7 @@ export function polyT0Pack(rP, rOffset, a) {
     t[6] = (1 << (D - 1)) - a.coeffs[8 * i + 6];
     t[7] = (1 << (D - 1)) - a.coeffs[8 * i + 7];
 
-    r[rOffset + 13 * i] = t[0]; // eslint-disable-line prefer-destructuring
+    r[rOffset + 13 * i] = t[0];
     r[rOffset + 13 * i + 1] = t[0] >> 8;
     r[rOffset + 13 * i + 1] |= t[1] << 5;
     r[rOffset + 13 * i + 2] = t[1] >> 3;
@@ -423,7 +423,7 @@ export function polyZPack(rP, rOffset, a) {
     t[0] = GAMMA1 - a.coeffs[2 * i];
     t[1] = GAMMA1 - a.coeffs[2 * i + 1];
 
-    r[rOffset + 5 * i] = t[0]; // eslint-disable-line prefer-destructuring
+    r[rOffset + 5 * i] = t[0];
     r[rOffset + 5 * i + 1] = t[0] >> 8;
     r[rOffset + 5 * i + 2] = t[0] >> 16;
     r[rOffset + 5 * i + 2] |= t[1] << 4;

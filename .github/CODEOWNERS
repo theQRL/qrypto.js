@@ -1,0 +1,9 @@
+# Default owners for everything in the repo
+* @theQRL/core
+
+# Cryptographic implementations require crypto team review
+/packages/dilithium5/ @theQRL/crypto
+/packages/mldsa87/ @theQRL/crypto
+
+# CI/CD changes
+/.github/ @theQRL/devops

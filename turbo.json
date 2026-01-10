@@ -4,6 +4,7 @@
     "build": {},
     "test": {},
     "lint": {},
+    "lint-check": {},
     "report-coverage": {}
   }
 }
