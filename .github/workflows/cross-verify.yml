@@ -40,7 +40,7 @@ jobs:
       - name: Verify qrypto.js signature with go-qrllib
         run: |
           echo "=== Verifying qrypto.js signature with go-qrllib ==="
-          go run .github/cross-verify/dilithium5_verify.go
+          cd .github/cross-verify && go run dilithium5_verify.go
           echo "✓ qrypto.js → go-qrllib: PASSED"
 
       - name: Generate go-qrllib Dilithium5 signature
@@ -86,7 +86,7 @@ jobs:
       - name: Verify qrypto.js signature with go-qrllib
         run: |
           echo "=== Verifying qrypto.js ML-DSA-87 signature with go-qrllib ==="
-          go run .github/cross-verify/mldsa87_verify.go
+          cd .github/cross-verify && go run mldsa87_verify.go
           echo "✓ qrypto.js → go-qrllib: PASSED"
 
       - name: Generate go-qrllib ML-DSA-87 signature
