@@ -2,6 +2,7 @@
   "name": "root",
   "type": "module",
   "private": true,
+  "packageManager": "npm@10.9.2",
   "scripts": {
     "build": "turbo run build",
     "test": "FORCE_COLOR=1 turbo test",
@@ -12,6 +13,9 @@
     "packages/*"
   ],
   "devDependencies": {
-    "turbo": "^1.11.3"
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "multi-semantic-release": "^3.0.2",
+    "turbo": "^2.7.3"
   }
 }
