@@ -73,9 +73,19 @@ jobs:
           echo "mldsa87=$(node -p "require('./packages/mldsa87/package.json').version")" >> "$GITHUB_OUTPUT"
           echo "dilithium5=$(node -p "require('./packages/dilithium5/package.json').version")" >> "$GITHUB_OUTPUT"
 
+      - name: Configure Git to use SSH
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin git@github.com:${{ github.repository }}.git
+
       - name: Semantic Release (version & changelog)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
         run: ./node_modules/.bin/multi-semantic-release
 
       - name: Get new versions
