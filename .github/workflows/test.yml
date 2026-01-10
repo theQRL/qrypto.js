@@ -70,8 +70,8 @@ jobs:
       - name: Get current versions
         id: versions-before
         run: |
-          echo "mldsa87=$(node -p "require('./packages/mldsa87/package.json').version")" >> $GITHUB_OUTPUT
-          echo "dilithium5=$(node -p "require('./packages/dilithium5/package.json').version")" >> $GITHUB_OUTPUT
+          echo "mldsa87=$(node -p "require('./packages/mldsa87/package.json').version")" >> "$GITHUB_OUTPUT"
+          echo "dilithium5=$(node -p "require('./packages/dilithium5/package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Semantic Release (version & changelog)
         env:
@@ -81,8 +81,8 @@ jobs:
       - name: Get new versions
         id: versions-after
         run: |
-          echo "mldsa87=$(node -p "require('./packages/mldsa87/package.json').version")" >> $GITHUB_OUTPUT
-          echo "dilithium5=$(node -p "require('./packages/dilithium5/package.json').version")" >> $GITHUB_OUTPUT
+          echo "mldsa87=$(node -p "require('./packages/mldsa87/package.json').version")" >> "$GITHUB_OUTPUT"
+          echo "dilithium5=$(node -p "require('./packages/dilithium5/package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Publish @theqrl/mldsa87 with OIDC
         if: steps.versions-before.outputs.mldsa87 != steps.versions-after.outputs.mldsa87
