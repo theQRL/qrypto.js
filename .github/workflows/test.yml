@@ -58,6 +58,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '22.x'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci
@@ -111,9 +112,13 @@ jobs:
       - name: Publish @theqrl/mldsa87 with OIDC
         if: steps.versions-before.outputs.mldsa87 != steps.versions-after.outputs.mldsa87
         working-directory: packages/mldsa87
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm publish --provenance --access public
 
       - name: Publish @theqrl/dilithium5 with OIDC
         if: steps.versions-before.outputs.dilithium5 != steps.versions-after.outputs.dilithium5
         working-directory: packages/dilithium5
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm publish --provenance --access public
