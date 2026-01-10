@@ -1,3 +1,10 @@
+## @theqrl/dilithium5 [1.0.2](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.0.1...@theqrl/dilithium5@1.0.2) (2026-01-10)
+
+
+### Bug Fixes
+
+* include LICENSE in npm packages ([8b90ca2](https://github.com/theQRL/qrypto.js/commit/8b90ca2a4610db666ebbb2e7a7714d03825aae95))
+
 ## @theqrl/dilithium5 [1.0.1](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.0.0...@theqrl/dilithium5@1.0.1) (2026-01-10)
 
 
