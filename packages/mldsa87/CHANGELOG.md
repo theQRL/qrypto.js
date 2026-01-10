@@ -1,3 +1,10 @@
+## @theqrl/mldsa87 [1.0.1](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@1.0.0...@theqrl/mldsa87@1.0.1) (2026-01-10)
+
+
+### Bug Fixes
+
+* package level docs ([be57337](https://github.com/theQRL/qrypto.js/commit/be5733779288dedec57a4f8f8c76641b19f1c8ef))
+
 # @theqrl/mldsa87 1.0.0 (2026-01-10)
 
 
