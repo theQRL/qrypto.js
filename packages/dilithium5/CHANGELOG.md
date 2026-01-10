@@ -1,3 +1,10 @@
+## @theqrl/dilithium5 [1.0.3](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.0.2...@theqrl/dilithium5@1.0.3) (2026-01-10)
+
+
+### Bug Fixes
+
+* include README in npm packages ([36dd6b2](https://github.com/theQRL/qrypto.js/commit/36dd6b24d6a2d7cdf47daab262aa645e832cabda))
+
 ## @theqrl/dilithium5 [1.0.2](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.0.1...@theqrl/dilithium5@1.0.2) (2026-01-10)
 
 
