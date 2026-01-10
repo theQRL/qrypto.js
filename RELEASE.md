@@ -39,3 +39,9 @@ This runs the Turbo build and publishes both packages to npm.
 
 Use `npm pack --dry-run` from each package directory if you want to inspect
 package contents before publishing.
+
+## Post-publish
+
+- [ ] Verify the npm pages show the new versions.
+- [ ] Push git tags created by Changesets: `git push --tags`.
+- [ ] Create a GitHub release with the changelog notes.
