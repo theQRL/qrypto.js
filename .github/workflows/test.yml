@@ -116,15 +116,24 @@ jobs:
         run: |
           echo "Node version: $(node --version)"
           echo "npm version: $(npm --version)"
-          echo "ACTIONS_ID_TOKEN_REQUEST_URL is set: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL != '' }}"
-          cat ~/.npmrc || echo "No .npmrc found"
+          echo "ACTIONS_ID_TOKEN_REQUEST_URL: ${ACTIONS_ID_TOKEN_REQUEST_URL:-not set}"
+          echo "Checking .npmrc locations:"
+          cat ~/.npmrc 2>/dev/null || echo "  ~/.npmrc not found"
+          cat .npmrc 2>/dev/null || echo "  ./.npmrc not found"
+          cat $NPM_CONFIG_USERCONFIG 2>/dev/null || echo "  NPM_CONFIG_USERCONFIG not found"
+          echo "npm config list:"
+          npm config list
 
       - name: Publish @theqrl/mldsa87 with OIDC
         if: steps.versions-before.outputs.mldsa87 != steps.versions-after.outputs.mldsa87
         working-directory: packages/mldsa87
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --provenance --access public
 
       - name: Publish @theqrl/dilithium5 with OIDC
         if: steps.versions-before.outputs.dilithium5 != steps.versions-after.outputs.dilithium5
         working-directory: packages/dilithium5
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --provenance --access public
