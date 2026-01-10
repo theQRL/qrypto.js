@@ -1,5 +1,5 @@
+import { shake128, shake256 } from '@noble/hashes/sha3';
 import pkg from 'randombytes';
-import { SHAKE } from 'sha3';
 
 const Shake128Rate = 168;
 const Shake256Rate = 136;
@@ -8,6 +8,7 @@ const Stream256BlockBytes = Shake256Rate;
 
 const SeedBytes = 32;
 const CRHBytes = 64;
+const TRBytes = 64;
 const N = 256;
 const Q = 8380417;
 const QInv = 58728449;
@@ -31,7 +32,7 @@ const PolyW1PackedBytes = 128;
 
 const CryptoPublicKeyBytes = SeedBytes + K * PolyT1PackedBytes;
 const CryptoSecretKeyBytes =
-  3 * SeedBytes + L * PolyETAPackedBytes + K * PolyETAPackedBytes + K * PolyT0PackedBytes;
+  2 * SeedBytes + TRBytes + L * PolyETAPackedBytes + K * PolyETAPackedBytes + K * PolyT0PackedBytes;
 const CryptoBytes = SeedBytes + L * PolyZPackedBytes + PolyVecHPackedBytes;
 
 const PolyUniformNBlocks = Math.floor((768 + Stream128BlockBytes - 1) / Stream128BlockBytes);
@@ -62,452 +63,65 @@ const zetas = [
   -1362209, 3937738, 1400424, -846154, 1976782,
 ];
 
-const NRounds = 24;
+/**
+ * FIPS 202 SHAKE functions using @noble/hashes
+ * Provides streaming XOF (extendable output function) interface
+ */
 
-const KeccakFRoundConstants = BigUint64Array.from([
-  0x0000000000000001n,
-  0x0000000000008082n,
-  0x800000000000808an,
-  0x8000000080008000n,
-  0x000000000000808bn,
-  0x0000000080000001n,
-  0x8000000080008081n,
-  0x8000000000008009n,
-  0x000000000000008an,
-  0x0000000000000088n,
-  0x0000000080008009n,
-  0x000000008000000an,
-  0x000000008000808bn,
-  0x800000000000008bn,
-  0x8000000000008089n,
-  0x8000000000008003n,
-  0x8000000000008002n,
-  0x8000000000000080n,
-  0x000000000000800an,
-  0x800000008000000an,
-  0x8000000080008081n,
-  0x8000000000008080n,
-  0x0000000080000001n,
-  0x8000000080008008n,
-]);
 
+/**
+ * Keccak state wrapper for @noble/hashes
+ * Maintains hasher instance for streaming operations
+ */
 class KeccakState {
   constructor() {
-    this.s = new BigUint64Array(25);
-    this.pos = 0;
+    this.hasher = null;
+    this.finalized = false;
   }
 }
 
-function ROL(a, offset) {
-  return BigInt.asUintN(64, BigInt.asUintN(64, a << offset) ^ (a >> (64n - offset)));
+// SHAKE-128 functions
+
+function shake128Init(state) {
+  state.hasher = shake128.create({});
+  state.finalized = false;
 }
 
-function load64(x, xOffset) {
-  let r = BigInt(0);
-
-  for (let i = 0; i < 8; i++) r = BigInt.asUintN(64, r | BigInt.asUintN(64, BigInt(x[xOffset + i]) << BigInt(8 * i)));
-
-  return r;
+function shake128Absorb(state, input) {
+  state.hasher.update(input);
 }
 
-function store64(xP, xOffset, u) {
-  const x = xP;
-  for (let i = 0; i < 8; i++) x[xOffset + i] = Number((u >> BigInt(8 * i)) & 0xffn);
-}
-
-function KeccakF1600StatePermute(stateP) {
-  const state = stateP;
-  // copyFromState(A, state)
-  let Aba = state[0];
-  let Abe = state[1];
-  let Abi = state[2];
-  let Abo = state[3];
-  let Abu = state[4];
-  let Aga = state[5];
-  let Age = state[6];
-  let Agi = state[7];
-  let Ago = state[8];
-  let Agu = state[9];
-  let Aka = state[10];
-  let Ake = state[11];
-  let Aki = state[12];
-  let Ako = state[13];
-  let Aku = state[14];
-  let Ama = state[15];
-  let Ame = state[16];
-  let Ami = state[17];
-  let Amo = state[18];
-  let Amu = state[19];
-  let Asa = state[20];
-  let Ase = state[21];
-  let Asi = state[22];
-  let Aso = state[23];
-  let Asu = state[24];
-
-  for (let round = 0; round < NRounds; round += 2) {
-    //    prepareTheta
-    let BCa = BigInt.asUintN(64, Aba ^ Aga ^ Aka ^ Ama ^ Asa);
-    let BCe = BigInt.asUintN(64, Abe ^ Age ^ Ake ^ Ame ^ Ase);
-    let BCi = BigInt.asUintN(64, Abi ^ Agi ^ Aki ^ Ami ^ Asi);
-    let BCo = BigInt.asUintN(64, Abo ^ Ago ^ Ako ^ Amo ^ Aso);
-    let BCu = BigInt.asUintN(64, Abu ^ Agu ^ Aku ^ Amu ^ Asu);
-
-    // thetaRhoPiChiIotaPrepareTheta(round, A, E)
-    let Da = BigInt.asUintN(64, BCu ^ ROL(BCe, 1n));
-    let De = BigInt.asUintN(64, BCa ^ ROL(BCi, 1n));
-    let Di = BigInt.asUintN(64, BCe ^ ROL(BCo, 1n));
-    let Do = BigInt.asUintN(64, BCi ^ ROL(BCu, 1n));
-    let Du = BigInt.asUintN(64, BCo ^ ROL(BCa, 1n));
-
-    Aba = BigInt.asUintN(64, Aba ^ Da);
-    BCa = Aba;
-    Age = BigInt.asUintN(64, Age ^ De);
-    BCe = ROL(Age, 44n);
-    Aki = BigInt.asUintN(64, Aki ^ Di);
-    BCi = ROL(Aki, 43n);
-    Amo = BigInt.asUintN(64, Amo ^ Do);
-    BCo = ROL(Amo, 21n);
-    Asu = BigInt.asUintN(64, Asu ^ Du);
-    BCu = ROL(Asu, 14n);
-    let Eba = BigInt.asUintN(64, BCa ^ (~BCe & BCi));
-    Eba = BigInt.asUintN(64, Eba ^ KeccakFRoundConstants[round]);
-    let Ebe = BigInt.asUintN(64, BCe ^ (~BCi & BCo));
-    let Ebi = BigInt.asUintN(64, BCi ^ (~BCo & BCu));
-    let Ebo = BigInt.asUintN(64, BCo ^ (~BCu & BCa));
-    let Ebu = BigInt.asUintN(64, BCu ^ (~BCa & BCe));
-
-    Abo = BigInt.asUintN(64, Abo ^ Do);
-    BCa = ROL(Abo, 28n);
-    Agu = BigInt.asUintN(64, Agu ^ Du);
-    BCe = ROL(Agu, 20n);
-    Aka = BigInt.asUintN(64, Aka ^ Da);
-    BCi = ROL(Aka, 3n);
-    Ame = BigInt.asUintN(64, Ame ^ De);
-    BCo = ROL(Ame, 45n);
-    Asi = BigInt.asUintN(64, Asi ^ Di);
-    BCu = ROL(Asi, 61n);
-    let Ega = BigInt.asUintN(64, BCa ^ (~BCe & BCi));
-    let Ege = BigInt.asUintN(64, BCe ^ (~BCi & BCo));
-    let Egi = BigInt.asUintN(64, BCi ^ (~BCo & BCu));
-    let Ego = BigInt.asUintN(64, BCo ^ (~BCu & BCa));
-    let Egu = BigInt.asUintN(64, BCu ^ (~BCa & BCe));
-
-    Abe = BigInt.asUintN(64, Abe ^ De);
-    BCa = ROL(Abe, 1n);
-    Agi = BigInt.asUintN(64, Agi ^ Di);
-    BCe = ROL(Agi, 6n);
-    Ako = BigInt.asUintN(64, Ako ^ Do);
-    BCi = ROL(Ako, 25n);
-    Amu = BigInt.asUintN(64, Amu ^ Du);
-    BCo = ROL(Amu, 8n);
-    Asa = BigInt.asUintN(64, Asa ^ Da);
-    BCu = ROL(Asa, 18n);
-    let Eka = BigInt.asUintN(64, BCa ^ (~BCe & BCi));
-    let Eke = BigInt.asUintN(64, BCe ^ (~BCi & BCo));
-    let Eki = BigInt.asUintN(64, BCi ^ (~BCo & BCu));
-    let Eko = BigInt.asUintN(64, BCo ^ (~BCu & BCa));
-    let Eku = BigInt.asUintN(64, BCu ^ (~BCa & BCe));
-
-    Abu = BigInt.asUintN(64, Abu ^ Du);
-    BCa = ROL(Abu, 27n);
-    Aga = BigInt.asUintN(64, Aga ^ Da);
-    BCe = ROL(Aga, 36n);
-    Ake = BigInt.asUintN(64, Ake ^ De);
-    BCi = ROL(Ake, 10n);
-    Ami = BigInt.asUintN(64, Ami ^ Di);
-    BCo = ROL(Ami, 15n);
-    Aso = BigInt.asUintN(64, Aso ^ Do);
-    BCu = ROL(Aso, 56n);
-    let Ema = BigInt.asUintN(64, BCa ^ (~BCe & BCi));
-    let Eme = BigInt.asUintN(64, BCe ^ (~BCi & BCo));
-    let Emi = BigInt.asUintN(64, BCi ^ (~BCo & BCu));
-    let Emo = BigInt.asUintN(64, BCo ^ (~BCu & BCa));
-    let Emu = BigInt.asUintN(64, BCu ^ (~BCa & BCe));
-
-    Abi = BigInt.asUintN(64, Abi ^ Di);
-    BCa = ROL(Abi, 62n);
-    Ago = BigInt.asUintN(64, Ago ^ Do);
-    BCe = ROL(Ago, 55n);
-    Aku = BigInt.asUintN(64, Aku ^ Du);
-    BCi = ROL(Aku, 39n);
-    Ama = BigInt.asUintN(64, Ama ^ Da);
-    BCo = ROL(Ama, 41n);
-    Ase = BigInt.asUintN(64, Ase ^ De);
-    BCu = ROL(Ase, 2n);
-    let Esa = BigInt.asUintN(64, BCa ^ (~BCe & BCi));
-    let Ese = BigInt.asUintN(64, BCe ^ (~BCi & BCo));
-    let Esi = BigInt.asUintN(64, BCi ^ (~BCo & BCu));
-    let Eso = BigInt.asUintN(64, BCo ^ (~BCu & BCa));
-    let Esu = BigInt.asUintN(64, BCu ^ (~BCa & BCe));
-
-    //    prepareTheta
-    BCa = BigInt.asUintN(64, Eba ^ Ega ^ Eka ^ Ema ^ Esa);
-    BCe = BigInt.asUintN(64, Ebe ^ Ege ^ Eke ^ Eme ^ Ese);
-    BCi = BigInt.asUintN(64, Ebi ^ Egi ^ Eki ^ Emi ^ Esi);
-    BCo = BigInt.asUintN(64, Ebo ^ Ego ^ Eko ^ Emo ^ Eso);
-    BCu = BigInt.asUintN(64, Ebu ^ Egu ^ Eku ^ Emu ^ Esu);
-
-    // thetaRhoPiChiIotaPrepareTheta(round+1, E, A)
-    Da = BigInt.asUintN(64, BCu ^ ROL(BCe, 1n));
-    De = BigInt.asUintN(64, BCa ^ ROL(BCi, 1n));
-    Di = BigInt.asUintN(64, BCe ^ ROL(BCo, 1n));
-    Do = BigInt.asUintN(64, BCi ^ ROL(BCu, 1n));
-    Du = BigInt.asUintN(64, BCo ^ ROL(BCa, 1n));
-
-    Eba = BigInt.asUintN(64, Eba ^ Da);
-    BCa = Eba;
-    Ege = BigInt.asUintN(64, Ege ^ De);
-    BCe = ROL(Ege, 44n);
-    Eki = BigInt.asUintN(64, Eki ^ Di);
-    BCi = ROL(Eki, 43n);
-    Emo = BigInt.asUintN(64, Emo ^ Do);
-    BCo = ROL(Emo, 21n);
-    Esu = BigInt.asUintN(64, Esu ^ Du);
-    BCu = ROL(Esu, 14n);
-    Aba = BigInt.asUintN(64, BCa ^ (~BCe & BCi));
-    Aba = BigInt.asUintN(64, Aba ^ KeccakFRoundConstants[round + 1]);
-    Abe = BigInt.asUintN(64, BCe ^ (~BCi & BCo));
-    Abi = BigInt.asUintN(64, BCi ^ (~BCo & BCu));
-    Abo = BigInt.asUintN(64, BCo ^ (~BCu & BCa));
-    Abu = BigInt.asUintN(64, BCu ^ (~BCa & BCe));
-
-    Ebo = BigInt.asUintN(64, Ebo ^ Do);
-    BCa = ROL(Ebo, 28n);
-    Egu = BigInt.asUintN(64, Egu ^ Du);
-    BCe = ROL(Egu, 20n);
-    Eka = BigInt.asUintN(64, Eka ^ Da);
-    BCi = ROL(Eka, 3n);
-    Eme = BigInt.asUintN(64, Eme ^ De);
-    BCo = ROL(Eme, 45n);
-    Esi = BigInt.asUintN(64, Esi ^ Di);
-    BCu = ROL(Esi, 61n);
-    Aga = BigInt.asUintN(64, BCa ^ (~BCe & BCi));
-    Age = BigInt.asUintN(64, BCe ^ (~BCi & BCo));
-    Agi = BigInt.asUintN(64, BCi ^ (~BCo & BCu));
-    Ago = BigInt.asUintN(64, BCo ^ (~BCu & BCa));
-    Agu = BigInt.asUintN(64, BCu ^ (~BCa & BCe));
-
-    Ebe = BigInt.asUintN(64, Ebe ^ De);
-    BCa = ROL(Ebe, 1n);
-    Egi = BigInt.asUintN(64, Egi ^ Di);
-    BCe = ROL(Egi, 6n);
-    Eko = BigInt.asUintN(64, Eko ^ Do);
-    BCi = ROL(Eko, 25n);
-    Emu = BigInt.asUintN(64, Emu ^ Du);
-    BCo = ROL(Emu, 8n);
-    Esa = BigInt.asUintN(64, Esa ^ Da);
-    BCu = ROL(Esa, 18n);
-    Aka = BigInt.asUintN(64, BCa ^ (~BCe & BCi));
-    Ake = BigInt.asUintN(64, BCe ^ (~BCi & BCo));
-    Aki = BigInt.asUintN(64, BCi ^ (~BCo & BCu));
-    Ako = BigInt.asUintN(64, BCo ^ (~BCu & BCa));
-    Aku = BigInt.asUintN(64, BCu ^ (~BCa & BCe));
-
-    Ebu = BigInt.asUintN(64, Ebu ^ Du);
-    BCa = ROL(Ebu, 27n);
-    Ega = BigInt.asUintN(64, Ega ^ Da);
-    BCe = ROL(Ega, 36n);
-    Eke = BigInt.asUintN(64, Eke ^ De);
-    BCi = ROL(Eke, 10n);
-    Emi = BigInt.asUintN(64, Emi ^ Di);
-    BCo = ROL(Emi, 15n);
-    Eso = BigInt.asUintN(64, Eso ^ Do);
-    BCu = ROL(Eso, 56n);
-    Ama = BigInt.asUintN(64, BCa ^ (~BCe & BCi));
-    Ame = BigInt.asUintN(64, BCe ^ (~BCi & BCo));
-    Ami = BigInt.asUintN(64, BCi ^ (~BCo & BCu));
-    Amo = BigInt.asUintN(64, BCo ^ (~BCu & BCa));
-    Amu = BigInt.asUintN(64, BCu ^ (~BCa & BCe));
-
-    Ebi = BigInt.asUintN(64, Ebi ^ Di);
-    BCa = ROL(Ebi, 62n);
-    Ego = BigInt.asUintN(64, Ego ^ Do);
-    BCe = ROL(Ego, 55n);
-    Eku = BigInt.asUintN(64, Eku ^ Du);
-    BCi = ROL(Eku, 39n);
-    Ema = BigInt.asUintN(64, Ema ^ Da);
-    BCo = ROL(Ema, 41n);
-    Ese = BigInt.asUintN(64, Ese ^ De);
-    BCu = ROL(Ese, 2n);
-    Asa = BigInt.asUintN(64, BCa ^ (~BCe & BCi));
-    Ase = BigInt.asUintN(64, BCe ^ (~BCi & BCo));
-    Asi = BigInt.asUintN(64, BCi ^ (~BCo & BCu));
-    Aso = BigInt.asUintN(64, BCo ^ (~BCu & BCa));
-    Asu = BigInt.asUintN(64, BCu ^ (~BCa & BCe));
-  }
-
-  state[0] = Aba;
-  state[1] = Abe;
-  state[2] = Abi;
-  state[3] = Abo;
-  state[4] = Abu;
-  state[5] = Aga;
-  state[6] = Age;
-  state[7] = Agi;
-  state[8] = Ago;
-  state[9] = Agu;
-  state[10] = Aka;
-  state[11] = Ake;
-  state[12] = Aki;
-  state[13] = Ako;
-  state[14] = Aku;
-  state[15] = Ama;
-  state[16] = Ame;
-  state[17] = Ami;
-  state[18] = Amo;
-  state[19] = Amu;
-  state[20] = Asa;
-  state[21] = Ase;
-  state[22] = Asi;
-  state[23] = Aso;
-  state[24] = Asu;
-}
-
-function keccakInit(sP) {
-  const s = sP;
-  for (let i = 0; i < 25; i++) s[i] = 0n;
-}
-
-function keccakAbsorb(sP, posP, r, input) {
-  const s = sP;
-  let pos = posP;
-  let inLen = input.length;
-  let i;
-  let inputOffset = 0;
-  while (pos + inLen >= r) {
-    for (i = pos; i < r; i++)
-      s[Math.floor(i / 8)] = BigInt.asUintN(
-        64,
-        s[Math.floor(i / 8)] ^ (BigInt(input[inputOffset++]) << BigInt(8 * (i % 8)))
-      );
-    inLen -= r - pos;
-    KeccakF1600StatePermute(s);
-    pos = 0;
-  }
-
-  for (i = pos; i < pos + inLen; i++) {
-    s[Math.floor(i / 8)] = BigInt.asUintN(
-      64,
-      s[Math.floor(i / 8)] ^ (BigInt(input[inputOffset++]) << BigInt(8 * (i % 8)))
-    );
-  }
-
-  return i;
-}
-
-function keccakFinalize(sP, pos, r, p) {
-  const s = sP;
-  s[Math.floor(pos / 8)] = BigInt.asUintN(64, s[Math.floor(pos / 8)] ^ (BigInt(p) << BigInt(8 * (pos % 8))));
-  s[Math.floor(r / 8) - 1] = BigInt.asUintN(64, s[Math.floor(r / 8) - 1] ^ (1n << 63n));
-}
-
-function keccakSqueeze(outP, s, posP, r) {
-  let pos = posP;
-  const out = outP;
-  let outLen = out.length;
-  let outputOffset = 0;
-  let i = 0;
-
-  while (outLen) {
-    if (pos === r) {
-      KeccakF1600StatePermute(s);
-      pos = 0;
-    }
-    for (i = pos; i < r && i < pos + outLen; i++) out[outputOffset++] = s[Math.floor(i / 8)] >> BigInt(8 * (i % 8));
-    outLen -= i - pos;
-    pos = i;
-  }
-
-  return pos;
-}
-
-function keccakAbsorbOnce(sP, r, input, p) {
-  const s = sP;
-  let inLen = input.length;
-  let inputOffset = 0;
-  let i;
-
-  for (i = 0; i < 25; i++) s[i] = 0;
-
-  while (inLen >= r) {
-    for (i = 0; i < Math.floor(r / 8); i++) s[i] = BigInt.asUintN(64, s[i] ^ load64(input, inputOffset + 8 * i));
-    inputOffset += r;
-    inLen -= r;
-    KeccakF1600StatePermute(s);
-  }
-
-  for (i = 0; i < inLen; i++)
-    s[Math.floor(i / 8)] = BigInt.asUintN(
-      64,
-      s[Math.floor(i / 8)] ^ (BigInt(input[inputOffset + i]) << BigInt(8 * (i % 8)))
-    );
-
-  s[Math.floor(i / 8)] = BigInt.asUintN(64, s[Math.floor(i / 8)] ^ (BigInt(p) << BigInt(8 * (i % 8))));
-  s[Math.floor((r - 1) / 8)] = BigInt.asUintN(64, s[Math.floor((r - 1) / 8)] ^ (1n << 63n));
-}
-
-function keccakSqueezeBlocks(output, outputOffsetP, nBlocksP, s, r) {
-  let nBlocks = nBlocksP;
-  let outputOffset = outputOffsetP;
-  while (nBlocks) {
-    KeccakF1600StatePermute(s);
-    for (let i = 0; i < Math.floor(r / 8); i++) store64(output, outputOffset + 8 * i, s[i]);
-    outputOffset += r;
-    nBlocks -= 1;
-  }
-}
-
-function shake128Init(stateP) {
-  const state = stateP;
-  keccakInit(state.s);
-  state.pos = 0;
-}
-
-function shake128Absorb(stateP, input) {
-  const state = stateP;
-  state.pos = keccakAbsorb(state.s, state.pos, Shake128Rate, input);
-}
-
-function shake128Finalize(stateP) {
-  const state = stateP;
-  keccakFinalize(state.s, state.pos, Shake128Rate, 0x1f);
-  state.pos = Shake128Rate;
-}
-
-function shake128Squeeze(out, stateP) {
-  const state = stateP;
-  state.pos = keccakSqueeze(out, state.s, state.pos, Shake128Rate);
-}
-
-function shake128AbsorbOnce(stateP, input) {
-  const state = stateP;
-  keccakAbsorbOnce(state.s, Shake128Rate, input, 0x1f);
-  state.pos = Shake128Rate;
+function shake128Finalize(state) {
+  // Mark as finalized - actual finalization happens on first xofInto call
+  state.finalized = true;
 }
 
 function shake128SqueezeBlocks(out, outputOffset, nBlocks, state) {
-  keccakSqueezeBlocks(out, outputOffset, nBlocks, state.s, Shake128Rate);
+  const len = nBlocks * Shake128Rate;
+  const output = out.subarray(outputOffset, outputOffset + len);
+  state.hasher.xofInto(output);
 }
 
-function shake256Init(stateP) {
-  const state = stateP;
-  keccakInit(state.s);
-  state.pos = 0;
+// SHAKE-256 functions
+
+function shake256Init(state) {
+  state.hasher = shake256.create({});
+  state.finalized = false;
 }
 
-function shake256Absorb(stateP, input) {
-  const state = stateP;
-  state.pos = keccakAbsorb(state.s, state.pos, Shake256Rate, input);
+function shake256Absorb(state, input) {
+  state.hasher.update(input);
 }
 
-function shake256Finalize(stateP) {
-  const state = stateP;
-  keccakFinalize(state.s, state.pos, Shake256Rate, 0x1f);
-  state.pos = Shake256Rate;
+function shake256Finalize(state) {
+  // Mark as finalized - actual finalization happens on first xofInto call
+  state.finalized = true;
 }
 
 function shake256SqueezeBlocks(out, outputOffset, nBlocks, state) {
-  keccakSqueezeBlocks(out, outputOffset, nBlocks, state.s, Shake256Rate);
+  const len = nBlocks * Shake256Rate;
+  const output = out.subarray(outputOffset, outputOffset + len);
+  state.hasher.xofInto(output);
 }
 
 function dilithiumShake128StreamInit(state, seed, nonce) {
@@ -565,9 +179,8 @@ function ntt(a) {
       const zeta = zetas[++k];
       for (j = start; j < start + len; ++j) {
         const t = Number(montgomeryReduce(BigInt.asIntN(64, BigInt(zeta) * BigInt(a[j + len]))));
-        a[j + len] = a[j] - t; // eslint-disable-line no-param-reassign
-        // eslint-disable-next-line
-        a[j] = a[j] + t;
+        a[j + len] = a[j] - t;
+        a[j] += t;
       }
     }
   }
@@ -583,15 +196,14 @@ function invNTTToMont(a) {
       const zeta = BigInt.asIntN(32, BigInt(-zetas[--k]));
       for (j = start; j < start + len; ++j) {
         const t = a[j];
-        a[j] = t + a[j + len]; // eslint-disable-line no-param-reassign
-        a[j + len] = t - a[j + len]; // eslint-disable-line no-param-reassign
-        a[j + len] = Number(montgomeryReduce(BigInt.asIntN(64, zeta * BigInt(a[j + len])))); // eslint-disable-line no-param-reassign
+        a[j] = t + a[j + len];
+        a[j + len] = t - a[j + len];
+        a[j + len] = Number(montgomeryReduce(BigInt.asIntN(64, zeta * BigInt(a[j + len]))));
       }
     }
   }
-  // eslint-disable-next-line no-shadow
   for (let j = 0; j < N; ++j) {
-    a[j] = Number(montgomeryReduce(BigInt.asIntN(64, f * BigInt(a[j])))); // eslint-disable-line no-param-reassign
+    a[j] = Number(montgomeryReduce(BigInt.asIntN(64, f * BigInt(a[j]))));
   }
 }
 
@@ -944,7 +556,7 @@ function polyT0Pack(rP, rOffset, a) {
     t[6] = (1 << (D - 1)) - a.coeffs[8 * i + 6];
     t[7] = (1 << (D - 1)) - a.coeffs[8 * i + 7];
 
-    r[rOffset + 13 * i] = t[0]; // eslint-disable-line prefer-destructuring
+    r[rOffset + 13 * i] = t[0];
     r[rOffset + 13 * i + 1] = t[0] >> 8;
     r[rOffset + 13 * i + 1] |= t[1] << 5;
     r[rOffset + 13 * i + 2] = t[1] >> 3;
@@ -1024,7 +636,7 @@ function polyZPack(rP, rOffset, a) {
     t[0] = GAMMA1 - a.coeffs[2 * i];
     t[1] = GAMMA1 - a.coeffs[2 * i + 1];
 
-    r[rOffset + 5 * i] = t[0]; // eslint-disable-line prefer-destructuring
+    r[rOffset + 5 * i] = t[0];
     r[rOffset + 5 * i + 1] = t[0] >> 8;
     r[rOffset + 5 * i + 2] = t[0] >> 16;
     r[rOffset + 5 * i + 2] |= t[1] << 4;
@@ -1071,7 +683,7 @@ function polyVecMatrixExpand(mat, rho) {
 
 function polyVecMatrixPointWiseMontgomery(t, mat, v) {
   for (let i = 0; i < K; ++i) {
-    polyVecLPointWiseAccMontgomery(t.vec[i], mat[i], v); // eslint-disable-line no-use-before-define
+    polyVecLPointWiseAccMontgomery(t.vec[i], mat[i], v);
   }
 }
 
@@ -1272,10 +884,10 @@ function packSk(skp, rho, tr, key, t0, s1, s2) {
   }
   skOffset += SeedBytes;
 
-  for (let i = 0; i < SeedBytes; ++i) {
+  for (let i = 0; i < TRBytes; ++i) {
     sk[skOffset + i] = tr[i];
   }
-  skOffset += SeedBytes;
+  skOffset += TRBytes;
 
   for (let i = 0; i < L; ++i) {
     polyEtaPack(sk, skOffset + i * PolyETAPackedBytes, s1.vec[i]);
@@ -1307,10 +919,10 @@ function unpackSk(rhoP, trP, keyP, t0, s1, s2, sk) {
   }
   skOffset += SeedBytes;
 
-  for (let i = 0; i < SeedBytes; ++i) {
+  for (let i = 0; i < TRBytes; ++i) {
     tr[i] = sk[skOffset + i];
   }
-  skOffset += SeedBytes;
+  skOffset += TRBytes;
 
   for (let i = 0; i < L; ++i) {
     polyEtaUnpack(s1.vec[i], sk, skOffset + i * PolyETAPackedBytes);
@@ -1404,6 +1016,36 @@ function unpackSig(cP, z, hP, sig) {
 
 const randomBytes = pkg;
 
+/**
+ * Convert hex string to Uint8Array
+ * @param {string} hex - Hex-encoded string
+ * @returns {Uint8Array} Decoded bytes
+ * @private
+ */
+function hexToBytes(hex) {
+  const len = hex.length / 2;
+  const result = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    result[i] = parseInt(hex.substr(i * 2, 2), 16);
+  }
+  return result;
+}
+
+/**
+ * Generate a Dilithium-5 key pair.
+ *
+ * @param {Uint8Array|null} passedSeed - Optional 32-byte seed for deterministic key generation.
+ *   Pass null for random key generation.
+ * @param {Uint8Array} pk - Output buffer for public key (must be CryptoPublicKeyBytes = 2592 bytes)
+ * @param {Uint8Array} sk - Output buffer for secret key (must be CryptoSecretKeyBytes = 4896 bytes)
+ * @returns {Uint8Array} The seed used for key generation (useful when passedSeed is null)
+ * @throws {Error} If pk/sk buffers are null or wrong size, or if seed is wrong size
+ *
+ * @example
+ * const pk = new Uint8Array(CryptoPublicKeyBytes);
+ * const sk = new Uint8Array(CryptoSecretKeyBytes);
+ * const seed = cryptoSignKeypair(null, pk, sk);
+ */
 function cryptoSignKeypair(passedSeed, pk, sk) {
   try {
     if (pk.length !== CryptoPublicKeyBytes) {
@@ -1419,8 +1061,15 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
       throw new Error(`${e.message}`);
     }
   }
-  // eslint-disable-next-line no-unused-vars
-  const mat = new Array(K).fill().map((_) => new PolyVecL());
+
+  // Validate seed length if provided
+  if (passedSeed !== null && passedSeed !== undefined) {
+    if (passedSeed.length !== SeedBytes) {
+      throw new Error(`invalid seed length ${passedSeed.length} | Expected length ${SeedBytes}`);
+    }
+  }
+
+  const mat = new Array(K).fill().map(() => new PolyVecL());
   const s1 = new PolyVecL();
   const s2 = new PolyVecK();
   const t1 = new PolyVecK();
@@ -1429,10 +1078,8 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
   // Get randomness for rho, rhoPrime and key
   const seed = passedSeed || randomBytes(SeedBytes);
 
-  const state = new SHAKE(256);
-  let outputLength = 2 * SeedBytes + CRHBytes;
-  state.update(seed);
-  const seedBuf = state.digest({ buffer: Buffer.alloc(outputLength) });
+  const outputLength = 2 * SeedBytes + CRHBytes;
+  const seedBuf = shake256.create({}).update(seed).xof(outputLength);
   const rho = seedBuf.slice(0, SeedBytes);
   const rhoPrime = seedBuf.slice(SeedBytes, SeedBytes + CRHBytes);
   const key = seedBuf.slice(SeedBytes + CRHBytes);
@@ -1461,30 +1108,42 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
   packPk(pk, rho, t1);
 
   // Compute H(rho, t1) and write secret key
-  const hasher = new SHAKE(256);
-  outputLength = SeedBytes;
-  hasher.update(Buffer.from(pk, 'hex'));
-  const tr = new Uint8Array(hasher.digest());
+  const tr = shake256.create({}).update(pk).xof(TRBytes);
   packSk(sk, rho, tr, key, t0, s1, s2);
 
   return seed;
 }
 
+/**
+ * Create a detached signature for a message.
+ *
+ * Uses the Dilithium-5 (Round 3) signing algorithm with rejection sampling.
+ *
+ * @param {Uint8Array} sig - Output buffer for signature (must be at least CryptoBytes = 4595 bytes)
+ * @param {string|Uint8Array} m - Message to sign (hex string or Uint8Array)
+ * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
+ * @param {boolean} randomizedSigning - If true, use random nonce for hedged signing.
+ *   If false, use deterministic nonce derived from message and key.
+ * @returns {number} 0 on success
+ * @throws {Error} If sk is wrong size
+ *
+ * @example
+ * const sig = new Uint8Array(CryptoBytes);
+ * cryptoSignSignature(sig, message, sk, false);
+ */
 function cryptoSignSignature(sig, m, sk, randomizedSigning) {
   if (sk.length !== CryptoSecretKeyBytes) {
     throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
   }
 
   const rho = new Uint8Array(SeedBytes);
-  const tr = new Uint8Array(SeedBytes);
+  const tr = new Uint8Array(TRBytes);
   const key = new Uint8Array(SeedBytes);
   let rhoPrime = new Uint8Array(CRHBytes);
   let nonce = 0;
-  let state = null;
   const mat = Array(K)
     .fill()
-    // eslint-disable-next-line no-unused-vars
-    .map((_) => new PolyVecL());
+    .map(() => new PolyVecL());
   const s1 = new PolyVecL();
   const y = new PolyVecL();
   const z = new PolyVecL();
@@ -1497,19 +1156,14 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
 
   unpackSk(rho, tr, key, t0, s1, s2, sk);
 
-  state = new SHAKE(256);
-  let outputLength = CRHBytes;
-  state.update(Buffer.from(tr, 'hex'));
-  state.update(Buffer.from(m, 'hex'));
-  const mu = new Uint8Array(state.digest({ buffer: Buffer.alloc(outputLength) }));
+  // Convert hex message to bytes
+  const mBytes = typeof m === 'string' ? hexToBytes(m) : m;
+  const mu = shake256.create({}).update(tr).update(mBytes).xof(CRHBytes);
 
-  if (randomizedSigning) rhoPrime = new Uint8Array(randomBytes(CRHBytes));
-  else {
-    state = new SHAKE(256);
-    outputLength = CRHBytes;
-    state.update(Buffer.from(key, 'hex'));
-    state.update(Buffer.from(mu, 'hex'));
-    rhoPrime.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
+  if (randomizedSigning) {
+    rhoPrime = new Uint8Array(randomBytes(CRHBytes));
+  } else {
+    rhoPrime = shake256.create({}).update(key).update(mu).xof(CRHBytes);
   }
 
   polyVecMatrixExpand(mat, rho);
@@ -1517,7 +1171,6 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
   polyVecKNTT(s2);
   polyVecKNTT(t0);
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     polyVecLUniformGamma1(y, rhoPrime, nonce++);
     // Matrix-vector multiplication
@@ -1532,11 +1185,12 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
     polyVecKDecompose(w1, w0, w1);
     polyVecKPackW1(sig, w1);
 
-    state = new SHAKE(256);
-    outputLength = SeedBytes;
-    state.update(Buffer.from(mu, 'hex'));
-    state.update(Buffer.from(sig.slice(0, K * PolyW1PackedBytes)), 'hex');
-    sig.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
+    const cHash = shake256
+      .create({})
+      .update(mu)
+      .update(sig.slice(0, K * PolyW1PackedBytes))
+      .xof(SeedBytes);
+    sig.set(cHash);
 
     polyChallenge(cp, sig);
     polyNTT(cp);
@@ -1547,7 +1201,7 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
     polyVecLAdd(z, z, y);
     polyVecLReduce(z);
     if (polyVecLChkNorm(z, GAMMA1 - BETA) !== 0) {
-      continue; // eslint-disable-line no-continue
+      continue;
     }
 
     polyVecKPointWisePolyMontgomery(h, cp, s2);
@@ -1555,20 +1209,20 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
     polyVecKSub(w0, w0, h);
     polyVecKReduce(w0);
     if (polyVecKChkNorm(w0, GAMMA2 - BETA) !== 0) {
-      continue; // eslint-disable-line no-continue
+      continue;
     }
 
     polyVecKPointWisePolyMontgomery(h, cp, t0);
     polyVecKInvNTTToMont(h);
     polyVecKReduce(h);
     if (polyVecKChkNorm(h, GAMMA2) !== 0) {
-      continue; // eslint-disable-line no-continue
+      continue;
     }
 
     polyVecKAdd(w0, w0, h);
     const n = polyVecKMakeHint(h, w0, w1);
     if (n > OMEGA) {
-      continue; // eslint-disable-line no-continue
+      continue;
     }
 
     packSig(sig, sig, z, h);
@@ -1576,6 +1230,22 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
   }
 }
 
+/**
+ * Sign a message, returning signature concatenated with message.
+ *
+ * This is the combined sign operation that produces a "signed message" containing
+ * both the signature and the original message (signature || message).
+ *
+ * @param {Uint8Array} msg - Message to sign
+ * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
+ * @param {boolean} randomizedSigning - If true, use random nonce; if false, deterministic
+ * @returns {Uint8Array} Signed message (CryptoBytes + msg.length bytes)
+ * @throws {Error} If signing fails
+ *
+ * @example
+ * const signedMsg = cryptoSign(message, sk, false);
+ * // signedMsg contains: signature (4595 bytes) || message
+ */
 function cryptoSign(msg, sk, randomizedSigning) {
   const sm = new Uint8Array(CryptoBytes + msg.length);
   const mLen = msg.length;
@@ -1590,6 +1260,22 @@ function cryptoSign(msg, sk, randomizedSigning) {
   return sm;
 }
 
+/**
+ * Verify a detached signature.
+ *
+ * Performs constant-time verification to prevent timing side-channel attacks.
+ *
+ * @param {Uint8Array} sig - Signature to verify (must be CryptoBytes = 4595 bytes)
+ * @param {string|Uint8Array} m - Message that was signed (hex string or Uint8Array)
+ * @param {Uint8Array} pk - Public key (must be CryptoPublicKeyBytes = 2592 bytes)
+ * @returns {boolean} true if signature is valid, false otherwise
+ *
+ * @example
+ * const isValid = cryptoSignVerify(signature, message, pk);
+ * if (!isValid) {
+ *   throw new Error('Invalid signature');
+ * }
+ */
 function cryptoSignVerify(sig, m, pk) {
   let i;
   const buf = new Uint8Array(K * PolyW1PackedBytes);
@@ -1598,8 +1284,7 @@ function cryptoSignVerify(sig, m, pk) {
   const c = new Uint8Array(SeedBytes);
   const c2 = new Uint8Array(SeedBytes);
   const cp = new Poly();
-  // eslint-disable-next-line no-unused-vars
-  const mat = new Array(K).fill().map((_) => new PolyVecL());
+  const mat = new Array(K).fill().map(() => new PolyVecL());
   const z = new PolyVecL();
   const t1 = new PolyVecK();
   const w1 = new PolyVecK();
@@ -1621,16 +1306,13 @@ function cryptoSignVerify(sig, m, pk) {
   }
 
   /* Compute CRH(H(rho, t1), msg) */
-  let state = new SHAKE(256);
-  let outputLength = SeedBytes;
-  state.update(pk.slice(0, CryptoPublicKeyBytes));
-  mu.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
+  const tr = shake256.create({}).update(pk).xof(TRBytes);
+  mu.set(tr);
 
-  state = new SHAKE(256);
-  outputLength = CRHBytes;
-  state.update(Buffer.from(mu.slice(0, SeedBytes), 'hex'));
-  state.update(Buffer.from(m, 'hex'));
-  mu.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
+  // Convert hex message to bytes
+  const mBytes = typeof m === 'string' ? hexToBytes(m) : m;
+  const muFull = shake256.create({}).update(mu.slice(0, TRBytes)).update(mBytes).xof(CRHBytes);
+  mu.set(muFull);
 
   /* Matrix-vector multiplication; compute Az - c2^dt1 */
   polyChallenge(cp, c);
@@ -1654,16 +1336,33 @@ function cryptoSignVerify(sig, m, pk) {
   polyVecKPackW1(buf, w1);
 
   /* Call random oracle and verify challenge */
-  state = new SHAKE(256);
-  outputLength = SeedBytes;
-  state.update(Buffer.from(mu, 'hex'));
-  state.update(Buffer.from(buf, 'hex'));
-  c2.set(state.digest({ buffer: Buffer.alloc(outputLength) }));
+  const c2Hash = shake256.create({}).update(mu).update(buf).xof(SeedBytes);
+  c2.set(c2Hash);
 
-  for (i = 0; i < SeedBytes; ++i) if (c[i] !== c2[i]) return false;
-  return true;
+  // Constant-time comparison to prevent timing attacks
+  let diff = 0;
+  for (i = 0; i < SeedBytes; ++i) {
+    diff |= c[i] ^ c2[i];
+  }
+  return diff === 0;
 }
 
+/**
+ * Open a signed message (verify and extract message).
+ *
+ * This is the counterpart to cryptoSign(). It verifies the signature and
+ * extracts the original message from a signed message.
+ *
+ * @param {Uint8Array} sm - Signed message (signature || message)
+ * @param {Uint8Array} pk - Public key (must be CryptoPublicKeyBytes = 2592 bytes)
+ * @returns {Uint8Array|undefined} The original message if valid, undefined if verification fails
+ *
+ * @example
+ * const message = cryptoSignOpen(signedMsg, pk);
+ * if (message === undefined) {
+ *   throw new Error('Invalid signature');
+ * }
+ */
 function cryptoSignOpen(sm, pk) {
   if (sm.length < CryptoBytes) {
     return undefined;
@@ -1678,4 +1377,56 @@ function cryptoSignOpen(sm, pk) {
   return msg;
 }
 
-export { BETA, CRHBytes, CryptoBytes, CryptoPublicKeyBytes, CryptoSecretKeyBytes, D, ETA, GAMMA1, GAMMA2, K, KeccakF1600StatePermute, KeccakFRoundConstants, KeccakState, L, N, NRounds, OMEGA, Poly, PolyETAPackedBytes, PolyT0PackedBytes, PolyT1PackedBytes, PolyUniformETANBlocks, PolyUniformGamma1NBlocks, PolyUniformNBlocks, PolyVecHPackedBytes, PolyVecK, PolyVecL, PolyW1PackedBytes, PolyZPackedBytes, Q, QInv, ROL, SeedBytes, Shake128Rate, Shake256Rate, Stream128BlockBytes, Stream256BlockBytes, TAU, cAddQ, cryptoSign, cryptoSignKeypair, cryptoSignOpen, cryptoSignSignature, cryptoSignVerify, decompose, dilithiumShake128StreamInit, dilithiumShake256StreamInit, invNTTToMont, keccakAbsorb, keccakAbsorbOnce, keccakFinalize, keccakInit, keccakSqueeze, keccakSqueezeBlocks, load64, makeHint, montgomeryReduce, ntt, packPk, packSig, packSk, polyAdd, polyCAddQ, polyChallenge, polyChkNorm, polyDecompose, polyEtaPack, polyEtaUnpack, polyInvNTTToMont, polyMakeHint, polyNTT, polyPointWiseMontgomery, polyPower2round, polyReduce, polyShiftL, polySub, polyT0Pack, polyT0Unpack, polyT1Pack, polyT1Unpack, polyUniform, polyUniformEta, polyUniformGamma1, polyUseHint, polyVecKAdd, polyVecKCAddQ, polyVecKChkNorm, polyVecKDecompose, polyVecKInvNTTToMont, polyVecKMakeHint, polyVecKNTT, polyVecKPackW1, polyVecKPointWisePolyMontgomery, polyVecKPower2round, polyVecKReduce, polyVecKShiftL, polyVecKSub, polyVecKUniformEta, polyVecKUseHint, polyVecLAdd, polyVecLChkNorm, polyVecLInvNTTToMont, polyVecLNTT, polyVecLPointWiseAccMontgomery, polyVecLPointWisePolyMontgomery, polyVecLReduce, polyVecLUniformEta, polyVecLUniformGamma1, polyVecMatrixExpand, polyVecMatrixPointWiseMontgomery, polyW1Pack, polyZPack, polyZUnpack, power2round, reduce32, rejEta, rejUniform, shake128Absorb, shake128AbsorbOnce, shake128Finalize, shake128Init, shake128Squeeze, shake128SqueezeBlocks, shake256Absorb, shake256Finalize, shake256Init, shake256SqueezeBlocks, store64, unpackPk, unpackSig, unpackSk, useHint, zetas };
+/**
+ * Security utilities for Dilithium5
+ *
+ * IMPORTANT: JavaScript cannot guarantee secure memory zeroization.
+ * See SECURITY.md for details on limitations.
+ */
+
+/**
+ * Attempts to zero out a Uint8Array buffer.
+ *
+ * WARNING: This is a BEST-EFFORT operation. Due to JavaScript/JIT limitations:
+ * - The write may be optimized away if the buffer is unused afterward
+ * - Copies may exist in garbage collector memory
+ * - Data may have been swapped to disk
+ *
+ * For high-security applications, consider native implementations (go-qrllib)
+ * or hardware security modules.
+ *
+ * @param {Uint8Array} buffer - The buffer to zero
+ * @returns {void}
+ */
+function zeroize(buffer) {
+  if (!(buffer instanceof Uint8Array)) {
+    throw new TypeError('zeroize requires a Uint8Array');
+  }
+  // Use fill(0) for zeroing - best effort
+  buffer.fill(0);
+  // Additional volatile-like access to discourage optimization
+  // (This is a hint to the JIT, not a guarantee)
+  if (buffer.length > 0 && buffer[0] !== 0) {
+    throw new Error('zeroize failed'); // Should never happen
+  }
+}
+
+/**
+ * Checks if a buffer is all zeros.
+ * Uses constant-time comparison to avoid timing leaks.
+ *
+ * @param {Uint8Array} buffer - The buffer to check
+ * @returns {boolean} True if all bytes are zero
+ */
+function isZero(buffer) {
+  if (!(buffer instanceof Uint8Array)) {
+    throw new TypeError('isZero requires a Uint8Array');
+  }
+  let acc = 0;
+  for (let i = 0; i < buffer.length; i++) {
+    acc |= buffer[i];
+  }
+  return acc === 0;
+}
+
+export { BETA, CRHBytes, CryptoBytes, CryptoPublicKeyBytes, CryptoSecretKeyBytes, D, ETA, GAMMA1, GAMMA2, K, KeccakState, L, N, OMEGA, Poly, PolyETAPackedBytes, PolyT0PackedBytes, PolyT1PackedBytes, PolyUniformETANBlocks, PolyUniformGamma1NBlocks, PolyUniformNBlocks, PolyVecHPackedBytes, PolyVecK, PolyVecL, PolyW1PackedBytes, PolyZPackedBytes, Q, QInv, SeedBytes, Shake128Rate, Shake256Rate, Stream128BlockBytes, Stream256BlockBytes, TAU, TRBytes, cAddQ, cryptoSign, cryptoSignKeypair, cryptoSignOpen, cryptoSignSignature, cryptoSignVerify, decompose, dilithiumShake128StreamInit, dilithiumShake256StreamInit, invNTTToMont, isZero, makeHint, montgomeryReduce, ntt, packPk, packSig, packSk, polyAdd, polyCAddQ, polyChallenge, polyChkNorm, polyDecompose, polyEtaPack, polyEtaUnpack, polyInvNTTToMont, polyMakeHint, polyNTT, polyPointWiseMontgomery, polyPower2round, polyReduce, polyShiftL, polySub, polyT0Pack, polyT0Unpack, polyT1Pack, polyT1Unpack, polyUniform, polyUniformEta, polyUniformGamma1, polyUseHint, polyVecKAdd, polyVecKCAddQ, polyVecKChkNorm, polyVecKDecompose, polyVecKInvNTTToMont, polyVecKMakeHint, polyVecKNTT, polyVecKPackW1, polyVecKPointWisePolyMontgomery, polyVecKPower2round, polyVecKReduce, polyVecKShiftL, polyVecKSub, polyVecKUniformEta, polyVecKUseHint, polyVecLAdd, polyVecLChkNorm, polyVecLInvNTTToMont, polyVecLNTT, polyVecLPointWiseAccMontgomery, polyVecLPointWisePolyMontgomery, polyVecLReduce, polyVecLUniformEta, polyVecLUniformGamma1, polyVecMatrixExpand, polyVecMatrixPointWiseMontgomery, polyW1Pack, polyZPack, polyZUnpack, power2round, reduce32, rejEta, rejUniform, shake128Absorb, shake128Finalize, shake128Init, shake128SqueezeBlocks, shake256Absorb, shake256Finalize, shake256Init, shake256SqueezeBlocks, unpackPk, unpackSig, unpackSk, useHint, zeroize, zetas };
