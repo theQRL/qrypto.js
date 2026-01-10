@@ -111,8 +111,8 @@ jobs:
           NEW_MLDSA87=$(node -p "require('./packages/mldsa87/package.json').version")
           NEW_DILITHIUM5=$(node -p "require('./packages/dilithium5/package.json').version")
           echo "Detected new versions: mldsa87=$NEW_MLDSA87, dilithium5=$NEW_DILITHIUM5"
-          echo "mldsa87=$NEW_MLDSA87" >> $GITHUB_OUTPUT
-          echo "dilithium5=$NEW_DILITHIUM5" >> $GITHUB_OUTPUT
+          echo "mldsa87=$NEW_MLDSA87" >> "$GITHUB_OUTPUT"
+          echo "dilithium5=$NEW_DILITHIUM5" >> "$GITHUB_OUTPUT"
 
       - name: Publish @theqrl/mldsa87 with OIDC
         if: steps.versions-before.outputs.mldsa87 != steps.versions-after.outputs.mldsa87
