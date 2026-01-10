@@ -52,7 +52,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          persist-credentials: false
+          ssh-key: ${{ secrets.BYPASS_SSH_KEY }}
+          persist-credentials: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
