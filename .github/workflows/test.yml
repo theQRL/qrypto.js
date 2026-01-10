@@ -120,7 +120,7 @@ jobs:
           echo "Checking .npmrc locations:"
           cat ~/.npmrc 2>/dev/null || echo "  ~/.npmrc not found"
           cat .npmrc 2>/dev/null || echo "  ./.npmrc not found"
-          cat $NPM_CONFIG_USERCONFIG 2>/dev/null || echo "  NPM_CONFIG_USERCONFIG not found"
+          cat "$NPM_CONFIG_USERCONFIG" 2>/dev/null || echo "  NPM_CONFIG_USERCONFIG not found"
           echo "npm config list:"
           npm config list
 
