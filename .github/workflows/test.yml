@@ -52,8 +52,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ssh-key: ${{ secrets.BYPASS_SSH_KEY }}
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -73,11 +72,20 @@ jobs:
           echo "mldsa87=$(node -p "require('./packages/mldsa87/package.json').version")" >> "$GITHUB_OUTPUT"
           echo "dilithium5=$(node -p "require('./packages/dilithium5/package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: Configure Git to use SSH
+      # --- MANUAL SSH SETUP START ---
+      - name: Setup SSH Agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.BYPASS_SSH_KEY }}
+
+      - name: Configure Git for SSH
         run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin git@github.com:${{ github.repository }}.git
+      # --- MANUAL SSH SETUP END ---
 
       - name: Debug Git Connection
         run: |
@@ -91,7 +99,8 @@ jobs:
           GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
-        run: ./node_modules/.bin/multi-semantic-release
+        # Force semantic-release to use the SSH URL
+        run: ./node_modules/.bin/multi-semantic-release --repository-url git@github.com:${{ github.repository }}.git
 
       - name: Get new versions
         id: versions-after
