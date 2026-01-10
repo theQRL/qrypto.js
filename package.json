@@ -12,6 +12,6 @@
     "packages/*"
   ],
   "devDependencies": {
-    "turbo": "^1.11.3"
+    "turbo": "^2.7.3"
   }
 }
