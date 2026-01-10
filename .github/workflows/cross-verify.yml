@@ -46,7 +46,7 @@ jobs:
       - name: Generate go-qrllib Dilithium5 signature
         run: |
           cd /tmp/go-qrllib
-          go run $GITHUB_WORKSPACE/.github/cross-verify/dilithium5_sign_goqrllib.go
+          go run "$GITHUB_WORKSPACE/.github/cross-verify/dilithium5_sign_goqrllib.go"
 
       - name: Verify go-qrllib signature with qrypto.js
         run: |
@@ -92,7 +92,7 @@ jobs:
       - name: Generate go-qrllib ML-DSA-87 signature
         run: |
           cd /tmp/go-qrllib
-          go run $GITHUB_WORKSPACE/.github/cross-verify/mldsa87_sign_goqrllib.go
+          go run "$GITHUB_WORKSPACE/.github/cross-verify/mldsa87_sign_goqrllib.go"
 
       - name: Verify go-qrllib signature with qrypto.js
         run: |
@@ -129,7 +129,7 @@ jobs:
         run: |
           cd /tmp/dilithium-ref/ref
           gcc -o /tmp/verify_dilithium5 -DDILITHIUM_MODE=5 \
-            $GITHUB_WORKSPACE/.github/cross-verify/dilithium5_verify_ref.c \
+            "$GITHUB_WORKSPACE/.github/cross-verify/dilithium5_verify_ref.c" \
             sign.c packing.c polyvec.c poly.c ntt.c reduce.c \
             rounding.c symmetric-shake.c fips202.c randombytes.c -I. -O2
 
@@ -143,7 +143,7 @@ jobs:
         run: |
           cd /tmp/dilithium-ref/ref
           gcc -o /tmp/sign_dilithium5_ref -DDILITHIUM_MODE=5 \
-            $GITHUB_WORKSPACE/.github/cross-verify/dilithium5_sign_ref.c \
+            "$GITHUB_WORKSPACE/.github/cross-verify/dilithium5_sign_ref.c" \
             sign.c packing.c polyvec.c poly.c ntt.c reduce.c \
             rounding.c symmetric-shake.c fips202.c randombytes.c -I. -O2
 
@@ -184,7 +184,7 @@ jobs:
         run: |
           cd /tmp/mldsa-ref/ref
           gcc -o /tmp/verify_mldsa87 -DDILITHIUM_MODE=5 \
-            $GITHUB_WORKSPACE/.github/cross-verify/mldsa87_verify_ref.c \
+            "$GITHUB_WORKSPACE/.github/cross-verify/mldsa87_verify_ref.c" \
             sign.c packing.c polyvec.c poly.c ntt.c reduce.c \
             rounding.c symmetric-shake.c fips202.c randombytes.c -I. -O2
 
@@ -198,7 +198,7 @@ jobs:
         run: |
           cd /tmp/mldsa-ref/ref
           gcc -o /tmp/sign_mldsa87_ref -DDILITHIUM_MODE=5 \
-            $GITHUB_WORKSPACE/.github/cross-verify/mldsa87_sign_ref.c \
+            "$GITHUB_WORKSPACE/.github/cross-verify/mldsa87_sign_ref.c" \
             sign.c packing.c polyvec.c poly.c ntt.c reduce.c \
             rounding.c symmetric-shake.c fips202.c randombytes.c -I. -O2
 
