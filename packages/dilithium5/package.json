@@ -10,7 +10,8 @@
   "author": "QRL contributors <info@theqrl.org> (https://theqrl.org)",
   "homepage": "https://github.com/theQRL/qrypto.js#readme",
   "license": "MIT",
-  "main": "src/index.js",
+  "main": "dist/cjs/dilithium5.js",
+  "module": "dist/mjs/dilithium5.js",
   "types": "src/index.d.ts",
   "directories": {
     "lib": "src",

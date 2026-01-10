@@ -10,7 +10,8 @@
   "author": "QRL contributors <info@theqrl.org> (https://theqrl.org)",
   "homepage": "https://github.com/theQRL/qrypto.js#readme",
   "license": "MIT",
-  "main": "src/index.js",
+  "main": "dist/cjs/mldsa87.js",
+  "module": "dist/mjs/mldsa87.js",
   "types": "src/index.d.ts",
   "directories": {
     "lib": "src",
