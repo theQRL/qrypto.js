@@ -2,11 +2,11 @@ name: Lint GitHub Actions
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
     paths:
       - '.github/workflows/**'
   pull_request:
-    branches: [main, master]
+    branches: [main]
     paths:
       - '.github/workflows/**'
   workflow_dispatch:
@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run actionlint
         uses: raven-actions/actionlint@v2
