@@ -20,7 +20,8 @@
   "files": [
     "dist",
     "src/index.d.ts",
-    "LICENSE"
+    "LICENSE",
+    "README.md"
   ],
   "publishConfig": {
     "access": "public"
