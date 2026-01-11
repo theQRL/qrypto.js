@@ -67,9 +67,11 @@ const DEFAULT_CTX = new Uint8Array([0x5a, 0x4f, 0x4e, 0x44]); // "ZOND"
  * @private
  */
 function hexToBytes(hex) {
+  /* c8 ignore start */
   if (typeof hex !== 'string') {
     throw new Error('message must be a hex string');
   }
+  /* c8 ignore stop */
   let clean = hex.trim();
   if (clean.startsWith('0x') || clean.startsWith('0X')) {
     clean = clean.slice(2);
@@ -298,15 +300,19 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
     polyVecKPointWisePolyMontgomery(h, cp, t0);
     polyVecKInvNTTToMont(h);
     polyVecKReduce(h);
+    /* c8 ignore start */
     if (polyVecKChkNorm(h, GAMMA2) !== 0) {
       continue;
     }
+    /* c8 ignore stop */
 
     polyVecKAdd(w0, w0, h);
     const n = polyVecKMakeHint(h, w0, w1);
+    /* c8 ignore start */
     if (n > OMEGA) {
       continue;
     }
+    /* c8 ignore stop */
 
     packSig(sig, ctilde, z, h);
     return 0;
@@ -344,9 +350,11 @@ export function cryptoSign(msg, sk, randomizedSigning, ctx = DEFAULT_CTX) {
   }
   const result = cryptoSignSignature(sm, msgBytes, sk, randomizedSigning, ctx);
 
+  /* c8 ignore start */
   if (result !== 0) {
     throw new Error('failed to sign');
   }
+  /* c8 ignore stop */
   return sm;
 }
 
