@@ -16,6 +16,7 @@
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
+    "conventional-changelog-conventionalcommits": "^9.1.0",
     "multi-semantic-release": "^3.0.2",
     "turbo": "^2.7.3"
   }
