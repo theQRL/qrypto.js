@@ -1,3 +1,10 @@
+## @theqrl/dilithium5 [1.0.4](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.0.3...@theqrl/dilithium5@1.0.4) (2026-01-11)
+
+
+### Bug Fixes
+
+* bump deps ([d5ada0c](https://github.com/theQRL/qrypto.js/commit/d5ada0c6205fcab21966426cc3b100f734261505))
+
 ## @theqrl/dilithium5 [1.0.3](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.0.2...@theqrl/dilithium5@1.0.3) (2026-01-10)
 
 
