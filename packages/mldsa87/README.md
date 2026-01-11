@@ -81,7 +81,7 @@ Generate a keypair from a seed.
 
 Sign a message (combined mode: returns signature || message).
 
-- `message`: `Uint8Array` - message to sign
+- `message`: `Uint8Array` or `string` - message bytes; if `string`, it must be hex only (optional `0x`, even length). Plain-text strings are not accepted.
 - `sk`: `Uint8Array(4896)` - secret key
 - `randomized`: `boolean` - `true` for hedged signing, `false` for deterministic
 - `context`: `Uint8Array` (optional) - context string, 0-255 bytes. Default: `"ZOND"`
@@ -101,7 +101,7 @@ Verify and extract message from signed message.
 Create a detached signature.
 
 - `sig`: `Uint8Array(4627)` - output buffer for signature
-- `message`: `Uint8Array` - message to sign
+- `message`: `Uint8Array` or `string` - message bytes; if `string`, it must be hex only (optional `0x`, even length). Plain-text strings are not accepted.
 - `sk`: `Uint8Array(4896)` - secret key
 - `randomized`: `boolean` - `true` for hedged, `false` for deterministic
 - `context`: `Uint8Array` (optional) - context string, 0-255 bytes
@@ -112,10 +112,12 @@ Create a detached signature.
 Verify a detached signature.
 
 - `sig`: `Uint8Array(4627)` - signature to verify
-- `message`: `Uint8Array` - original message
+- `message`: `Uint8Array` or `string` - original message bytes; if `string`, it must be hex only (optional `0x`, even length). Plain-text strings are not accepted.
 - `pk`: `Uint8Array(2592)` - public key
 - `context`: `Uint8Array` (optional) - must match signing context
 - Returns: `true` if valid, `false` otherwise
+
+**Note:** To sign or verify plain text, convert it to bytes (e.g., `new TextEncoder().encode('Hello')`). String inputs are interpreted as hex only.
 
 #### `zeroize(buffer)`
 
