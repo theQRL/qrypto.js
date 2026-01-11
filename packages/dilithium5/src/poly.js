@@ -152,6 +152,8 @@ export function polyUniform(a, seed, nonce) {
 
   let ctr = rejUniform(a.coeffs, 0, N, buf, bufLen);
 
+  // Note: With current parameters, needing extra blocks is vanishingly unlikely.
+  /* c8 ignore start */
   while (ctr < N) {
     off = bufLen % 3;
     for (let i = 0; i < off; ++i) buf[i] = buf[bufLen - off + i];
@@ -160,6 +162,7 @@ export function polyUniform(a, seed, nonce) {
     bufLen = Stream128BlockBytes + off;
     ctr += rejUniform(a.coeffs, ctr, N - ctr, buf, bufLen);
   }
+  /* c8 ignore stop */
 }
 
 export function rejEta(aP, aOffset, len, buf, bufLen) {
@@ -253,10 +256,13 @@ export function polyChallenge(cP, seed) {
   }
   for (let i = N - TAU; i < N; ++i) {
     do {
+      // Note: Re-squeezing here is extremely unlikely with TAU=60.
+      /* c8 ignore start */
       if (pos >= Shake256Rate) {
         shake256SqueezeBlocks(buf, 0, 1, state);
         pos = 0;
       }
+      /* c8 ignore stop */
 
       b = buf[pos++];
     } while (b > i);

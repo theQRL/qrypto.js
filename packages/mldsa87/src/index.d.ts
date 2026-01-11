@@ -58,7 +58,7 @@ export function cryptoSignKeypair(
 /**
  * Create a signature for a message with optional context
  * @param sig - Output buffer for signature (must be CryptoBytes length minimum)
- * @param m - Message to sign (hex string or Uint8Array)
+ * @param m - Message to sign (hex string or Uint8Array; strings are parsed as hex only)
  * @param sk - Secret key
  * @param randomizedSigning - If true, use random nonce; if false, deterministic
  * @param ctx - Optional context string (max 255 bytes, defaults to "ZOND")
@@ -92,7 +92,7 @@ export function cryptoSign(
 /**
  * Verify a signature with optional context
  * @param sig - Signature to verify
- * @param m - Message that was signed (hex string or Uint8Array)
+ * @param m - Message that was signed (hex string or Uint8Array; strings are parsed as hex only)
  * @param pk - Public key
  * @param ctx - Optional context string (max 255 bytes, defaults to "ZOND")
  * @returns true if signature is valid, false otherwise

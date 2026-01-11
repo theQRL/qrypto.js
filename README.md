@@ -133,7 +133,7 @@ cryptoSignOpen(signedMessage, pk, [context]) → Uint8Array | undefined
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `message` | `Uint8Array` or `string` | Message (Uint8Array or hex string, optional `0x` prefix, even length) |
+| `message` | `Uint8Array` or `string` | Message bytes; if `string`, it must be hex only (optional `0x`, even length). Plain-text strings are not accepted. |
 | `sk` | `Uint8Array` | Secret key (4896 bytes) |
 | `randomized` | `boolean` | `true` for hedged signing, `false` for deterministic |
 | `context` | `Uint8Array` | (ML-DSA only) Context string, 0-255 bytes. Default: "ZOND" |
@@ -157,7 +157,7 @@ cryptoSignVerify(sig, message, pk, [context]) → boolean
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `sig` | `Uint8Array` | Output buffer for signature / signature to verify (>= `CryptoBytes`) |
-| `message` | `Uint8Array` or `string` | Message (Uint8Array or hex string, optional `0x` prefix, even length) |
+| `message` | `Uint8Array` or `string` | Message bytes; if `string`, it must be hex only (optional `0x`, even length). Plain-text strings are not accepted. |
 | `sk` | `Uint8Array` | Secret key (4896 bytes) |
 | `pk` | `Uint8Array` | Public key (2592 bytes) |
 | `randomized` | `boolean` | `true` for hedged, `false` for deterministic |
@@ -166,6 +166,8 @@ cryptoSignVerify(sig, message, pk, [context]) → boolean
 **Returns:**
 - `cryptoSignSignature`: `0` on success
 - `cryptoSignVerify`: `true` if valid, `false` otherwise
+
+**Note:** If you need to sign human-readable text, convert it to bytes first (e.g., `new TextEncoder().encode('Hello')`). String inputs are interpreted as hex only.
 
 ### Security Utilities
 
@@ -234,7 +236,7 @@ This library is browser-compatible. It uses native `Uint8Array` throughout (no N
     cryptoSignOpen,
     CryptoPublicKeyBytes,
     CryptoSecretKeyBytes,
-  } from 'https://cdn.example.com/@theqrl/mldsa87/dist/mjs/mldsa87.js';
+  } from 'https://cdn.jsdelivr.net/npm/@theqrl/mldsa87@1.0.4/dist/mjs/mldsa87.js';
 
   const pk = new Uint8Array(CryptoPublicKeyBytes);
   const sk = new Uint8Array(CryptoSecretKeyBytes);
