@@ -1,6 +1,6 @@
 'use strict';
 
-var sha3 = require('@noble/hashes/sha3');
+var sha3_js = require('@noble/hashes/sha3.js');
 var pkg = require('randombytes');
 
 const Shake128Rate = 168;
@@ -85,7 +85,7 @@ class KeccakState {
 // SHAKE-128 functions
 
 function shake128Init(state) {
-  state.hasher = sha3.shake128.create({});
+  state.hasher = sha3_js.shake128.create({});
   state.finalized = false;
 }
 
@@ -107,7 +107,7 @@ function shake128SqueezeBlocks(out, outputOffset, nBlocks, state) {
 // SHAKE-256 functions
 
 function shake256Init(state) {
-  state.hasher = sha3.shake256.create({});
+  state.hasher = sha3_js.shake256.create({});
   state.finalized = false;
 }
 
@@ -1081,7 +1081,7 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
   const seed = passedSeed || randomBytes(SeedBytes);
 
   const outputLength = 2 * SeedBytes + CRHBytes;
-  const seedBuf = sha3.shake256.create({}).update(seed).xof(outputLength);
+  const seedBuf = sha3_js.shake256.create({}).update(seed).xof(outputLength);
   const rho = seedBuf.slice(0, SeedBytes);
   const rhoPrime = seedBuf.slice(SeedBytes, SeedBytes + CRHBytes);
   const key = seedBuf.slice(SeedBytes + CRHBytes);
@@ -1110,7 +1110,7 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
   packPk(pk, rho, t1);
 
   // Compute H(rho, t1) and write secret key
-  const tr = sha3.shake256.create({}).update(pk).xof(TRBytes);
+  const tr = sha3_js.shake256.create({}).update(pk).xof(TRBytes);
   packSk(sk, rho, tr, key, t0, s1, s2);
 
   return seed;
@@ -1160,12 +1160,12 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
 
   // Convert hex message to bytes
   const mBytes = typeof m === 'string' ? hexToBytes(m) : m;
-  const mu = sha3.shake256.create({}).update(tr).update(mBytes).xof(CRHBytes);
+  const mu = sha3_js.shake256.create({}).update(tr).update(mBytes).xof(CRHBytes);
 
   if (randomizedSigning) {
     rhoPrime = new Uint8Array(randomBytes(CRHBytes));
   } else {
-    rhoPrime = sha3.shake256.create({}).update(key).update(mu).xof(CRHBytes);
+    rhoPrime = sha3_js.shake256.create({}).update(key).update(mu).xof(CRHBytes);
   }
 
   polyVecMatrixExpand(mat, rho);
@@ -1187,7 +1187,7 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
     polyVecKDecompose(w1, w0, w1);
     polyVecKPackW1(sig, w1);
 
-    const cHash = sha3.shake256
+    const cHash = sha3_js.shake256
       .create({})
       .update(mu)
       .update(sig.slice(0, K * PolyW1PackedBytes))
@@ -1308,12 +1308,12 @@ function cryptoSignVerify(sig, m, pk) {
   }
 
   /* Compute CRH(H(rho, t1), msg) */
-  const tr = sha3.shake256.create({}).update(pk).xof(TRBytes);
+  const tr = sha3_js.shake256.create({}).update(pk).xof(TRBytes);
   mu.set(tr);
 
   // Convert hex message to bytes
   const mBytes = typeof m === 'string' ? hexToBytes(m) : m;
-  const muFull = sha3.shake256.create({}).update(mu.slice(0, TRBytes)).update(mBytes).xof(CRHBytes);
+  const muFull = sha3_js.shake256.create({}).update(mu.slice(0, TRBytes)).update(mBytes).xof(CRHBytes);
   mu.set(muFull);
 
   /* Matrix-vector multiplication; compute Az - c2^dt1 */
@@ -1338,7 +1338,7 @@ function cryptoSignVerify(sig, m, pk) {
   polyVecKPackW1(buf, w1);
 
   /* Call random oracle and verify challenge */
-  const c2Hash = sha3.shake256.create({}).update(mu).update(buf).xof(SeedBytes);
+  const c2Hash = sha3_js.shake256.create({}).update(mu).update(buf).xof(SeedBytes);
   c2.set(c2Hash);
 
   // Constant-time comparison to prevent timing attacks

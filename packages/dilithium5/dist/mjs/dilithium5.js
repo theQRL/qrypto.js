@@ -1,4 +1,4 @@
-import { shake128, shake256 } from '@noble/hashes/sha3';
+import { shake128, shake256 } from '@noble/hashes/sha3.js';
 import pkg from 'randombytes';
 
 const Shake128Rate = 168;

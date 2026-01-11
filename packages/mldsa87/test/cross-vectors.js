@@ -1,4 +1,3 @@
-/* eslint-disable import/prefer-default-export */
 export const MLDSA87_VECTORS = [
   {
     rawSeed: '0000000000000000000000000000000000000000000000000000000000000000',

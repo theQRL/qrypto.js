@@ -3,7 +3,7 @@
  * Provides streaming XOF (extendable output function) interface
  */
 
-import { shake128 as nobleShake128, shake256 as nobleShake256 } from '@noble/hashes/sha3';
+import { shake128 as nobleShake128, shake256 as nobleShake256 } from '@noble/hashes/sha3.js';
 import { Shake128Rate, Shake256Rate } from './const.js';
 
 /**
