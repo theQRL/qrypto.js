@@ -1,3 +1,10 @@
+## @theqrl/mldsa87 [1.0.5](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@1.0.4...@theqrl/mldsa87@1.0.5) (2026-01-11)
+
+### Bug Fixes
+
+* harmonise approach to 0x in hexseeds & coverage ([18fe86b](https://github.com/theQRL/qrypto.js/commit/18fe86bbe10fe883914777926771f9f968216e68))
+* validate cryptoSign message type ([ff5cdad](https://github.com/theQRL/qrypto.js/commit/ff5cdad599ab4e5059eec1397c99171111124a0c))
+
 ## @theqrl/mldsa87 [1.0.4](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@1.0.3...@theqrl/mldsa87@1.0.4) (2026-01-11)
 
 
