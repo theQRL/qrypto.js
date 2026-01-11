@@ -71,6 +71,23 @@ describe('cryptoSign', () => {
       expect(Buffer.from(sigMessage, 'binary').toString('hex')).to.equal(vector.derivedSig + vector.msg);
     });
   }
+
+  it('should accept hex string messages with default context', () => {
+    const vector = TEST_VECTORS[0];
+    const sk = Buffer.from(vector.derivedSK, 'hex');
+    const sigMessage = cryptoSign(vector.msg, sk, false);
+
+    expect(Buffer.from(sigMessage, 'binary').toString('hex')).to.equal(vector.derivedSig + vector.msg);
+  });
+
+  it('should reject invalid hex string messages', () => {
+    const vector = TEST_VECTORS[0];
+    const sk = Buffer.from(vector.derivedSK, 'hex');
+
+    expect(() => {
+      cryptoSign('0xabc', sk, false);
+    }).to.throw('hex string must have an even length');
+  });
 });
 
 describe('cryptoSignOpen', () => {

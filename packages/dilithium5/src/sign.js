@@ -295,7 +295,7 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
  * This is the combined sign operation that produces a "signed message" containing
  * both the signature and the original message (signature || message).
  *
- * @param {Uint8Array} msg - Message to sign
+ * @param {string|Uint8Array} msg - Message to sign (hex string, optional 0x prefix, or Uint8Array)
  * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
  * @param {boolean} randomizedSigning - If true, use random nonce; if false, deterministic
  * @returns {Uint8Array} Signed message (CryptoBytes + msg.length bytes)
@@ -306,12 +306,17 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
  * // signedMsg contains: signature (4595 bytes) || message
  */
 export function cryptoSign(msg, sk, randomizedSigning) {
-  const sm = new Uint8Array(CryptoBytes + msg.length);
-  const mLen = msg.length;
-  for (let i = 0; i < mLen; ++i) {
-    sm[CryptoBytes + mLen - 1 - i] = msg[mLen - 1 - i];
+  const msgBytes = messageToBytes(msg);
+  if (!msgBytes) {
+    throw new Error('message must be Uint8Array or hex string');
   }
-  const result = cryptoSignSignature(sm, msg, sk, randomizedSigning);
+
+  const sm = new Uint8Array(CryptoBytes + msgBytes.length);
+  const mLen = msgBytes.length;
+  for (let i = 0; i < mLen; ++i) {
+    sm[CryptoBytes + mLen - 1 - i] = msgBytes[mLen - 1 - i];
+  }
+  const result = cryptoSignSignature(sm, msgBytes, sk, randomizedSigning);
 
   if (result !== 0) {
     throw new Error('failed to sign');

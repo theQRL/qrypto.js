@@ -133,7 +133,7 @@ cryptoSignOpen(signedMessage, pk, [context]) → Uint8Array | undefined
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `message` | `Uint8Array` | Message to sign |
+| `message` | `Uint8Array` or `string` | Message (Uint8Array or hex string, optional `0x` prefix, even length) |
 | `sk` | `Uint8Array` | Secret key (4896 bytes) |
 | `randomized` | `boolean` | `true` for hedged signing, `false` for deterministic |
 | `context` | `Uint8Array` | (ML-DSA only) Context string, 0-255 bytes. Default: "ZOND" |
