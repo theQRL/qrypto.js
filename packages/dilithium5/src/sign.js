@@ -1,5 +1,5 @@
 import pkg from 'randombytes';
-import { shake256 } from '@noble/hashes/sha3';
+import { shake256 } from '@noble/hashes/sha3.js';
 
 import {
   PolyVecK,
