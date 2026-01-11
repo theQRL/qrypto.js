@@ -1,15 +1,17 @@
 # qrypto.js
 
+[![codecov](https://codecov.io/gh/theQRL/qrypto.js/graph/badge.svg)](https://codecov.io/gh/theQRL/qrypto.js)
+
 Post-quantum cryptographic signature library for JavaScript/TypeScript.
 
 This monorepo contains implementations of quantum-resistant digital signature algorithms for the QRL (Quantum Resistant Ledger) ecosystem. Works in both Node.js and browsers.
 
 ## Packages
 
-| Package | Description | Standard | Signature Size |
-|---------|-------------|----------|----------------|
-| [@theqrl/dilithium5](./packages/dilithium5) | Dilithium5 signatures | CRYSTALS-Dilithium Round 3 | 4595 bytes |
-| [@theqrl/mldsa87](./packages/mldsa87) | ML-DSA-87 signatures | FIPS 204 (final) | 4627 bytes |
+| Package | Description | Standard | Signature Size | Version |
+|---------|-------------|----------|----------------|---------|
+| [@theqrl/dilithium5](./packages/dilithium5) | Dilithium5 signatures | CRYSTALS-Dilithium Round 3 | 4595 bytes | [![npm version](https://img.shields.io/npm/v/@theqrl/dilithium5.svg)](https://www.npmjs.com/package/@theqrl/dilithium5) |
+| [@theqrl/mldsa87](./packages/mldsa87) | ML-DSA-87 signatures | FIPS 204 (final) | 4627 bytes | [![npm version](https://img.shields.io/npm/v/@theqrl/mldsa87.svg)](https://www.npmjs.com/package/@theqrl/mldsa87) |
 
 ## Installation
 
