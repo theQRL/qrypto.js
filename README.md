@@ -133,7 +133,7 @@ cryptoSignOpen(signedMessage, pk, [context]) → Uint8Array | undefined
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `message` | `Uint8Array` | Message to sign |
+| `message` | `Uint8Array` or `string` | Message (Uint8Array or hex string, optional `0x` prefix, even length) |
 | `sk` | `Uint8Array` | Secret key (4896 bytes) |
 | `randomized` | `boolean` | `true` for hedged signing, `false` for deterministic |
 | `context` | `Uint8Array` | (ML-DSA only) Context string, 0-255 bytes. Default: "ZOND" |
@@ -156,8 +156,8 @@ cryptoSignVerify(sig, message, pk, [context]) → boolean
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `sig` | `Uint8Array` | Output buffer for signature / signature to verify |
-| `message` | `Uint8Array` or `string` | Message (Uint8Array or hex string) |
+| `sig` | `Uint8Array` | Output buffer for signature / signature to verify (>= `CryptoBytes`) |
+| `message` | `Uint8Array` or `string` | Message (Uint8Array or hex string, optional `0x` prefix, even length) |
 | `sk` | `Uint8Array` | Secret key (4896 bytes) |
 | `pk` | `Uint8Array` | Public key (2592 bytes) |
 | `randomized` | `boolean` | `true` for hedged, `false` for deterministic |

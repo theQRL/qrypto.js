@@ -56,7 +56,7 @@ export function cryptoSignKeypair(
 /**
  * Create a signature for a message
  * @param sig - Output buffer for signature (must be CryptoBytes length minimum)
- * @param m - Message to sign (hex-encoded string)
+ * @param m - Message to sign (hex string or Uint8Array)
  * @param sk - Secret key
  * @param randomizedSigning - If true, use random nonce; if false, deterministic
  * @returns 0 on success
@@ -64,7 +64,7 @@ export function cryptoSignKeypair(
  */
 export function cryptoSignSignature(
   sig: Uint8Array,
-  m: string,
+  m: Uint8Array | string,
   sk: Uint8Array,
   randomizedSigning: boolean
 ): number;
@@ -78,7 +78,7 @@ export function cryptoSignSignature(
  * @throws Error if signing fails
  */
 export function cryptoSign(
-  msg: Uint8Array,
+  msg: Uint8Array | string,
   sk: Uint8Array,
   randomizedSigning: boolean
 ): Uint8Array;
@@ -86,13 +86,13 @@ export function cryptoSign(
 /**
  * Verify a signature
  * @param sig - Signature to verify
- * @param m - Message that was signed (hex-encoded string)
+ * @param m - Message that was signed (hex string or Uint8Array)
  * @param pk - Public key
  * @returns true if signature is valid, false otherwise
  */
 export function cryptoSignVerify(
   sig: Uint8Array,
-  m: string,
+  m: Uint8Array | string,
   pk: Uint8Array
 ): boolean;
 

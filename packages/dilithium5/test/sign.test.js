@@ -41,6 +41,22 @@ describe('cryptoSign', () => {
 
     expect(Buffer.from(sigMessage, 'binary').toString('hex')).to.equal(SIGNATURE + MESSAGE);
   });
+
+  it('should accept hex string messages', () => {
+    const sk = Buffer.from(SK, 'hex');
+
+    const sigMessage = cryptoSign(MESSAGE, sk, false);
+
+    expect(Buffer.from(sigMessage, 'binary').toString('hex')).to.equal(SIGNATURE + MESSAGE);
+  });
+
+  it('should reject invalid hex string messages', () => {
+    const sk = Buffer.from(SK, 'hex');
+
+    expect(() => {
+      cryptoSign('0xabc', sk, false);
+    }).to.throw('hex string must have an even length');
+  });
 });
 
 describe('cryptoSignOpen', () => {
@@ -72,6 +88,42 @@ describe('cryptoSignSignature', () => {
     expect(() => {
       cryptoSignSignature(sig, msg, sk, false);
     }).to.throw('invalid sk length');
+  });
+
+  it('should throw on short signature buffer', () => {
+    const sk = Buffer.from(SK, 'hex');
+    const msg = Buffer.from(MESSAGE, 'hex');
+    const sig = new Uint8Array(CryptoBytes - 1);
+
+    expect(() => {
+      cryptoSignSignature(sig, msg, sk, false);
+    }).to.throw('sig must be at least');
+  });
+
+  it('should reject invalid hex message strings', () => {
+    const sk = Buffer.from(SK, 'hex');
+    const sig = new Uint8Array(CryptoBytes);
+
+    expect(() => {
+      cryptoSignSignature(sig, '0xabc', sk, false);
+    }).to.throw('hex string must have an even length');
+  });
+
+  it('should accept 0x-prefixed hex message strings', () => {
+    const sk = Buffer.from(SK, 'hex');
+    const sig = new Uint8Array(CryptoBytes);
+
+    cryptoSignSignature(sig, `0x${MESSAGE}`, sk, false);
+    expect(Buffer.from(sig, 'binary').toString('hex')).to.equal(SIGNATURE);
+  });
+});
+
+describe('cryptoSignVerify', () => {
+  it('should return false for invalid hex message strings', () => {
+    const sig = Buffer.from(SIGNATURE, 'hex');
+    const pk = Buffer.from(PK, 'hex');
+
+    expect(cryptoSignVerify(sig, 'xyz', pk)).to.equal(false);
   });
 });
 
