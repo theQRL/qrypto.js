@@ -1,5 +1,6 @@
 import pkg from 'randombytes';
 import { shake256 } from '@noble/hashes/sha3.js';
+import { hexToBytes as nobleHexToBytes } from '@noble/hashes/utils.js';
 
 import {
   PolyVecK,
@@ -51,18 +52,36 @@ import { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } from './packin
 const randomBytes = pkg;
 
 /**
- * Convert hex string to Uint8Array
- * @param {string} hex - Hex-encoded string
- * @returns {Uint8Array} Decoded bytes
+ * Convert hex string to Uint8Array with strict validation.
+ * @param {string} hex - Hex string (optional 0x prefix, even length).
+ * @returns {Uint8Array} Decoded bytes.
  * @private
  */
 function hexToBytes(hex) {
-  const len = hex.length / 2;
-  const result = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    result[i] = parseInt(hex.substr(i * 2, 2), 16);
+  if (typeof hex !== 'string') {
+    throw new Error('message must be a hex string');
   }
-  return result;
+  let clean = hex.trim();
+  if (clean.startsWith('0x') || clean.startsWith('0X')) {
+    clean = clean.slice(2);
+  }
+  if (clean.length % 2 !== 0) {
+    throw new Error('hex string must have an even length');
+  }
+  if (!/^[0-9a-fA-F]*$/.test(clean)) {
+    throw new Error('hex string contains non-hex characters');
+  }
+  return nobleHexToBytes(clean);
+}
+
+function messageToBytes(message) {
+  if (typeof message === 'string') {
+    return hexToBytes(message);
+  }
+  if (message instanceof Uint8Array) {
+    return message;
+  }
+  return null;
 }
 
 /**
@@ -154,7 +173,7 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
  * Uses the Dilithium-5 (Round 3) signing algorithm with rejection sampling.
  *
  * @param {Uint8Array} sig - Output buffer for signature (must be at least CryptoBytes = 4595 bytes)
- * @param {string|Uint8Array} m - Message to sign (hex string or Uint8Array)
+ * @param {string|Uint8Array} m - Message to sign (hex string, optional 0x prefix, or Uint8Array)
  * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
  * @param {boolean} randomizedSigning - If true, use random nonce for hedged signing.
  *   If false, use deterministic nonce derived from message and key.
@@ -166,8 +185,16 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
  * cryptoSignSignature(sig, message, sk, false);
  */
 export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
+  if (!sig || sig.length < CryptoBytes) {
+    throw new Error(`sig must be at least ${CryptoBytes} bytes`);
+  }
   if (sk.length !== CryptoSecretKeyBytes) {
     throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
+  }
+
+  const mBytes = messageToBytes(m);
+  if (!mBytes) {
+    throw new Error('message must be Uint8Array or hex string');
   }
 
   const rho = new Uint8Array(SeedBytes);
@@ -190,8 +217,6 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
 
   unpackSk(rho, tr, key, t0, s1, s2, sk);
 
-  // Convert hex message to bytes
-  const mBytes = typeof m === 'string' ? hexToBytes(m) : m;
   const mu = shake256.create({}).update(tr).update(mBytes).xof(CRHBytes);
 
   if (randomizedSigning) {
@@ -300,7 +325,7 @@ export function cryptoSign(msg, sk, randomizedSigning) {
  * Performs constant-time verification to prevent timing side-channel attacks.
  *
  * @param {Uint8Array} sig - Signature to verify (must be CryptoBytes = 4595 bytes)
- * @param {string|Uint8Array} m - Message that was signed (hex string or Uint8Array)
+ * @param {string|Uint8Array} m - Message that was signed (hex string, optional 0x prefix, or Uint8Array)
  * @param {Uint8Array} pk - Public key (must be CryptoPublicKeyBytes = 2592 bytes)
  * @returns {boolean} true if signature is valid, false otherwise
  *
@@ -343,8 +368,15 @@ export function cryptoSignVerify(sig, m, pk) {
   const tr = shake256.create({}).update(pk).xof(TRBytes);
   mu.set(tr);
 
-  // Convert hex message to bytes
-  const mBytes = typeof m === 'string' ? hexToBytes(m) : m;
+  let mBytes;
+  try {
+    mBytes = messageToBytes(m);
+  } catch {
+    return false;
+  }
+  if (!mBytes) {
+    return false;
+  }
   const muFull = shake256.create({}).update(mu.slice(0, TRBytes)).update(mBytes).xof(CRHBytes);
   mu.set(muFull);
 

@@ -121,6 +121,47 @@ describe('cryptoSignSignature', () => {
       cryptoSignSignature(sig, msg, sk, false, ctx);
     }).to.throw('invalid sk length');
   });
+
+  it('should throw on short signature buffer', () => {
+    const v0 = TEST_VECTORS[0];
+    const sk = Buffer.from(v0.derivedSK, 'hex');
+    const msg = Buffer.from(v0.msg, 'hex');
+    const sig = new Uint8Array(CryptoBytes - 1);
+    const ctx = Buffer.from(v0.ctx, 'hex');
+
+    expect(() => {
+      cryptoSignSignature(sig, msg, sk, false, ctx);
+    }).to.throw('sig must be at least');
+  });
+
+  it('should reject invalid hex message strings', () => {
+    const v0 = TEST_VECTORS[0];
+    const sk = Buffer.from(v0.derivedSK, 'hex');
+    const sig = new Uint8Array(CryptoBytes);
+
+    expect(() => {
+      cryptoSignSignature(sig, '0xabc', sk, false);
+    }).to.throw('hex string must have an even length');
+  });
+
+  it('should accept 0x-prefixed hex message strings', () => {
+    const v0 = TEST_VECTORS[0];
+    const sk = Buffer.from(v0.derivedSK, 'hex');
+    const sig = new Uint8Array(CryptoBytes);
+
+    cryptoSignSignature(sig, `0x${v0.msg}`, sk, false);
+    expect(Buffer.from(sig, 'binary').toString('hex')).to.equal(v0.derivedSig);
+  });
+});
+
+describe('cryptoSignVerify invalid hex message', () => {
+  it('should return false', () => {
+    const v0 = TEST_VECTORS[0];
+    const sig = Buffer.from(v0.derivedSig, 'hex');
+    const pk = Buffer.from(v0.derivedPK, 'hex');
+
+    expect(cryptoSignVerify(sig, 'xyz', pk)).to.equal(false);
+  });
 });
 
 describe('signingErrors', () => {
