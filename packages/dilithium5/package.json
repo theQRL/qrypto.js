@@ -35,6 +35,7 @@
     "build": "rollup src/index.js --file ./dist/cjs/dilithium5.js --format cjs && rollup src/index.js --file ./dist/mjs/dilithium5.js --format esm && ./fixup",
     "lint-check": "eslint 'src/**/*.js' 'test/**/*.js'",
     "lint": "eslint --fix 'src/**/*.js' 'test/**/*.js'",
+    "coverage": "c8 npm run test",
     "report-coverage": "c8 --reporter=text-lcov npm run test > coverage.lcov"
   },
   "bugs": {
