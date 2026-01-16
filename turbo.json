@@ -5,6 +5,7 @@
     "test": {},
     "lint": {},
     "lint-check": {},
+    "coverage": {},
     "report-coverage": {}
   }
 }

@@ -10,20 +10,57 @@ This monorepo contains implementations of quantum-resistant digital signature al
 
 | Package | Description | Standard | Signature Size | Version |
 |---------|-------------|----------|----------------|---------|
-| [@theqrl/dilithium5](./packages/dilithium5) | Dilithium5 signatures | CRYSTALS-Dilithium Round 3 | 4595 bytes | [![npm version](https://img.shields.io/npm/v/@theqrl/dilithium5.svg)](https://www.npmjs.com/package/@theqrl/dilithium5) |
 | [@theqrl/mldsa87](./packages/mldsa87) | ML-DSA-87 signatures | FIPS 204 (final) | 4627 bytes | [![npm version](https://img.shields.io/npm/v/@theqrl/mldsa87.svg)](https://www.npmjs.com/package/@theqrl/mldsa87) |
+| [@theqrl/dilithium5](./packages/dilithium5) | Dilithium5 signatures | CRYSTALS-Dilithium Round 3 | 4595 bytes | [![npm version](https://img.shields.io/npm/v/@theqrl/dilithium5.svg)](https://www.npmjs.com/package/@theqrl/dilithium5) |
 
 ## Installation
 
 ```bash
-# Dilithium5 (Round 3, pre-FIPS)
-npm install @theqrl/dilithium5
-
 # ML-DSA-87 (FIPS 204)
 npm install @theqrl/mldsa87
+
+# Dilithium5 (Round 3, pre-FIPS)
+npm install @theqrl/dilithium5
 ```
 
 ## Quick Start
+
+### ML-DSA-87 (FIPS 204)
+
+```javascript
+import {
+  cryptoSignKeypair,
+  cryptoSign,
+  cryptoSignOpen,
+  cryptoSignVerify,
+  CryptoPublicKeyBytes,
+  CryptoSecretKeyBytes,
+  CryptoBytes,
+} from '@theqrl/mldsa87';
+
+// Generate keypair
+const pk = new Uint8Array(CryptoPublicKeyBytes);  // 2592 bytes
+const sk = new Uint8Array(CryptoSecretKeyBytes);  // 4896 bytes
+cryptoSignKeypair(null, pk, sk);
+
+// Sign a message (uses default "ZOND" context for "QRL v2.0" applications)
+const message = new TextEncoder().encode('Hello, quantum world!');
+const signedMessage = cryptoSign(message, sk, false);
+
+// Verify and extract
+const extracted = cryptoSignOpen(signedMessage, pk);
+if (extracted === undefined) {
+  throw new Error('Invalid signature');
+}
+
+// With custom context (FIPS 204 feature)
+const customContext = new TextEncoder().encode('my-app-v1');
+const signedWithCtx = cryptoSign(message, sk, false, customContext);
+const extractedWithCtx = cryptoSignOpen(signedWithCtx, pk, customContext);
+```
+
+> [!NOTE]
+> The following section on Dilithium5 is maintained for compatibility with legacy tools and projects. For all new development, ML-DSA-87 is recommended.
 
 ### Dilithium5
 
@@ -61,49 +98,15 @@ const isValid = cryptoSignVerify(signature, message, pk);
 console.log('Signature valid:', isValid);  // true
 ```
 
-### ML-DSA-87 (FIPS 204)
-
-```javascript
-import {
-  cryptoSignKeypair,
-  cryptoSign,
-  cryptoSignOpen,
-  cryptoSignVerify,
-  CryptoPublicKeyBytes,
-  CryptoSecretKeyBytes,
-  CryptoBytes,
-} from '@theqrl/mldsa87';
-
-// Generate keypair
-const pk = new Uint8Array(CryptoPublicKeyBytes);  // 2592 bytes
-const sk = new Uint8Array(CryptoSecretKeyBytes);  // 4896 bytes
-cryptoSignKeypair(null, pk, sk);
-
-// Sign a message (uses default "ZOND" context)
-const message = new TextEncoder().encode('Hello, quantum world!');
-const signedMessage = cryptoSign(message, sk, false);
-
-// Verify and extract
-const extracted = cryptoSignOpen(signedMessage, pk);
-if (extracted === undefined) {
-  throw new Error('Invalid signature');
-}
-
-// With custom context (FIPS 204 feature)
-const customContext = new TextEncoder().encode('my-app-v1');
-const signedWithCtx = cryptoSign(message, sk, false, customContext);
-const extractedWithCtx = cryptoSignOpen(signedWithCtx, pk, customContext);
-```
-
 ## API Reference
 
 ### Constants
 
-| Constant | Dilithium5 | ML-DSA-87 | Description |
-|----------|------------|-----------|-------------|
+| Constant | ML-DSA-87 | Dilithium5 | Description |
+|----------|-----------|------------|-------------|
 | `CryptoPublicKeyBytes` | 2592 | 2592 | Public key size |
 | `CryptoSecretKeyBytes` | 4896 | 4896 | Secret key size |
-| `CryptoBytes` | 4595 | 4627 | Signature size |
+| `CryptoBytes` | 4627 | 4595 | Signature size |
 | `SeedBytes` | 32 | 32 | Seed size for key generation |
 
 ### Key Generation
@@ -138,7 +141,7 @@ cryptoSignOpen(signedMessage, pk, [context]) → Uint8Array | undefined
 | `message` | `Uint8Array` or `string` | Message bytes; if `string`, it must be hex only (optional `0x`, even length). Plain-text strings are not accepted. |
 | `sk` | `Uint8Array` | Secret key (4896 bytes) |
 | `randomized` | `boolean` | `true` for hedged signing, `false` for deterministic |
-| `context` | `Uint8Array` | (ML-DSA only) Context string, 0-255 bytes. Default: "ZOND" |
+| `context` | `Uint8Array` | (ML-DSA only) Context string, 0-255 bytes. Default: "ZOND" (for "QRL v2.0" applications) |
 | `signedMessage` | `Uint8Array` | Output from `cryptoSign()` |
 | `pk` | `Uint8Array` | Public key (2592 bytes) |
 
@@ -174,7 +177,7 @@ cryptoSignVerify(sig, message, pk, [context]) → boolean
 ### Security Utilities
 
 ```javascript
-import { zeroize, isZero } from '@theqrl/dilithium5';
+import { zeroize, isZero } from '@theqrl/mldsa87';
 
 // Zero out sensitive data (best-effort, see SECURITY.md)
 zeroize(secretKey);
@@ -189,21 +192,27 @@ if (!isZero(buffer)) {
 
 ## Key Differences
 
-| Feature | Dilithium5 | ML-DSA-87 |
-|---------|------------|-----------|
-| Standard | CRYSTALS Round 3 | FIPS 204 |
-| Signature size | 4595 bytes | 4627 bytes |
-| Context parameter | Not supported | Required (default: "ZOND") |
-| Challenge size | 32 bytes | 64 bytes |
-| Use case | Legacy/go-qrllib compat | New implementations |
+| Feature | ML-DSA-87 | Dilithium5 |
+|---------|-----------|------------|
+| Standard | FIPS 204 | CRYSTALS Round 3 |
+| Signature size | 4627 bytes | 4595 bytes |
+| Context parameter | Required (default: "ZOND" for "QRL v2.0" applications) | Not supported |
+| Challenge size | 64 bytes | 32 bytes |
+| Use case | New implementations | Legacy/go-qrllib compat |
 
 **Which should I use?**
 - **ML-DSA-87**: Recommended for new projects. FIPS 204 compliant, will be required for US government use.
-- **Dilithium5**: For compatibility with existing QRL infrastructure and go-qrllib.
+- **Dilithium5**: For compatibility with existing applications utilising this scheme.
 
 ## Interoperability
 
 ### With go-qrllib
+
+**ML-DSA-87:** Both implementations process seeds identically. Raw seeds produce matching keys:
+```javascript
+// Same seed produces same keys in both implementations
+cryptoSignKeypair(seed, pk, sk);
+```
 
 **Dilithium5:** go-qrllib pre-hashes seeds with SHAKE256 before key generation. To generate matching keys:
 ```javascript
@@ -212,17 +221,11 @@ if (!isZero(buffer)) {
 cryptoSignKeypair(hashedSeed, pk, sk);
 ```
 
-**ML-DSA-87:** Both implementations process seeds identically. Raw seeds produce matching keys:
-```javascript
-// Same seed produces same keys in both implementations
-cryptoSignKeypair(seed, pk, sk);
-```
-
 ### With pq-crystals Reference
 
 Both implementations are verified against the pq-crystals C reference:
-- Dilithium5: `pq-crystals/dilithium@ac743d5` (Round 3)
 - ML-DSA-87: `pq-crystals/dilithium@latest` (FIPS 204)
+- Dilithium5: `pq-crystals/dilithium@ac743d5` (Round 3)
 
 Cross-verification tests run in CI for every commit.
 
