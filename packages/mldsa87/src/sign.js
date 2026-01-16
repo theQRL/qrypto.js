@@ -1,6 +1,5 @@
-import pkg from 'randombytes';
 import { shake256 } from '@noble/hashes/sha3.js';
-import { hexToBytes as nobleHexToBytes } from '@noble/hashes/utils.js';
+import { hexToBytes as nobleHexToBytes, randomBytes } from '@noble/hashes/utils.js';
 
 import {
   PolyVecK,
@@ -50,8 +49,6 @@ import {
 } from './const.js';
 import { Poly, polyChallenge, polyNTT } from './poly.js';
 import { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } from './packing.js';
-
-const randomBytes = pkg;
 
 /**
  * Default signing context ("ZOND" in ASCII).
