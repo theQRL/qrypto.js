@@ -1,8 +1,9 @@
 'use strict';
 
 var sha3_js = require('@noble/hashes/sha3.js');
-var pkg = require('randombytes');
+var utils_js = require('@noble/hashes/utils.js');
 
+var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
 const Shake128Rate = 168;
 const Shake256Rate = 136;
 const Stream128BlockBytes = Shake128Rate;
@@ -369,6 +370,8 @@ function polyUniform(a, seed, nonce) {
 
   let ctr = rejUniform(a.coeffs, 0, N, buf, bufLen);
 
+  // Note: With current parameters, needing extra blocks is vanishingly unlikely.
+  /* c8 ignore start */
   while (ctr < N) {
     off = bufLen % 3;
     for (let i = 0; i < off; ++i) buf[i] = buf[bufLen - off + i];
@@ -377,6 +380,7 @@ function polyUniform(a, seed, nonce) {
     bufLen = Stream128BlockBytes + off;
     ctr += rejUniform(a.coeffs, ctr, N - ctr, buf, bufLen);
   }
+  /* c8 ignore stop */
 }
 
 function rejEta(aP, aOffset, len, buf, bufLen) {
@@ -472,10 +476,13 @@ function polyChallenge(cP, seed) {
   }
   for (let i = N - TAU; i < N; ++i) {
     do {
+      // Note: Re-squeezing here is extremely unlikely with TAU=60.
+      /* c8 ignore start */
       if (pos >= Shake256Rate) {
         shake256SqueezeBlocks(buf, 0, 1, state);
         pos = 0;
       }
+      /* c8 ignore stop */
 
       b = buf[pos++];
     } while (b > i);
@@ -1020,7 +1027,69 @@ function unpackSig(cP, z, hP, sig) {
   return 0;
 }
 
-const randomBytes = pkg;
+const MAX_BYTES = 65536;
+
+function getGlobalScope() {
+  if (typeof globalThis === 'object') return globalThis;
+  if (typeof self === 'object') return self;
+  if (typeof window === 'object') return window;
+  if (typeof global === 'object') return global;
+  return {};
+}
+
+function getWebCrypto() {
+  const scope = getGlobalScope();
+  return scope.crypto || scope.msCrypto || null;
+}
+
+function getNodeRandomBytes() {
+  /* c8 ignore next */
+  const isNode = typeof process === 'object' && process !== null && process.versions && process.versions.node;
+  if (!isNode) return null;
+
+  const req =
+    typeof module !== 'undefined' && module && typeof module.require === 'function'
+      ? module.require.bind(module)
+      : typeof module !== 'undefined' && module && typeof module.createRequire === 'function'
+        ? module.createRequire((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('mldsa87.js', document.baseURI).href)))
+        : typeof require === 'function'
+          ? require
+          : null;
+  if (!req) return null;
+
+  try {
+    const nodeCrypto = req('crypto');
+    if (nodeCrypto && typeof nodeCrypto.randomBytes === 'function') {
+      return nodeCrypto.randomBytes;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function randomBytes(size) {
+  if (!Number.isSafeInteger(size) || size < 0) {
+    throw new RangeError('size must be a non-negative integer');
+  }
+
+  const cryptoObj = getWebCrypto();
+  if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {
+    const out = new Uint8Array(size);
+    for (let i = 0; i < size; i += MAX_BYTES) {
+      cryptoObj.getRandomValues(out.subarray(i, Math.min(size, i + MAX_BYTES)));
+    }
+    return out;
+  }
+
+  const nodeRandomBytes = getNodeRandomBytes();
+  if (nodeRandomBytes) {
+    return nodeRandomBytes(size);
+  }
+
+  throw new Error('Secure random number generation is not supported by this environment');
+}
 
 /**
  * Default signing context ("ZOND" in ASCII).
@@ -1030,18 +1099,48 @@ const randomBytes = pkg;
 const DEFAULT_CTX = new Uint8Array([0x5a, 0x4f, 0x4e, 0x44]); // "ZOND"
 
 /**
- * Convert hex string to Uint8Array
- * @param {string} hex - Hex-encoded string
- * @returns {Uint8Array} Decoded bytes
+ * Convert hex string to Uint8Array with strict validation.
+ *
+ * NOTE: This function accepts multiple hex formats (with/without 0x prefix,
+ * leading/trailing whitespace). While user-friendly, this flexibility could
+ * mask input errors. Applications requiring strict format validation should
+ * validate hex format before calling cryptographic functions, e.g.:
+ *   - Reject strings with 0x prefix if raw hex is expected
+ *   - Reject strings with whitespace
+ *   - Enforce consistent casing (lowercase/uppercase)
+ *
+ * @param {string} hex - Hex string (optional 0x prefix, even length).
+ * @returns {Uint8Array} Decoded bytes.
  * @private
  */
 function hexToBytes(hex) {
-  const len = hex.length / 2;
-  const result = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    result[i] = parseInt(hex.substr(i * 2, 2), 16);
+  /* c8 ignore start */
+  if (typeof hex !== 'string') {
+    throw new Error('message must be a hex string');
   }
-  return result;
+  /* c8 ignore stop */
+  let clean = hex.trim();
+  // Accepts both "0x..." and raw hex formats for convenience
+  if (clean.startsWith('0x') || clean.startsWith('0X')) {
+    clean = clean.slice(2);
+  }
+  if (clean.length % 2 !== 0) {
+    throw new Error('hex string must have an even length');
+  }
+  if (!/^[0-9a-fA-F]*$/.test(clean)) {
+    throw new Error('hex string contains non-hex characters');
+  }
+  return utils_js.hexToBytes(clean);
+}
+
+function messageToBytes(message) {
+  if (typeof message === 'string') {
+    return hexToBytes(message);
+  }
+  if (message instanceof Uint8Array) {
+    return message;
+  }
+  throw new Error('message must be Uint8Array or hex string');
 }
 
 /**
@@ -1138,7 +1237,7 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
  * The context parameter provides domain separation as required by FIPS 204.
  *
  * @param {Uint8Array} sig - Output buffer for signature (must be at least CryptoBytes = 4627 bytes)
- * @param {string|Uint8Array} m - Message to sign (hex string or Uint8Array)
+ * @param {string|Uint8Array} m - Message to sign (hex string, optional 0x prefix, or Uint8Array)
  * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
  * @param {boolean} randomizedSigning - If true, use random nonce for hedged signing.
  *   If false, use deterministic nonce derived from message and key.
@@ -1154,6 +1253,9 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
  * cryptoSignSignature(sig, message, sk, false, new Uint8Array([0x01, 0x02]));
  */
 function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT_CTX) {
+  if (!sig || sig.length < CryptoBytes) {
+    throw new Error(`sig must be at least ${CryptoBytes} bytes`);
+  }
   if (ctx.length > 255) throw new Error(`invalid context length: ${ctx.length} (max 255)`);
   if (sk.length !== CryptoSecretKeyBytes) {
     throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
@@ -1185,8 +1287,7 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT_CTX) {
   pre[1] = ctx.length;
   pre.set(ctx, 2);
 
-  // Convert hex message to bytes
-  const mBytes = typeof m === 'string' ? hexToBytes(m) : m;
+  const mBytes = messageToBytes(m);
 
   // mu = SHAKE256(tr || pre || m)
   const mu = sha3_js.shake256.create({}).update(tr).update(pre).update(mBytes).xof(CRHBytes);
@@ -1244,15 +1345,19 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT_CTX) {
     polyVecKPointWisePolyMontgomery(h, cp, t0);
     polyVecKInvNTTToMont(h);
     polyVecKReduce(h);
+    /* c8 ignore start */
     if (polyVecKChkNorm(h, GAMMA2) !== 0) {
       continue;
     }
+    /* c8 ignore stop */
 
     polyVecKAdd(w0, w0, h);
     const n = polyVecKMakeHint(h, w0, w1);
+    /* c8 ignore start */
     if (n > OMEGA) {
       continue;
     }
+    /* c8 ignore stop */
 
     packSig(sig, ctilde, z, h);
     return 0;
@@ -1265,7 +1370,7 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT_CTX) {
  * This is the combined sign operation that produces a "signed message" containing
  * both the signature and the original message (signature || message).
  *
- * @param {Uint8Array} msg - Message to sign
+ * @param {string|Uint8Array} msg - Message to sign (hex string, optional 0x prefix, or Uint8Array)
  * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
  * @param {boolean} randomizedSigning - If true, use random nonce; if false, deterministic
  * @param {Uint8Array} [ctx=DEFAULT_CTX] - Context string for domain separation (max 255 bytes).
@@ -1278,16 +1383,20 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT_CTX) {
  * // signedMsg contains: signature (4627 bytes) || message
  */
 function cryptoSign(msg, sk, randomizedSigning, ctx = DEFAULT_CTX) {
-  const sm = new Uint8Array(CryptoBytes + msg.length);
-  const mLen = msg.length;
-  for (let i = 0; i < mLen; ++i) {
-    sm[CryptoBytes + mLen - 1 - i] = msg[mLen - 1 - i];
-  }
-  const result = cryptoSignSignature(sm, msg, sk, randomizedSigning, ctx);
+  const msgBytes = messageToBytes(msg);
 
+  const sm = new Uint8Array(CryptoBytes + msgBytes.length);
+  const mLen = msgBytes.length;
+  for (let i = 0; i < mLen; ++i) {
+    sm[CryptoBytes + mLen - 1 - i] = msgBytes[mLen - 1 - i];
+  }
+  const result = cryptoSignSignature(sm, msgBytes, sk, randomizedSigning, ctx);
+
+  /* c8 ignore start */
   if (result !== 0) {
     throw new Error('failed to sign');
   }
+  /* c8 ignore stop */
   return sm;
 }
 
@@ -1298,7 +1407,7 @@ function cryptoSign(msg, sk, randomizedSigning, ctx = DEFAULT_CTX) {
  * The context must match the one used during signing.
  *
  * @param {Uint8Array} sig - Signature to verify (must be CryptoBytes = 4627 bytes)
- * @param {string|Uint8Array} m - Message that was signed (hex string or Uint8Array)
+ * @param {string|Uint8Array} m - Message that was signed (hex string, optional 0x prefix, or Uint8Array)
  * @param {Uint8Array} pk - Public key (must be CryptoPublicKeyBytes = 2592 bytes)
  * @param {Uint8Array} [ctx=DEFAULT_CTX] - Context string used during signing (max 255 bytes).
  *   Defaults to "ZOND" for QRL compatibility.
@@ -1348,8 +1457,12 @@ function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
   pre[1] = ctx.length;
   pre.set(ctx, 2);
 
-  // Convert hex message to bytes
-  const mBytes = typeof m === 'string' ? hexToBytes(m) : m;
+  let mBytes;
+  try {
+    mBytes = messageToBytes(m);
+  } catch {
+    return false;
+  }
   const muFull = sha3_js.shake256.create({}).update(tr).update(pre).update(mBytes).xof(CRHBytes);
   mu.set(muFull);
 

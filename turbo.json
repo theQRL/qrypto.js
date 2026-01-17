@@ -6,6 +6,7 @@
     "lint": {},
     "lint-check": {},
     "coverage": {},
-    "report-coverage": {}
+    "report-coverage": {},
+    "test:browser": {}
   }
 }

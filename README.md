@@ -260,7 +260,7 @@ See [SECURITY.md](./SECURITY.md) for important security information, including:
 
 - **Memory security:** JavaScript cannot guarantee secure zeroization of secret keys
 - **Side channels:** Signature verification uses constant-time comparison
-- **Randomness:** Uses `crypto.getRandomValues()` in browsers, `crypto.randomBytes()` in Node.js
+- **Randomness:** Uses Web Crypto (`crypto.getRandomValues()`) in browsers and Node 18.20+. If Web Crypto is unavailable in Node, falls back to `crypto.randomBytes()`
 - **Key handling:** Recommendations for secure key storage and disposal
 
 ## Development
@@ -272,6 +272,9 @@ npm install
 # Run all tests (153 tests across both packages)
 npm test
 
+# Run browser tests (Playwright)
+npm run test:browser
+
 # Run linter
 npm run lint
 
@@ -281,7 +284,7 @@ npm run build
 
 ## Requirements
 
-- Node.js 18.x, 20.x, or 22.x
+- Node.js 18.20+, 20.x, or 22.x
 - Modern browsers with ES2020 support
 
 ## TypeScript

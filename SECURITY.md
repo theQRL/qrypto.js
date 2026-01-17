@@ -62,6 +62,20 @@ for (i = 0; i < length; ++i) {
 return diff === 0;
 ```
 
+### Timing Considerations for Arithmetic Operations
+
+The Montgomery reduction and other arithmetic operations use JavaScript's `BigInt` type. **Important**: The JavaScript specification does not guarantee that `BigInt` operations are constant-time. The execution time of operations like multiplication and division may vary based on operand values.
+
+**Implications:**
+- Signing operations that use these arithmetic functions may have timing variations
+- This is a known limitation of JavaScript cryptographic implementations
+- Signature verification uses constant-time comparison (see above), which is the critical path for timing attacks
+
+**Mitigations for sensitive deployments:**
+- For applications with strict constant-time requirements, consider using the Go implementation (go-qrllib) which provides better timing guarantees
+- Rate-limit signature operations at the application layer to reduce timing attack feasibility
+- Run signing operations in isolated environments where timing cannot be observed
+
 ### 3. Input Validation
 
 All cryptographic functions validate input lengths and types to prevent:

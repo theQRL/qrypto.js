@@ -1,11 +1,15 @@
 {
   "name": "root",
   "type": "module",
+  "engines": {
+    "node": ">=18.20.0"
+  },
   "private": true,
   "packageManager": "npm@10.9.2",
   "scripts": {
     "build": "turbo run build",
     "test": "FORCE_COLOR=1 turbo test",
+    "test:browser": "playwright install chromium && turbo run test:browser",
     "lint": "turbo lint-check",
     "coverage": "turbo coverage",
     "report-coverage": "turbo report-coverage"
@@ -14,11 +18,13 @@
     "packages/*"
   ],
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
     "conventional-changelog-conventionalcommits": "^9.1.0",
     "multi-semantic-release": "^3.0.2",
+    "playwright": "^1.57.0",
     "turbo": "^2.7.3"
   }
 }

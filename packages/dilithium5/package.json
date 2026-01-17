@@ -31,7 +31,8 @@
     "url": "git+https://github.com/theQRL/qrypto.js.git"
   },
   "scripts": {
-    "test": "../../node_modules/mocha/bin/mocha.js --timeout 10000",
+    "test": "../../node_modules/mocha/bin/mocha.js --require ../../scripts/node-test-setup.cjs --timeout 10000",
+    "test:browser": "playwright test",
     "build": "rollup src/index.js --file ./dist/cjs/dilithium5.js --format cjs && rollup src/index.js --file ./dist/mjs/dilithium5.js --format esm && ./fixup",
     "lint-check": "eslint 'src/**/*.js' 'test/**/*.js'",
     "lint": "eslint --fix 'src/**/*.js' 'test/**/*.js'",
@@ -48,6 +49,9 @@
     }
   },
   "type": "module",
+  "engines": {
+    "node": ">=18.20.0"
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
     "c8": "^10.1.3",
@@ -62,7 +66,6 @@
     "rollup": "^4.55.1"
   },
   "dependencies": {
-    "@noble/hashes": "^2.0.1",
-    "randombytes": "^2.1.0"
+    "@noble/hashes": "^2.0.1"
   }
 }
