@@ -1,3 +1,9 @@
+## @theqrl/dilithium5 [1.0.6](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.0.5...@theqrl/dilithium5@1.0.6) (2026-01-17)
+
+### Bug Fixes
+
+* use internal randombytes ([3ffecd4](https://github.com/theQRL/qrypto.js/commit/3ffecd4aa0248d8642dfb94ca44838884c8f7367))
+
 ## @theqrl/dilithium5 [1.0.5](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.0.4...@theqrl/dilithium5@1.0.5) (2026-01-11)
 
 ### Bug Fixes
