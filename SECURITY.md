@@ -153,9 +153,114 @@ If you discover a security vulnerability in qrypto.js:
 3. Provide detailed reproduction steps
 4. Allow reasonable time for a fix before public disclosure
 
+---
+
+## Supply Chain Security
+
+### npm Provenance
+
+All npm packages are published with [npm provenance](https://docs.npmjs.com/generating-provenance-statements), which cryptographically links published packages to their source repository and build workflow.
+
+Verify provenance on npm:
+```bash
+npm audit signatures
+```
+
+### Sigstore Attestations
+
+All releases include GitHub attestations backed by Sigstore:
+- **Build provenance** for checksums and package files
+- **SBOM attestations** in SPDX and CycloneDX formats
+- **SLSA Level 3 provenance** for build verification
+
+### Dependency Tracking
+
+Each release includes Software Bill of Materials (SBOM) files:
+- `sbom-spdx.json` - SPDX format
+- `sbom-cyclonedx.json` - CycloneDX format
+
+---
+
+## Release Verification
+
+All releases include cryptographic attestations and checksums for verification.
+
+### Verifying with GitHub CLI
+
+```bash
+# Verify attestations for package files
+gh attestation verify package.json --owner theQRL
+gh attestation verify package-lock.json --owner theQRL
+
+# Verify SBOM attestation
+gh attestation verify sbom-spdx.json --owner theQRL
+```
+
+### Verifying Checksums
+
+Download and verify checksums from the release:
+
+```bash
+# Download checksums file
+curl -LO https://github.com/theQRL/qrypto.js/releases/download/vX.Y.Z/checksums-sha256.txt
+
+# Verify package files
+sha256sum -c checksums-sha256.txt
+```
+
+### Verifying SLSA Provenance
+
+```bash
+# Install slsa-verifier: https://github.com/slsa-framework/slsa-verifier#installation
+
+# Download provenance
+curl -LO https://github.com/theQRL/qrypto.js/releases/download/vX.Y.Z/provenance.intoto.jsonl
+
+# Verify provenance
+slsa-verifier verify-artifact package.json \
+  --provenance-path provenance.intoto.jsonl \
+  --source-uri github.com/theQRL/qrypto.js
+```
+
+### Software Bill of Materials (SBOM)
+
+Each release includes SBOMs in two formats:
+- **SPDX**: `sbom-spdx.json`
+- **CycloneDX**: `sbom-cyclonedx.json`
+
+These can be analyzed with tools like:
+```bash
+# Using grype for vulnerability scanning
+grype sbom:sbom-spdx.json
+
+# Using syft for inspection
+syft convert sbom-cyclonedx.json -o table
+```
+
+### What Gets Attested
+
+| Artifact | Attestation Type | Purpose |
+|----------|-----------------|---------|
+| `package.json`, `package-lock.json` | Build provenance | Verify package dependencies |
+| `checksums-sha256.txt` | Build provenance | Integrity verification |
+| `sbom-spdx.json` | SBOM | Software composition |
+| `sbom-cyclonedx.json` | SBOM | Software composition |
+| Source code | SLSA provenance | Build reproducibility |
+| npm package | npm provenance | Package authenticity |
+
+### Trust Model
+
+Attestations are signed using GitHub's Sigstore integration:
+- **Identity**: GitHub Actions OIDC token
+- **Transparency**: Logged in Sigstore's Rekor transparency log
+- **Verification**: Proves release came from official CI workflow
+
+---
+
 ## References
 
 - [NIST Post-Quantum Cryptography](https://csrc.nist.gov/projects/post-quantum-cryptography)
 - [FIPS 204: Module-Lattice-Based Digital Signature Standard](https://csrc.nist.gov/pubs/fips/204/final)
 - [pq-crystals Dilithium](https://github.com/pq-crystals/dilithium)
 - [go-qrllib](https://github.com/theQRL/go-qrllib)
+

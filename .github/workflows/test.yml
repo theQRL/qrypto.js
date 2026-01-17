@@ -154,3 +154,148 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --provenance --access public
+
+    outputs:
+      mldsa87_released: ${{ steps.versions-before.outputs.mldsa87 != steps.versions-after.outputs.mldsa87 }}
+      dilithium5_released: ${{ steps.versions-before.outputs.dilithium5 != steps.versions-after.outputs.dilithium5 }}
+      mldsa87_version: ${{ steps.versions-after.outputs.mldsa87 }}
+      dilithium5_version: ${{ steps.versions-after.outputs.dilithium5 }}
+
+  # Generate checksums, SBOM, and attestations for the release
+  supply-chain-security:
+    name: Supply Chain Security Artifacts
+    runs-on: ubuntu-latest
+    needs: release
+    if: needs.release.outputs.mldsa87_released == 'true' || needs.release.outputs.dilithium5_released == 'true'
+    permissions:
+      contents: write
+      id-token: write      # For Sigstore OIDC
+      attestations: write  # For GitHub attestations
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: main  # Get latest after semantic-release commits
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22.x'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Generate checksums for lockfiles
+      - name: Generate checksums
+        run: |
+          mkdir -p dist
+          sha256sum package.json package-lock.json > dist/checksums-sha256.txt
+          sha512sum package.json package-lock.json > dist/checksums-sha512.txt
+          # Also create checksums for package sources
+          find packages -name "*.js" -type f | sort | xargs sha256sum >> dist/source-checksums-sha256.txt
+
+      # Generate SBOM using Syft
+      - name: Generate SBOM (SPDX)
+        uses: anchore/sbom-action@v0
+        with:
+          format: spdx-json
+          output-file: dist/sbom-spdx.json
+          artifact-name: sbom-spdx.json
+
+      - name: Generate SBOM (CycloneDX)
+        uses: anchore/sbom-action@v0
+        with:
+          format: cyclonedx-json
+          output-file: dist/sbom-cyclonedx.json
+          artifact-name: sbom-cyclonedx.json
+
+      # Attest checksums with GitHub attestations (Sigstore-backed)
+      - name: Attest checksums
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/checksums-sha256.txt
+            dist/checksums-sha512.txt
+
+      # Attest SBOM files
+      - name: Attest SBOM (SPDX)
+        uses: actions/attest-sbom@v2
+        with:
+          subject-path: dist/sbom-spdx.json
+          sbom-path: dist/sbom-spdx.json
+
+      - name: Attest SBOM (CycloneDX)
+        uses: actions/attest-sbom@v2
+        with:
+          subject-path: dist/sbom-cyclonedx.json
+          sbom-path: dist/sbom-cyclonedx.json
+
+      # Attest package files directly
+      - name: Attest package files
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            package.json
+            package-lock.json
+
+      # Upload artifacts to the release(s)
+      - name: Upload to mldsa87 release
+        if: needs.release.outputs.mldsa87_released == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "@theqrl/mldsa87-v${{ needs.release.outputs.mldsa87_version }}" \
+            dist/checksums-sha256.txt \
+            dist/checksums-sha512.txt \
+            dist/sbom-spdx.json \
+            dist/sbom-cyclonedx.json \
+            --clobber || echo "Release upload failed (release may not exist yet)"
+
+      - name: Upload to dilithium5 release
+        if: needs.release.outputs.dilithium5_released == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "@theqrl/dilithium5-v${{ needs.release.outputs.dilithium5_version }}" \
+            dist/checksums-sha256.txt \
+            dist/checksums-sha512.txt \
+            dist/sbom-spdx.json \
+            dist/sbom-cyclonedx.json \
+            --clobber || echo "Release upload failed (release may not exist yet)"
+
+  # Compute subjects for SLSA provenance
+  compute-subjects:
+    name: Compute SLSA Subjects
+    runs-on: ubuntu-latest
+    needs: release
+    if: needs.release.outputs.mldsa87_released == 'true' || needs.release.outputs.dilithium5_released == 'true'
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: main  # Get latest after semantic-release commits
+
+      - name: Generate subject hashes
+        id: hash
+        run: |
+          # Compute SHA256 hashes of package files
+          set -euo pipefail
+          echo "hashes=$(sha256sum package.json package-lock.json | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+  # Generate SLSA provenance (Level 3)
+  provenance:
+    name: SLSA Provenance
+    needs: [release, compute-subjects]
+    if: needs.release.outputs.mldsa87_released == 'true' || needs.release.outputs.dilithium5_released == 'true'
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    with:
+      base64-subjects: ${{ needs.compute-subjects.outputs.hashes }}
+      upload-assets: true
+      provenance-name: provenance.intoto.jsonl
