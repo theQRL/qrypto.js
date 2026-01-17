@@ -1,0 +1,11 @@
+import './setup.js';
+import '../test/coverage.test.js';
+import '../test/cross.test.js';
+import '../test/edge-cases.test.js';
+import '../test/kat.test.js';
+import '../test/polyvec.test.js';
+import '../test/random.test.js';
+import '../test/rounding.test.js';
+import '../test/sign.test.js';
+import '../test/symmetric-shake.test.js';
+import '../test/utils.test.js';

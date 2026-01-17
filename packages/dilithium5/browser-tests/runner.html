@@ -1,0 +1,69 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>dilithium5 browser tests</title>
+<link rel="stylesheet" href="/node_modules/mocha/mocha.css">
+<div id="mocha"></div>
+<script src="/node_modules/mocha/mocha.js"></script>
+<script>
+  mocha.setup({ ui: 'bdd', timeout: 10000 });
+</script>
+<script>
+  window.__mochaDone = null;
+  window.__mochaProgress = { started: 0, passed: 0, failed: 0, pending: 0, current: '' };
+
+  function reportFatal(err) {
+    const message = err && err.message ? err.message : String(err);
+    const details = [`Fatal: ${message}`];
+    if (window.__mochaDone) {
+      window.__mochaDone.failures = Math.max(window.__mochaDone.failures || 0, 1);
+      window.__mochaDone.details = (window.__mochaDone.details || []).concat(details);
+      window.__mochaDone.fatal = true;
+      return;
+    }
+    window.__mochaDone = { failures: 1, details, fatal: true };
+  }
+
+  window.addEventListener('error', (event) => {
+    reportFatal(event.error || event.message || event);
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    reportFatal(event.reason || event);
+  });
+</script>
+<script type="importmap">
+  {
+    "imports": {
+      "chai": "./chai.js",
+      "mocha": "./mocha-shim.js",
+      "@noble/hashes/": "/node_modules/@noble/hashes/"
+    }
+  }
+</script>
+<script type="module">
+  import './tests.js';
+
+  const failures = [];
+  const runner = mocha.run();
+  runner.on('test', (test) => {
+    window.__mochaProgress.started += 1;
+    window.__mochaProgress.current =
+      test && typeof test.fullTitle === 'function' ? test.fullTitle() : 'unknown test';
+  });
+  runner.on('pass', () => {
+    window.__mochaProgress.passed += 1;
+    console.log(`[mocha] PASS ${window.__mochaProgress.current}`);
+  });
+  runner.on('pending', () => {
+    window.__mochaProgress.pending += 1;
+  });
+  runner.on('fail', (test, err) => {
+    window.__mochaProgress.failed += 1;
+    const title = test && typeof test.fullTitle === 'function' ? test.fullTitle() : 'unknown test';
+    const message = err && err.message ? err.message : String(err);
+    failures.push(`${title}: ${message}`);
+    console.log(`[mocha] FAIL ${title}: ${message}`);
+  });
+  runner.on('end', () => {
+    window.__mochaDone = { failures: runner.failures, details: failures };
+  });
+</script>

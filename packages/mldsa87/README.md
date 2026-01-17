@@ -159,7 +159,7 @@ See [SECURITY.md](../../SECURITY.md) for important information about:
 
 ## Requirements
 
-- Node.js 18+ or modern browsers with ES2020 support
+- Node.js 18.20+ or modern browsers with ES2020 support
 - Full TypeScript definitions included
 
 ## License

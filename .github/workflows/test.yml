@@ -39,9 +39,23 @@ jobs:
       - run: npm ci
       - run: npm test
 
+  browser-tests:
+    name: Browser Tests (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.x'
+      - run: npm ci
+      - name: Install Playwright browsers and deps
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+
   release:
     name: Release
-    needs: [lint, test]
+    needs: [lint, test, browser-tests]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'theQRL/qrypto.js'
     environment: npm-publish

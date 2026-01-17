@@ -1,6 +1,6 @@
-import pkg from 'randombytes';
 import { shake256 } from '@noble/hashes/sha3.js';
 import { hexToBytes as nobleHexToBytes } from '@noble/hashes/utils.js';
+import { randomBytes } from './random.js';
 
 import {
   PolyVecK,
@@ -49,10 +49,17 @@ import {
 import { Poly, polyChallenge, polyNTT } from './poly.js';
 import { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } from './packing.js';
 
-const randomBytes = pkg;
-
 /**
  * Convert hex string to Uint8Array with strict validation.
+ *
+ * NOTE: This function accepts multiple hex formats (with/without 0x prefix,
+ * leading/trailing whitespace). While user-friendly, this flexibility could
+ * mask input errors. Applications requiring strict format validation should
+ * validate hex format before calling cryptographic functions, e.g.:
+ *   - Reject strings with 0x prefix if raw hex is expected
+ *   - Reject strings with whitespace
+ *   - Enforce consistent casing (lowercase/uppercase)
+ *
  * @param {string} hex - Hex string (optional 0x prefix, even length).
  * @returns {Uint8Array} Decoded bytes.
  * @private
@@ -64,6 +71,7 @@ function hexToBytes(hex) {
   }
   /* c8 ignore stop */
   let clean = hex.trim();
+  // Accepts both "0x..." and raw hex formats for convenience
   if (clean.startsWith('0x') || clean.startsWith('0X')) {
     clean = clean.slice(2);
   }
@@ -83,7 +91,7 @@ function messageToBytes(message) {
   if (message instanceof Uint8Array) {
     return message;
   }
-  return null;
+  throw new Error('message must be Uint8Array or hex string');
 }
 
 /**
@@ -195,9 +203,6 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
   }
 
   const mBytes = messageToBytes(m);
-  if (!mBytes) {
-    throw new Error('message must be Uint8Array or hex string');
-  }
 
   const rho = new Uint8Array(SeedBytes);
   const tr = new Uint8Array(TRBytes);
@@ -313,9 +318,6 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
  */
 export function cryptoSign(msg, sk, randomizedSigning) {
   const msgBytes = messageToBytes(msg);
-  if (!msgBytes) {
-    throw new Error('message must be Uint8Array or hex string');
-  }
 
   const sm = new Uint8Array(CryptoBytes + msgBytes.length);
   const mLen = msgBytes.length;
@@ -385,9 +387,6 @@ export function cryptoSignVerify(sig, m, pk) {
   try {
     mBytes = messageToBytes(m);
   } catch {
-    return false;
-  }
-  if (!mBytes) {
     return false;
   }
   const muFull = shake256.create({}).update(mu.slice(0, TRBytes)).update(mBytes).xof(CRHBytes);
