@@ -245,7 +245,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "@theqrl/mldsa87-v${{ needs.release.outputs.mldsa87_version }}" \
+          gh release upload "@theqrl/mldsa87@${{ needs.release.outputs.mldsa87_version }}" \
             dist/checksums-sha256.txt \
             dist/checksums-sha512.txt \
             dist/sbom-spdx.json \
@@ -257,7 +257,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "@theqrl/dilithium5-v${{ needs.release.outputs.dilithium5_version }}" \
+          gh release upload "@theqrl/dilithium5@${{ needs.release.outputs.dilithium5_version }}" \
             dist/checksums-sha256.txt \
             dist/checksums-sha512.txt \
             dist/sbom-spdx.json \
