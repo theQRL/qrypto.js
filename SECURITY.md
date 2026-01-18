@@ -263,4 +263,3 @@ Attestations are signed using GitHub's Sigstore integration:
 - [FIPS 204: Module-Lattice-Based Digital Signature Standard](https://csrc.nist.gov/pubs/fips/204/final)
 - [pq-crystals Dilithium](https://github.com/pq-crystals/dilithium)
 - [go-qrllib](https://github.com/theQRL/go-qrllib)
-
