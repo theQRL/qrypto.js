@@ -1,3 +1,9 @@
+## @theqrl/mldsa87 [1.0.8](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@1.0.7...@theqrl/mldsa87@1.0.8) (2026-01-18)
+
+### Bug Fixes
+
+* trigger release ([2738025](https://github.com/theQRL/qrypto.js/commit/27380256499f8625bfc0ec7328bfbafc18c0e986))
+
 ## @theqrl/mldsa87 [1.0.7](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@1.0.6...@theqrl/mldsa87@1.0.7) (2026-01-18)
 
 ### Bug Fixes
