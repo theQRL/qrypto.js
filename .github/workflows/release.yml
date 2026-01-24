@@ -156,7 +156,7 @@ jobs:
           artifact-name: sbom-cyclonedx.json
 
       - name: Attest checksums
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: |
             dist/checksums-sha256.txt
@@ -175,7 +175,7 @@ jobs:
           sbom-path: dist/sbom-cyclonedx.json
 
       - name: Attest package files
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: |
             package.json
