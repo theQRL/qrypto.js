@@ -284,12 +284,12 @@ jobs:
       contents: write
     steps:
       - name: Download provenance
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: provenance.intoto.jsonl
 
       - name: Download npm tarballs
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: npm-tarballs
           path: tarballs
