@@ -60,10 +60,10 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import-x": "^4.15.0",
     "eslint-plugin-prettier": "^5.5.4",
-    "globals": "^17.0.0",
+    "globals": "^17.1.0",
     "mocha": "^11.7.5",
-    "prettier": "^3.7.4",
-    "rollup": "^4.55.1"
+    "prettier": "^3.8.1",
+    "rollup": "^4.56.0"
   },
   "dependencies": {
     "@noble/hashes": "^2.0.1"
