@@ -1,3 +1,9 @@
+## @theqrl/mldsa87 [1.0.9](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@1.0.8...@theqrl/mldsa87@1.0.9) (2026-02-02)
+
+### Bug Fixes
+
+* internal zeroisation and other small issues ([b52d6ae](https://github.com/theQRL/qrypto.js/commit/b52d6ae99dad5ef3e642592358cb4c63fa768fd0))
+
 ## @theqrl/mldsa87 [1.0.8](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@1.0.7...@theqrl/mldsa87@1.0.8) (2026-01-18)
 
 ### Bug Fixes
