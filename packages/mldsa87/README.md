@@ -159,7 +159,8 @@ See [SECURITY.md](../../SECURITY.md) for important information about:
 
 ## Requirements
 
-- Node.js 18.20+ or modern browsers with ES2020 support
+- **Node.js**: 18.20+, 20.x, or 22.x (requires `globalThis.crypto.getRandomValues`)
+- **Browsers**: [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) and ES2020 (BigInt) -- Chrome 67+, Firefox 68+, Safari 14+, Edge 79+
 - Full TypeScript definitions included
 
 ## License

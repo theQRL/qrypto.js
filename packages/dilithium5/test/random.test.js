@@ -7,19 +7,8 @@ const itIfBrowser = isNode ? it.skip : it;
 
 const originalGlobalThis = globalThis;
 const originalState = {
-  self: originalGlobalThis.self,
-  window: originalGlobalThis.window,
-  global: originalGlobalThis.global,
-  module: originalGlobalThis.module,
-  require: originalGlobalThis.require,
-  msCrypto: originalGlobalThis.msCrypto,
   cryptoDesc: Object.getOwnPropertyDescriptor(originalGlobalThis, 'crypto'),
-  processDesc: Object.getOwnPropertyDescriptor(originalGlobalThis, 'process'),
 };
-
-function setGlobalThisValue(value) {
-  originalGlobalThis.globalThis = value;
-}
 
 function setCrypto(value) {
   Object.defineProperty(originalGlobalThis, 'crypto', {
@@ -30,39 +19,11 @@ function setCrypto(value) {
   });
 }
 
-function setProcess(value) {
-  Object.defineProperty(originalGlobalThis, 'process', {
-    value,
-    configurable: true,
-    writable: true,
-    enumerable: false,
-  });
-}
-
 function restoreGlobals() {
-  setGlobalThisValue(originalGlobalThis);
-  originalGlobalThis.self = originalState.self;
-  originalGlobalThis.window = originalState.window;
-  originalGlobalThis.global = originalState.global;
-  originalGlobalThis.module = originalState.module;
-  originalGlobalThis.require = originalState.require;
-
   if (originalState.cryptoDesc) {
     Object.defineProperty(originalGlobalThis, 'crypto', originalState.cryptoDesc);
   } else {
     delete originalGlobalThis.crypto;
-  }
-
-  if (originalState.processDesc) {
-    Object.defineProperty(originalGlobalThis, 'process', originalState.processDesc);
-  } else {
-    delete originalGlobalThis.process;
-  }
-
-  if (originalState.msCrypto === undefined) {
-    delete originalGlobalThis.msCrypto;
-  } else {
-    originalGlobalThis.msCrypto = originalState.msCrypto;
   }
 }
 
@@ -111,172 +72,39 @@ describe('randomBytes', () => {
     expect(out[out.length - 1]).to.equal(0xab);
   });
 
-  itIfNode('uses msCrypto when crypto is unavailable', () => {
-    const calls = [];
+  itIfNode('throws when getRandomValues returns all zeros for buffers >= 16 bytes', () => {
     const stubCrypto = {
       getRandomValues: (arr) => {
-        calls.push(arr.length);
-        arr.fill(0xcd);
-        return arr;
-      },
-    };
-    setCrypto(undefined);
-    originalGlobalThis.msCrypto = stubCrypto;
-
-    const out = randomBytes(8);
-    expect(out.length).to.equal(8);
-    expect(out[0]).to.equal(0xcd);
-    expect(calls).to.deep.equal([8]);
-  });
-
-  itIfNode('uses self when globalThis is unavailable', () => {
-    const stubCrypto = {
-      getRandomValues: (arr) => {
-        arr.fill(0x11);
-        return arr;
-      },
-    };
-    originalGlobalThis.self = { crypto: stubCrypto };
-    originalGlobalThis.window = undefined;
-    setGlobalThisValue(undefined);
-
-    const out = randomBytes(4);
-    expect(out[0]).to.equal(0x11);
-  });
-
-  itIfNode('uses window when globalThis and self are unavailable', () => {
-    const stubCrypto = {
-      getRandomValues: (arr) => {
-        arr.fill(0x22);
-        return arr;
-      },
-    };
-    originalGlobalThis.self = undefined;
-    originalGlobalThis.window = { crypto: stubCrypto };
-    setGlobalThisValue(undefined);
-
-    const out = randomBytes(4);
-    expect(out[0]).to.equal(0x22);
-  });
-
-  itIfNode('uses global when globalThis, self, and window are unavailable', () => {
-    const stubCrypto = {
-      getRandomValues: (arr) => {
-        arr.fill(0x33);
+        // Leave buffer as all zeros (default Uint8Array state)
         return arr;
       },
     };
     setCrypto(stubCrypto);
-    originalGlobalThis.self = undefined;
-    originalGlobalThis.window = undefined;
-    setGlobalThisValue(undefined);
 
-    const out = randomBytes(4);
-    expect(out[0]).to.equal(0x33);
+    expect(() => randomBytes(32)).to.throw('getRandomValues returned all zeros');
   });
 
-  itIfNode('falls back when crypto object lacks getRandomValues', () => {
+  itIfNode('does not throw all-zeros check for small buffers', () => {
+    const stubCrypto = {
+      getRandomValues: (arr) => {
+        // Leave buffer as all zeros
+        return arr;
+      },
+    };
+    setCrypto(stubCrypto);
+
+    // Buffers smaller than 16 bytes skip the zero check
+    const out = randomBytes(8);
+    expect(out.length).to.equal(8);
+  });
+
+  itIfNode('throws when crypto lacks getRandomValues', () => {
     setCrypto({});
-    originalGlobalThis.msCrypto = undefined;
-    originalGlobalThis.module = {
-      require: (name) => {
-        expect(name).to.equal('crypto');
-        return {
-          randomBytes: (size) => {
-            const out = new Uint8Array(size);
-            out.fill(0x7f);
-            return out;
-          },
-        };
-      },
-    };
-
-    const out = randomBytes(3);
-    expect(out[0]).to.equal(0x7f);
-  });
-
-  itIfNode('falls back to module.createRequire when module.require is missing', () => {
-    setCrypto(undefined);
-    originalGlobalThis.msCrypto = undefined;
-    originalGlobalThis.module = {
-      createRequire: (url) => {
-        expect(typeof url).to.equal('string');
-        return (name) => {
-          expect(name).to.equal('crypto');
-          return {
-            randomBytes: (size) => {
-              const out = new Uint8Array(size);
-              out.fill(0x66);
-              return out;
-            },
-          };
-        };
-      },
-    };
-
-    const out = randomBytes(2);
-    expect(out[0]).to.equal(0x66);
-  });
-
-  itIfNode('falls back to require when module is missing', () => {
-    setCrypto(undefined);
-    originalGlobalThis.msCrypto = undefined;
-    originalGlobalThis.module = undefined;
-    originalGlobalThis.require = (name) => {
-      expect(name).to.equal('crypto');
-      return {
-        randomBytes: (size) => {
-          const out = new Uint8Array(size);
-          out.fill(0x55);
-          return out;
-        },
-      };
-    };
-
-    const out = randomBytes(2);
-    expect(out[0]).to.equal(0x55);
-  });
-
-  itIfNode('throws when module returns no randomBytes', () => {
-    setCrypto(undefined);
-    originalGlobalThis.msCrypto = undefined;
-    originalGlobalThis.module = { require: () => ({}) };
-
-    expect(() => randomBytes(1)).to.throw('Secure random number generation');
-  });
-
-  itIfNode('throws when module require throws', () => {
-    setCrypto(undefined);
-    originalGlobalThis.msCrypto = undefined;
-    originalGlobalThis.module = {
-      require: () => {
-        throw new Error('boom');
-      },
-    };
-
-    expect(() => randomBytes(1)).to.throw('Secure random number generation');
-  });
-
-  itIfNode('throws when require is unavailable in Node', () => {
-    setCrypto(undefined);
-    originalGlobalThis.msCrypto = undefined;
-    originalGlobalThis.module = undefined;
-    originalGlobalThis.require = undefined;
-
     expect(() => randomBytes(1)).to.throw('Secure random number generation');
   });
 
   itIfNode('throws when no secure RNG is available', () => {
     setCrypto(undefined);
-    originalGlobalThis.msCrypto = undefined;
-    originalGlobalThis.module = undefined;
-    originalGlobalThis.require = undefined;
-    originalGlobalThis.self = undefined;
-    originalGlobalThis.window = undefined;
-    originalGlobalThis.global = undefined;
-    setGlobalThisValue(undefined);
-    setProcess(undefined);
-
     expect(() => randomBytes(1)).to.throw('Secure random number generation');
   });
 });

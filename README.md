@@ -260,7 +260,7 @@ See [SECURITY.md](./SECURITY.md) for important security information, including:
 
 - **Memory security:** JavaScript cannot guarantee secure zeroization of secret keys
 - **Side channels:** Signature verification uses constant-time comparison
-- **Randomness:** Uses Web Crypto (`crypto.getRandomValues()`) in browsers and Node 18.20+. If Web Crypto is unavailable in Node, falls back to `crypto.randomBytes()`
+- **Randomness:** Uses Web Crypto API (`crypto.getRandomValues()`) exclusively. Throws if unavailable. Includes basic entropy validation to detect broken RNG implementations.
 - **Key handling:** Recommendations for secure key storage and disposal
 
 ## Development
@@ -284,8 +284,9 @@ npm run build
 
 ## Requirements
 
-- Node.js 18.20+, 20.x, or 22.x
-- Modern browsers with ES2020 support
+- **Node.js**: 18.20+, 20.x, or 22.x (requires `globalThis.crypto.getRandomValues`, available since Node.js 15)
+- **Browsers**: Any modern browser with [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) support (`crypto.getRandomValues()`) and ES2020 (BigInt). This includes Chrome 67+, Firefox 68+, Safari 14+, and Edge 79+.
+- **Not supported**: Internet Explorer, Node.js < 15, or environments without Web Crypto API
 
 ## TypeScript
 

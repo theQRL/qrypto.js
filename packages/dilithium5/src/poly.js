@@ -217,7 +217,7 @@ export function polyZUnpack(rP, a, aOffset) {
     r.coeffs[2 * i + 1] = a[aOffset + 5 * i + 2] >> 4;
     r.coeffs[2 * i + 1] |= a[aOffset + 5 * i + 3] << 4;
     r.coeffs[2 * i + 1] |= a[aOffset + 5 * i + 4] << 12;
-    r.coeffs[2 * i] &= 0xfffff;
+    r.coeffs[2 * i + 1] &= 0xfffff;
 
     r.coeffs[2 * i] = GAMMA1 - r.coeffs[2 * i];
     r.coeffs[2 * i + 1] = GAMMA1 - r.coeffs[2 * i + 1];
