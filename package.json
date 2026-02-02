@@ -10,6 +10,7 @@
     "build": "turbo run build",
     "test": "FORCE_COLOR=1 turbo test",
     "test:browser": "playwright install chromium && turbo run test:browser",
+    "check-shared": "node scripts/check-shared-files.js",
     "lint": "turbo lint-check",
     "coverage": "turbo coverage",
     "report-coverage": "turbo report-coverage"

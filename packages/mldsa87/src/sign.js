@@ -50,6 +50,7 @@ import {
 } from './const.js';
 import { Poly, polyChallenge, polyNTT } from './poly.js';
 import { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } from './packing.js';
+import { zeroize } from './utils.js';
 
 /**
  * Default signing context ("ZOND" in ASCII).
@@ -160,34 +161,45 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
   const rhoPrime = seedBuf.slice(SeedBytes, SeedBytes + CRHBytes);
   const key = seedBuf.slice(SeedBytes + CRHBytes);
 
-  // Expand matrix
-  polyVecMatrixExpand(mat, rho);
+  let s1hat;
+  try {
+    // Expand matrix
+    polyVecMatrixExpand(mat, rho);
 
-  // Sample short vectors s1 and s2
-  polyVecLUniformEta(s1, rhoPrime, 0);
-  polyVecKUniformEta(s2, rhoPrime, L);
+    // Sample short vectors s1 and s2
+    polyVecLUniformEta(s1, rhoPrime, 0);
+    polyVecKUniformEta(s2, rhoPrime, L);
 
-  // Matrix-vector multiplication
-  const s1hat = new PolyVecL();
-  s1hat.copy(s1);
-  polyVecLNTT(s1hat);
-  polyVecMatrixPointWiseMontgomery(t1, mat, s1hat);
-  polyVecKReduce(t1);
-  polyVecKInvNTTToMont(t1);
+    // Matrix-vector multiplication
+    s1hat = new PolyVecL();
+    s1hat.copy(s1);
+    polyVecLNTT(s1hat);
+    polyVecMatrixPointWiseMontgomery(t1, mat, s1hat);
+    polyVecKReduce(t1);
+    polyVecKInvNTTToMont(t1);
 
-  // Add error vector s2
-  polyVecKAdd(t1, t1, s2);
+    // Add error vector s2
+    polyVecKAdd(t1, t1, s2);
 
-  // Extract t1 and write public key
-  polyVecKCAddQ(t1);
-  polyVecKPower2round(t1, t0, t1);
-  packPk(pk, rho, t1);
+    // Extract t1 and write public key
+    polyVecKCAddQ(t1);
+    polyVecKPower2round(t1, t0, t1);
+    packPk(pk, rho, t1);
 
-  // Compute tr = SHAKE256(pk) (64 bytes) and write secret key
-  const tr = shake256.create({}).update(pk).xof(TRBytes);
-  packSk(sk, rho, tr, key, t0, s1, s2);
+    // Compute tr = SHAKE256(pk) (64 bytes) and write secret key
+    const tr = shake256.create({}).update(pk).xof(TRBytes);
+    packSk(sk, rho, tr, key, t0, s1, s2);
 
-  return seed;
+    return seed;
+  } finally {
+    zeroize(seedBuf);
+    zeroize(rhoPrime);
+    zeroize(key);
+    for (let i = 0; i < L; i++) s1.vec[i].coeffs.fill(0);
+    for (let i = 0; i < K; i++) s2.vec[i].coeffs.fill(0);
+    if (s1hat) for (let i = 0; i < L; i++) s1hat.vec[i].coeffs.fill(0);
+    for (let i = 0; i < K; i++) t0.vec[i].coeffs.fill(0);
+  }
 }
 
 /**
@@ -239,88 +251,97 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT
   const h = new PolyVecK();
   const cp = new Poly();
 
-  unpackSk(rho, tr, key, t0, s1, s2, sk);
+  try {
+    unpackSk(rho, tr, key, t0, s1, s2, sk);
 
-  // pre = 0x00 || len(ctx) || ctx
-  const pre = new Uint8Array(2 + ctx.length);
-  pre[0] = 0;
-  pre[1] = ctx.length;
-  pre.set(ctx, 2);
+    // pre = 0x00 || len(ctx) || ctx
+    const pre = new Uint8Array(2 + ctx.length);
+    pre[0] = 0;
+    pre[1] = ctx.length;
+    pre.set(ctx, 2);
 
-  const mBytes = messageToBytes(m);
+    const mBytes = messageToBytes(m);
 
-  // mu = SHAKE256(tr || pre || m)
-  const mu = shake256.create({}).update(tr).update(pre).update(mBytes).xof(CRHBytes);
+    // mu = SHAKE256(tr || pre || m)
+    const mu = shake256.create({}).update(tr).update(pre).update(mBytes).xof(CRHBytes);
 
-  // rhoPrime = SHAKE256(key || rnd || mu)
-  const rnd = randomizedSigning ? randomBytes(RNDBytes) : new Uint8Array(RNDBytes);
-  rhoPrime = shake256.create({}).update(key).update(rnd).update(mu).xof(CRHBytes);
+    // rhoPrime = SHAKE256(key || rnd || mu)
+    const rnd = randomizedSigning ? randomBytes(RNDBytes) : new Uint8Array(RNDBytes);
+    rhoPrime = shake256.create({}).update(key).update(rnd).update(mu).xof(CRHBytes);
 
-  polyVecMatrixExpand(mat, rho);
-  polyVecLNTT(s1);
-  polyVecKNTT(s2);
-  polyVecKNTT(t0);
+    polyVecMatrixExpand(mat, rho);
+    polyVecLNTT(s1);
+    polyVecKNTT(s2);
+    polyVecKNTT(t0);
 
-  while (true) {
-    polyVecLUniformGamma1(y, rhoPrime, nonce++);
-    // Matrix-vector multiplication
-    z.copy(y);
-    polyVecLNTT(z);
-    polyVecMatrixPointWiseMontgomery(w1, mat, z);
-    polyVecKReduce(w1);
-    polyVecKInvNTTToMont(w1);
+    while (true) {
+      polyVecLUniformGamma1(y, rhoPrime, nonce++);
+      // Matrix-vector multiplication
+      z.copy(y);
+      polyVecLNTT(z);
+      polyVecMatrixPointWiseMontgomery(w1, mat, z);
+      polyVecKReduce(w1);
+      polyVecKInvNTTToMont(w1);
 
-    // Decompose w and call the random oracle
-    polyVecKCAddQ(w1);
-    polyVecKDecompose(w1, w0, w1);
-    polyVecKPackW1(sig, w1);
+      // Decompose w and call the random oracle
+      polyVecKCAddQ(w1);
+      polyVecKDecompose(w1, w0, w1);
+      polyVecKPackW1(sig, w1);
 
-    // ctilde = SHAKE256(mu || w1_packed) (64 bytes)
-    const ctilde = shake256
-      .create({})
-      .update(mu)
-      .update(sig.slice(0, K * PolyW1PackedBytes))
-      .xof(CTILDEBytes);
+      // ctilde = SHAKE256(mu || w1_packed) (64 bytes)
+      const ctilde = shake256
+        .create({})
+        .update(mu)
+        .update(sig.slice(0, K * PolyW1PackedBytes))
+        .xof(CTILDEBytes);
 
-    polyChallenge(cp, ctilde);
-    polyNTT(cp);
+      polyChallenge(cp, ctilde);
+      polyNTT(cp);
 
-    // Compute z, reject if it reveals secret
-    polyVecLPointWisePolyMontgomery(z, cp, s1);
-    polyVecLInvNTTToMont(z);
-    polyVecLAdd(z, z, y);
-    polyVecLReduce(z);
-    if (polyVecLChkNorm(z, GAMMA1 - BETA) !== 0) {
-      continue;
+      // Compute z, reject if it reveals secret
+      polyVecLPointWisePolyMontgomery(z, cp, s1);
+      polyVecLInvNTTToMont(z);
+      polyVecLAdd(z, z, y);
+      polyVecLReduce(z);
+      if (polyVecLChkNorm(z, GAMMA1 - BETA) !== 0) {
+        continue;
+      }
+
+      polyVecKPointWisePolyMontgomery(h, cp, s2);
+      polyVecKInvNTTToMont(h);
+      polyVecKSub(w0, w0, h);
+      polyVecKReduce(w0);
+      if (polyVecKChkNorm(w0, GAMMA2 - BETA) !== 0) {
+        continue;
+      }
+
+      polyVecKPointWisePolyMontgomery(h, cp, t0);
+      polyVecKInvNTTToMont(h);
+      polyVecKReduce(h);
+      /* c8 ignore start */
+      if (polyVecKChkNorm(h, GAMMA2) !== 0) {
+        continue;
+      }
+      /* c8 ignore stop */
+
+      polyVecKAdd(w0, w0, h);
+      const n = polyVecKMakeHint(h, w0, w1);
+      /* c8 ignore start */
+      if (n > OMEGA) {
+        continue;
+      }
+      /* c8 ignore stop */
+
+      packSig(sig, ctilde, z, h);
+      return 0;
     }
-
-    polyVecKPointWisePolyMontgomery(h, cp, s2);
-    polyVecKInvNTTToMont(h);
-    polyVecKSub(w0, w0, h);
-    polyVecKReduce(w0);
-    if (polyVecKChkNorm(w0, GAMMA2 - BETA) !== 0) {
-      continue;
-    }
-
-    polyVecKPointWisePolyMontgomery(h, cp, t0);
-    polyVecKInvNTTToMont(h);
-    polyVecKReduce(h);
-    /* c8 ignore start */
-    if (polyVecKChkNorm(h, GAMMA2) !== 0) {
-      continue;
-    }
-    /* c8 ignore stop */
-
-    polyVecKAdd(w0, w0, h);
-    const n = polyVecKMakeHint(h, w0, w1);
-    /* c8 ignore start */
-    if (n > OMEGA) {
-      continue;
-    }
-    /* c8 ignore stop */
-
-    packSig(sig, ctilde, z, h);
-    return 0;
+  } finally {
+    zeroize(key);
+    zeroize(rhoPrime);
+    for (let i = 0; i < L; i++) s1.vec[i].coeffs.fill(0);
+    for (let i = 0; i < K; i++) s2.vec[i].coeffs.fill(0);
+    for (let i = 0; i < K; i++) t0.vec[i].coeffs.fill(0);
+    for (let i = 0; i < L; i++) y.vec[i].coeffs.fill(0);
   }
 }
 

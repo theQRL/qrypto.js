@@ -55,4 +55,24 @@ export default [
       'no-use-before-define': ['error', { functions: false }],
     },
   },
+
+  // Configuration for scripts
+  {
+    files: ['scripts/**/*.js'],
+    plugins: {
+      prettier,
+    },
+    languageOptions: {
+      ecmaVersion: 2020,
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+        ...globals.es2020,
+      },
+    },
+    rules: {
+      'prettier/prettier': 'error',
+      'import-x/extensions': ['error', 'ignorePackages'],
+    },
+  },
 ];

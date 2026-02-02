@@ -1,5 +1,5 @@
 /**
- * Security utilities for Dilithium5
+ * Security utilities for post-quantum signature schemes
  *
  * IMPORTANT: JavaScript cannot guarantee secure memory zeroization.
  * See SECURITY.md for details on limitations.
@@ -25,10 +25,12 @@ export function zeroize(buffer) {
   }
   // Use fill(0) for zeroing - best effort
   buffer.fill(0);
-  // Additional volatile-like access to discourage optimization
-  // (This is a hint to the JIT, not a guarantee)
-  if (buffer.length > 0 && buffer[0] !== 0) {
-    throw new Error('zeroize failed'); // Should never happen
+  // Accumulator-OR over all bytes to discourage dead-store elimination
+  // (Reading every byte makes it harder for JIT to prove fill is dead)
+  let check = 0;
+  for (let i = 0; i < buffer.length; i++) check |= buffer[i];
+  if (check !== 0) {
+    throw new Error('zeroize failed');
   }
 }
 
