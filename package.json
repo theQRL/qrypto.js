@@ -19,13 +19,13 @@
     "packages/*"
   ],
   "devDependencies": {
-    "@playwright/test": "^1.58.1",
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/exec": "^7.1.0",
-    "@semantic-release/git": "^10.0.1",
-    "conventional-changelog-conventionalcommits": "^9.1.0",
-    "multi-semantic-release": "^3.0.2",
-    "playwright": "^1.57.0",
-    "turbo": "^2.8.1"
+    "@playwright/test": "1.58.1",
+    "@semantic-release/changelog": "6.0.3",
+    "@semantic-release/exec": "7.1.0",
+    "@semantic-release/git": "10.0.1",
+    "conventional-changelog-conventionalcommits": "9.1.0",
+    "multi-semantic-release": "3.0.2",
+    "playwright": "1.57.0",
+    "turbo": "2.8.1"
   }
 }
