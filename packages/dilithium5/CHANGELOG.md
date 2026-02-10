@@ -1,3 +1,9 @@
+## @theqrl/dilithium5 [1.1.1](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.1.0...@theqrl/dilithium5@1.1.1) (2026-02-10)
+
+### Bug Fixes
+
+* rollup for CJS/ESM exports ([5ca7780](https://github.com/theQRL/qrypto.js/commit/5ca778057e2946adeeb88362e4f9951ea6b24f61))
+
 ## @theqrl/dilithium5 [1.1.0](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.0.9...@theqrl/dilithium5@1.1.0) (2026-02-10)
 
 ### Features
