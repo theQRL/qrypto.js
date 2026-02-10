@@ -1,3 +1,9 @@
+## @theqrl/dilithium5 [1.1.0](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.0.9...@theqrl/dilithium5@1.1.0) (2026-02-10)
+
+### Features
+
+* nodejs supported versions to >=20 ([b0c93d2](https://github.com/theQRL/qrypto.js/commit/b0c93d295941364716c90c0a164243c651514c64))
+
 ## @theqrl/dilithium5 [1.0.9](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.0.8...@theqrl/dilithium5@1.0.9) (2026-02-02)
 
 ### Bug Fixes
