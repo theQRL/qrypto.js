@@ -20,7 +20,7 @@ function run(script, opts = {}) {
   const args = opts.cjs
     ? ['-e', script]
     : ['--input-type=module', '-e', script];
-  return exec(NODE, args, { cwd: ROOT, timeout: 30_000 });
+  return exec(NODE, args, { cwd: ROOT, timeout: 30000 });
 }
 
 describe('dist bundle smoke tests', () => {
