@@ -17,10 +17,8 @@ const ROOT = path.resolve(__dirname, '..');
 const NODE = process.execPath;
 
 function run(script, opts = {}) {
-  const args = opts.cjs
-    ? ['-e', script]
-    : ['--input-type=module', '-e', script];
-  return exec(NODE, args, { cwd: ROOT, timeout: 30_000 });
+  const args = opts.cjs ? ['-e', script] : ['--input-type=module', '-e', script];
+  return exec(NODE, args, { cwd: ROOT, timeout: 30000 });
 }
 
 describe('dist bundle smoke tests', () => {
@@ -53,18 +51,22 @@ describe('dist bundle smoke tests', () => {
 
   describe('CJS (dist/cjs/dilithium5.js)', () => {
     it('requires and generates a keypair', async () => {
-      const { stdout } = await run(`
+      const { stdout } = await run(
+        `
         const { cryptoSignKeypair, CryptoPublicKeyBytes, CryptoSecretKeyBytes } = require('./dist/cjs/dilithium5.js');
         const pk = new Uint8Array(CryptoPublicKeyBytes);
         const sk = new Uint8Array(CryptoSecretKeyBytes);
         cryptoSignKeypair(null, pk, sk);
         console.log(pk.length === CryptoPublicKeyBytes && sk.length === CryptoSecretKeyBytes);
-      `, { cjs: true });
+      `,
+        { cjs: true }
+      );
       expect(stdout.trim()).to.equal('true');
     });
 
     it('sign and verify round-trip', async () => {
-      const { stdout } = await run(`
+      const { stdout } = await run(
+        `
         const { cryptoSignKeypair, cryptoSignSignature, cryptoSignVerify, CryptoBytes, CryptoPublicKeyBytes, CryptoSecretKeyBytes } = require('./dist/cjs/dilithium5.js');
         const pk = new Uint8Array(CryptoPublicKeyBytes);
         const sk = new Uint8Array(CryptoSecretKeyBytes);
@@ -73,7 +75,9 @@ describe('dist bundle smoke tests', () => {
         const sig = new Uint8Array(CryptoBytes);
         cryptoSignSignature(sig, msg, sk);
         console.log(cryptoSignVerify(sig, msg, pk));
-      `, { cjs: true });
+      `,
+        { cjs: true }
+      );
       expect(stdout.trim()).to.equal('true');
     });
   });
