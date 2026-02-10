@@ -73,7 +73,7 @@ Both implementations use the same seed expansion with `[K, L]` domain separator,
 ### Prerequisites
 
 - Node.js 22.x
-- Go 1.23.x (for go-qrllib tests)
+- Go 1.25.x (for go-qrllib tests)
 - GCC (for pq-crystals tests)
 
 ### go-qrllib Tests
