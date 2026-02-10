@@ -14,6 +14,28 @@ updates:
     commit-message:
       prefix: "deps"
 
+  - package-ecosystem: "npm"
+    directory: "/packages/dilithium5"
+    schedule:
+      interval: "weekly"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "deps"
+
+  - package-ecosystem: "npm"
+    directory: "/packages/mldsa87"
+    schedule:
+      interval: "weekly"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "deps"
+
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
