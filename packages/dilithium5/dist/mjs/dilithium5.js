@@ -430,7 +430,7 @@ function polyZUnpack(rP, a, aOffset) {
     r.coeffs[2 * i + 1] = a[aOffset + 5 * i + 2] >> 4;
     r.coeffs[2 * i + 1] |= a[aOffset + 5 * i + 3] << 4;
     r.coeffs[2 * i + 1] |= a[aOffset + 5 * i + 4] << 12;
-    r.coeffs[2 * i] &= 0xfffff;
+    r.coeffs[2 * i + 1] &= 0xfffff;
 
     r.coeffs[2 * i] = GAMMA1 - r.coeffs[2 * i];
     r.coeffs[2 * i + 1] = GAMMA1 - r.coeffs[2 * i + 1];
@@ -1023,43 +1023,8 @@ function unpackSig(cP, z, hP, sig) {
 const MAX_BYTES = 65536;
 const MAX_UINT32 = 0xffffffff;
 
-function getGlobalScope() {
-  if (typeof globalThis === 'object') return globalThis;
-  if (typeof self === 'object') return self;
-  if (typeof window === 'object') return window;
-  if (typeof global === 'object') return global;
-  return {};
-}
-
 function getWebCrypto() {
-  const scope = getGlobalScope();
-  return scope.crypto || scope.msCrypto || null;
-}
-
-function getNodeRandomBytes() {
-  /* c8 ignore next */
-  const isNode = typeof process === 'object' && process !== null && process.versions && process.versions.node;
-  if (!isNode) return null;
-
-  const req =
-    typeof module !== 'undefined' && module && typeof module.require === 'function'
-      ? module.require.bind(module)
-      : typeof module !== 'undefined' && module && typeof module.createRequire === 'function'
-        ? module.createRequire(import.meta.url)
-        : typeof require === 'function'
-          ? require
-          : null;
-  if (!req) return null;
-
-  try {
-    const nodeCrypto = req('crypto');
-    if (nodeCrypto && typeof nodeCrypto.randomBytes === 'function') {
-      return nodeCrypto.randomBytes;
-    }
-  } catch {
-    return null;
-  }
-
+  if (typeof globalThis === 'object' && globalThis.crypto) return globalThis.crypto;
   return null;
 }
 
@@ -1078,15 +1043,69 @@ function randomBytes(size) {
     for (let i = 0; i < size; i += MAX_BYTES) {
       cryptoObj.getRandomValues(out.subarray(i, Math.min(size, i + MAX_BYTES)));
     }
+    if (size >= 16) {
+      let acc = 0;
+      for (let i = 0; i < 16; i++) acc |= out[i];
+      if (acc === 0) throw new Error('getRandomValues returned all zeros');
+    }
     return out;
   }
 
-  const nodeRandomBytes = getNodeRandomBytes();
-  if (nodeRandomBytes) {
-    return nodeRandomBytes(size);
-  }
-
   throw new Error('Secure random number generation is not supported by this environment');
+}
+
+/**
+ * Security utilities for post-quantum signature schemes
+ *
+ * IMPORTANT: JavaScript cannot guarantee secure memory zeroization.
+ * See SECURITY.md for details on limitations.
+ */
+
+/**
+ * Attempts to zero out a Uint8Array buffer.
+ *
+ * WARNING: This is a BEST-EFFORT operation. Due to JavaScript/JIT limitations:
+ * - The write may be optimized away if the buffer is unused afterward
+ * - Copies may exist in garbage collector memory
+ * - Data may have been swapped to disk
+ *
+ * For high-security applications, consider native implementations (go-qrllib)
+ * or hardware security modules.
+ *
+ * @param {Uint8Array} buffer - The buffer to zero
+ * @returns {void}
+ */
+function zeroize(buffer) {
+  if (!(buffer instanceof Uint8Array)) {
+    throw new TypeError('zeroize requires a Uint8Array');
+  }
+  // Use fill(0) for zeroing - best effort
+  buffer.fill(0);
+  // Accumulator-OR over all bytes to discourage dead-store elimination
+  // (Reading every byte makes it harder for JIT to prove fill is dead)
+  let check = 0;
+  for (let i = 0; i < buffer.length; i++) check |= buffer[i];
+  if (check !== 0) {
+    throw new Error('zeroize failed');
+  }
+}
+
+/**
+ * Checks if a buffer is all zeros.
+ * Uses constant-time comparison to avoid timing leaks.
+ *
+ * @param {Uint8Array} buffer - The buffer to check
+ * @returns {boolean} True if all bytes are zero
+ */
+function isZero(buffer) {
+  if (!(buffer instanceof Uint8Array)) {
+    throw new TypeError('isZero requires a Uint8Array');
+  }
+  let acc = 0;
+  for (let i = 0; i < buffer.length; i++) {
+    acc |= buffer[i];
+  }
+  return acc === 0;
 }
 
 /**
@@ -1187,34 +1206,45 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
   const rhoPrime = seedBuf.slice(SeedBytes, SeedBytes + CRHBytes);
   const key = seedBuf.slice(SeedBytes + CRHBytes);
 
-  // Expand matrix
-  polyVecMatrixExpand(mat, rho);
+  let s1hat;
+  try {
+    // Expand matrix
+    polyVecMatrixExpand(mat, rho);
 
-  // Sample short vectors s1 and s2
-  polyVecLUniformEta(s1, rhoPrime, 0);
-  polyVecKUniformEta(s2, rhoPrime, L);
+    // Sample short vectors s1 and s2
+    polyVecLUniformEta(s1, rhoPrime, 0);
+    polyVecKUniformEta(s2, rhoPrime, L);
 
-  // Matrix-vector multiplication
-  const s1hat = new PolyVecL();
-  s1hat.copy(s1);
-  polyVecLNTT(s1hat);
-  polyVecMatrixPointWiseMontgomery(t1, mat, s1hat);
-  polyVecKReduce(t1);
-  polyVecKInvNTTToMont(t1);
+    // Matrix-vector multiplication
+    s1hat = new PolyVecL();
+    s1hat.copy(s1);
+    polyVecLNTT(s1hat);
+    polyVecMatrixPointWiseMontgomery(t1, mat, s1hat);
+    polyVecKReduce(t1);
+    polyVecKInvNTTToMont(t1);
 
-  // Add error vector s2
-  polyVecKAdd(t1, t1, s2);
+    // Add error vector s2
+    polyVecKAdd(t1, t1, s2);
 
-  // Extract t1 and write public key
-  polyVecKCAddQ(t1);
-  polyVecKPower2round(t1, t0, t1);
-  packPk(pk, rho, t1);
+    // Extract t1 and write public key
+    polyVecKCAddQ(t1);
+    polyVecKPower2round(t1, t0, t1);
+    packPk(pk, rho, t1);
 
-  // Compute H(rho, t1) and write secret key
-  const tr = shake256.create({}).update(pk).xof(TRBytes);
-  packSk(sk, rho, tr, key, t0, s1, s2);
+    // Compute H(rho, t1) and write secret key
+    const tr = shake256.create({}).update(pk).xof(TRBytes);
+    packSk(sk, rho, tr, key, t0, s1, s2);
 
-  return seed;
+    return seed;
+  } finally {
+    zeroize(seedBuf);
+    zeroize(rhoPrime);
+    zeroize(key);
+    for (let i = 0; i < L; i++) s1.vec[i].coeffs.fill(0);
+    for (let i = 0; i < K; i++) s2.vec[i].coeffs.fill(0);
+    if (s1hat) for (let i = 0; i < L; i++) s1hat.vec[i].coeffs.fill(0);
+    for (let i = 0; i < K; i++) t0.vec[i].coeffs.fill(0);
+  }
 }
 
 /**
@@ -1262,81 +1292,90 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
   const h = new PolyVecK();
   const cp = new Poly();
 
-  unpackSk(rho, tr, key, t0, s1, s2, sk);
+  try {
+    unpackSk(rho, tr, key, t0, s1, s2, sk);
 
-  const mu = shake256.create({}).update(tr).update(mBytes).xof(CRHBytes);
+    const mu = shake256.create({}).update(tr).update(mBytes).xof(CRHBytes);
 
-  if (randomizedSigning) {
-    rhoPrime = new Uint8Array(randomBytes(CRHBytes));
-  } else {
-    rhoPrime = shake256.create({}).update(key).update(mu).xof(CRHBytes);
-  }
-
-  polyVecMatrixExpand(mat, rho);
-  polyVecLNTT(s1);
-  polyVecKNTT(s2);
-  polyVecKNTT(t0);
-
-  while (true) {
-    polyVecLUniformGamma1(y, rhoPrime, nonce++);
-    // Matrix-vector multiplication
-    z.copy(y);
-    polyVecLNTT(z);
-    polyVecMatrixPointWiseMontgomery(w1, mat, z);
-    polyVecKReduce(w1);
-    polyVecKInvNTTToMont(w1);
-
-    // Decompose w and call the random oracle
-    polyVecKCAddQ(w1);
-    polyVecKDecompose(w1, w0, w1);
-    polyVecKPackW1(sig, w1);
-
-    const cHash = shake256
-      .create({})
-      .update(mu)
-      .update(sig.slice(0, K * PolyW1PackedBytes))
-      .xof(SeedBytes);
-    sig.set(cHash);
-
-    polyChallenge(cp, sig);
-    polyNTT(cp);
-
-    // Compute z, reject if it reveals secret
-    polyVecLPointWisePolyMontgomery(z, cp, s1);
-    polyVecLInvNTTToMont(z);
-    polyVecLAdd(z, z, y);
-    polyVecLReduce(z);
-    if (polyVecLChkNorm(z, GAMMA1 - BETA) !== 0) {
-      continue;
+    if (randomizedSigning) {
+      rhoPrime = new Uint8Array(randomBytes(CRHBytes));
+    } else {
+      rhoPrime = shake256.create({}).update(key).update(mu).xof(CRHBytes);
     }
 
-    polyVecKPointWisePolyMontgomery(h, cp, s2);
-    polyVecKInvNTTToMont(h);
-    polyVecKSub(w0, w0, h);
-    polyVecKReduce(w0);
-    if (polyVecKChkNorm(w0, GAMMA2 - BETA) !== 0) {
-      continue;
-    }
+    polyVecMatrixExpand(mat, rho);
+    polyVecLNTT(s1);
+    polyVecKNTT(s2);
+    polyVecKNTT(t0);
 
-    polyVecKPointWisePolyMontgomery(h, cp, t0);
-    polyVecKInvNTTToMont(h);
-    polyVecKReduce(h);
-    /* c8 ignore start */
-    if (polyVecKChkNorm(h, GAMMA2) !== 0) {
-      continue;
-    }
-    /* c8 ignore stop */
+    while (true) {
+      polyVecLUniformGamma1(y, rhoPrime, nonce++);
+      // Matrix-vector multiplication
+      z.copy(y);
+      polyVecLNTT(z);
+      polyVecMatrixPointWiseMontgomery(w1, mat, z);
+      polyVecKReduce(w1);
+      polyVecKInvNTTToMont(w1);
 
-    polyVecKAdd(w0, w0, h);
-    const n = polyVecKMakeHint(h, w0, w1);
-    /* c8 ignore start */
-    if (n > OMEGA) {
-      continue;
-    }
-    /* c8 ignore stop */
+      // Decompose w and call the random oracle
+      polyVecKCAddQ(w1);
+      polyVecKDecompose(w1, w0, w1);
+      polyVecKPackW1(sig, w1);
 
-    packSig(sig, sig, z, h);
-    return 0;
+      const cHash = shake256
+        .create({})
+        .update(mu)
+        .update(sig.slice(0, K * PolyW1PackedBytes))
+        .xof(SeedBytes);
+      sig.set(cHash);
+
+      polyChallenge(cp, sig);
+      polyNTT(cp);
+
+      // Compute z, reject if it reveals secret
+      polyVecLPointWisePolyMontgomery(z, cp, s1);
+      polyVecLInvNTTToMont(z);
+      polyVecLAdd(z, z, y);
+      polyVecLReduce(z);
+      if (polyVecLChkNorm(z, GAMMA1 - BETA) !== 0) {
+        continue;
+      }
+
+      polyVecKPointWisePolyMontgomery(h, cp, s2);
+      polyVecKInvNTTToMont(h);
+      polyVecKSub(w0, w0, h);
+      polyVecKReduce(w0);
+      if (polyVecKChkNorm(w0, GAMMA2 - BETA) !== 0) {
+        continue;
+      }
+
+      polyVecKPointWisePolyMontgomery(h, cp, t0);
+      polyVecKInvNTTToMont(h);
+      polyVecKReduce(h);
+      /* c8 ignore start */
+      if (polyVecKChkNorm(h, GAMMA2) !== 0) {
+        continue;
+      }
+      /* c8 ignore stop */
+
+      polyVecKAdd(w0, w0, h);
+      const n = polyVecKMakeHint(h, w0, w1);
+      /* c8 ignore start */
+      if (n > OMEGA) {
+        continue;
+      }
+      /* c8 ignore stop */
+
+      packSig(sig, sig, z, h);
+      return 0;
+    }
+  } finally {
+    zeroize(key);
+    zeroize(rhoPrime);
+    for (let i = 0; i < L; i++) s1.vec[i].coeffs.fill(0);
+    for (let i = 0; i < K; i++) s2.vec[i].coeffs.fill(0);
+    for (let i = 0; i < K; i++) t0.vec[i].coeffs.fill(0);
+    for (let i = 0; i < L; i++) y.vec[i].coeffs.fill(0);
   }
 }
 
@@ -1493,58 +1532,6 @@ function cryptoSignOpen(sm, pk) {
   }
 
   return msg;
-}
-
-/**
- * Security utilities for Dilithium5
- *
- * IMPORTANT: JavaScript cannot guarantee secure memory zeroization.
- * See SECURITY.md for details on limitations.
- */
-
-/**
- * Attempts to zero out a Uint8Array buffer.
- *
- * WARNING: This is a BEST-EFFORT operation. Due to JavaScript/JIT limitations:
- * - The write may be optimized away if the buffer is unused afterward
- * - Copies may exist in garbage collector memory
- * - Data may have been swapped to disk
- *
- * For high-security applications, consider native implementations (go-qrllib)
- * or hardware security modules.
- *
- * @param {Uint8Array} buffer - The buffer to zero
- * @returns {void}
- */
-function zeroize(buffer) {
-  if (!(buffer instanceof Uint8Array)) {
-    throw new TypeError('zeroize requires a Uint8Array');
-  }
-  // Use fill(0) for zeroing - best effort
-  buffer.fill(0);
-  // Additional volatile-like access to discourage optimization
-  // (This is a hint to the JIT, not a guarantee)
-  if (buffer.length > 0 && buffer[0] !== 0) {
-    throw new Error('zeroize failed'); // Should never happen
-  }
-}
-
-/**
- * Checks if a buffer is all zeros.
- * Uses constant-time comparison to avoid timing leaks.
- *
- * @param {Uint8Array} buffer - The buffer to check
- * @returns {boolean} True if all bytes are zero
- */
-function isZero(buffer) {
-  if (!(buffer instanceof Uint8Array)) {
-    throw new TypeError('isZero requires a Uint8Array');
-  }
-  let acc = 0;
-  for (let i = 0; i < buffer.length; i++) {
-    acc |= buffer[i];
-  }
-  return acc === 0;
 }
 
 export { BETA, CRHBytes, CryptoBytes, CryptoPublicKeyBytes, CryptoSecretKeyBytes, D, ETA, GAMMA1, GAMMA2, K, KeccakState, L, N, OMEGA, Poly, PolyETAPackedBytes, PolyT0PackedBytes, PolyT1PackedBytes, PolyUniformETANBlocks, PolyUniformGamma1NBlocks, PolyUniformNBlocks, PolyVecHPackedBytes, PolyVecK, PolyVecL, PolyW1PackedBytes, PolyZPackedBytes, Q, QInv, SeedBytes, Shake128Rate, Shake256Rate, Stream128BlockBytes, Stream256BlockBytes, TAU, TRBytes, cAddQ, cryptoSign, cryptoSignKeypair, cryptoSignOpen, cryptoSignSignature, cryptoSignVerify, decompose, dilithiumShake128StreamInit, dilithiumShake256StreamInit, invNTTToMont, isZero, makeHint, montgomeryReduce, ntt, packPk, packSig, packSk, polyAdd, polyCAddQ, polyChallenge, polyChkNorm, polyDecompose, polyEtaPack, polyEtaUnpack, polyInvNTTToMont, polyMakeHint, polyNTT, polyPointWiseMontgomery, polyPower2round, polyReduce, polyShiftL, polySub, polyT0Pack, polyT0Unpack, polyT1Pack, polyT1Unpack, polyUniform, polyUniformEta, polyUniformGamma1, polyUseHint, polyVecKAdd, polyVecKCAddQ, polyVecKChkNorm, polyVecKDecompose, polyVecKInvNTTToMont, polyVecKMakeHint, polyVecKNTT, polyVecKPackW1, polyVecKPointWisePolyMontgomery, polyVecKPower2round, polyVecKReduce, polyVecKShiftL, polyVecKSub, polyVecKUniformEta, polyVecKUseHint, polyVecLAdd, polyVecLChkNorm, polyVecLInvNTTToMont, polyVecLNTT, polyVecLPointWiseAccMontgomery, polyVecLPointWisePolyMontgomery, polyVecLReduce, polyVecLUniformEta, polyVecLUniformGamma1, polyVecMatrixExpand, polyVecMatrixPointWiseMontgomery, polyW1Pack, polyZPack, polyZUnpack, power2round, reduce32, rejEta, rejUniform, shake128Absorb, shake128Finalize, shake128Init, shake128SqueezeBlocks, shake256Absorb, shake256Finalize, shake256Init, shake256SqueezeBlocks, unpackPk, unpackSig, unpackSk, useHint, zeroize, zetas };

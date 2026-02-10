@@ -33,7 +33,7 @@
   "scripts": {
     "test": "../../node_modules/mocha/bin/mocha.js --require ../../scripts/node-test-setup.cjs --timeout 10000",
     "test:browser": "playwright test",
-    "build": "rollup src/index.js --file ./dist/cjs/mldsa87.js --format cjs && rollup src/index.js --file ./dist/mjs/mldsa87.js --format esm && ./fixup",
+    "build": "rollup -c && ./fixup",
     "lint-check": "eslint 'src/**/*.js' 'test/**/*.js'",
     "lint": "eslint --fix 'src/**/*.js' 'test/**/*.js'",
     "coverage": "c8 npm run test",
@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@rollup/plugin-node-resolve": "^16.0.3",
     "c8": "^10.1.3",
     "chai": "^6.2.2",
     "eslint": "^10.0.0",

@@ -1,9 +1,5 @@
 'use strict';
 
-var sha3_js = require('@noble/hashes/sha3.js');
-var utils_js = require('@noble/hashes/utils.js');
-
-var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
 const Shake128Rate = 168;
 const Shake256Rate = 136;
 const Stream128BlockBytes = Shake128Rate;
@@ -69,6 +65,386 @@ const zetas = [
 ];
 
 /**
+ * Internal helpers for u64. BigUint64Array is too slow as per 2025, so we implement it using Uint32Array.
+ * @todo re-check https://issues.chromium.org/issues/42212588
+ * @module
+ */
+const U32_MASK64 = /* @__PURE__ */ BigInt(2 ** 32 - 1);
+const _32n = /* @__PURE__ */ BigInt(32);
+function fromBig(n, le = false) {
+    if (le)
+        return { h: Number(n & U32_MASK64), l: Number((n >> _32n) & U32_MASK64) };
+    return { h: Number((n >> _32n) & U32_MASK64) | 0, l: Number(n & U32_MASK64) | 0 };
+}
+function split(lst, le = false) {
+    const len = lst.length;
+    let Ah = new Uint32Array(len);
+    let Al = new Uint32Array(len);
+    for (let i = 0; i < len; i++) {
+        const { h, l } = fromBig(lst[i], le);
+        [Ah[i], Al[i]] = [h, l];
+    }
+    return [Ah, Al];
+}
+// Left rotate for Shift in [1, 32)
+const rotlSH = (h, l, s) => (h << s) | (l >>> (32 - s));
+const rotlSL = (h, l, s) => (l << s) | (h >>> (32 - s));
+// Left rotate for Shift in (32, 64), NOTE: 32 is special case.
+const rotlBH = (h, l, s) => (l << (s - 32)) | (h >>> (64 - s));
+const rotlBL = (h, l, s) => (h << (s - 32)) | (l >>> (64 - s));
+
+/**
+ * Utilities for hex, bytes, CSPRNG.
+ * @module
+ */
+/*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+/** Checks if something is Uint8Array. Be careful: nodejs Buffer will return true. */
+function isBytes(a) {
+    return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
+}
+/** Asserts something is positive integer. */
+function anumber(n, title = '') {
+    if (!Number.isSafeInteger(n) || n < 0) {
+        const prefix = title && `"${title}" `;
+        throw new Error(`${prefix}expected integer >= 0, got ${n}`);
+    }
+}
+/** Asserts something is Uint8Array. */
+function abytes(value, length, title = '') {
+    const bytes = isBytes(value);
+    const len = value?.length;
+    const needsLen = length !== undefined;
+    if (!bytes || (needsLen)) {
+        const prefix = title && `"${title}" `;
+        const ofLen = '';
+        const got = bytes ? `length=${len}` : `type=${typeof value}`;
+        throw new Error(prefix + 'expected Uint8Array' + ofLen + ', got ' + got);
+    }
+    return value;
+}
+/** Asserts a hash instance has not been destroyed / finished */
+function aexists(instance, checkFinished = true) {
+    if (instance.destroyed)
+        throw new Error('Hash instance has been destroyed');
+    if (checkFinished && instance.finished)
+        throw new Error('Hash#digest() has already been called');
+}
+/** Asserts output is properly-sized byte array */
+function aoutput(out, instance) {
+    abytes(out, undefined, 'digestInto() output');
+    const min = instance.outputLen;
+    if (out.length < min) {
+        throw new Error('"digestInto() output" expected to be of length >=' + min);
+    }
+}
+/** Cast u8 / u16 / u32 to u32. */
+function u32(arr) {
+    return new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
+}
+/** Zeroize a byte array. Warning: JS provides no guarantees. */
+function clean(...arrays) {
+    for (let i = 0; i < arrays.length; i++) {
+        arrays[i].fill(0);
+    }
+}
+/** Is current platform little-endian? Most are. Big-Endian platform: IBM */
+const isLE = /* @__PURE__ */ (() => new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44)();
+/** The byte swap operation for uint32 */
+function byteSwap(word) {
+    return (((word << 24) & 0xff000000) |
+        ((word << 8) & 0xff0000) |
+        ((word >>> 8) & 0xff00) |
+        ((word >>> 24) & 0xff));
+}
+/** In place byte swap for Uint32Array */
+function byteSwap32(arr) {
+    for (let i = 0; i < arr.length; i++) {
+        arr[i] = byteSwap(arr[i]);
+    }
+    return arr;
+}
+const swap32IfBE = isLE
+    ? (u) => u
+    : byteSwap32;
+// Built-in hex conversion https://caniuse.com/mdn-javascript_builtins_uint8array_fromhex
+const hasHexBuiltin = /* @__PURE__ */ (() => 
+// @ts-ignore
+typeof Uint8Array.from([]).toHex === 'function' && typeof Uint8Array.fromHex === 'function')();
+// We use optimized technique to convert hex string to byte array
+const asciis = { _0: 48, _9: 57, A: 65, F: 70, a: 97, f: 102 };
+function asciiToBase16(ch) {
+    if (ch >= asciis._0 && ch <= asciis._9)
+        return ch - asciis._0; // '2' => 50-48
+    if (ch >= asciis.A && ch <= asciis.F)
+        return ch - (asciis.A - 10); // 'B' => 66-(65-10)
+    if (ch >= asciis.a && ch <= asciis.f)
+        return ch - (asciis.a - 10); // 'b' => 98-(97-10)
+    return;
+}
+/**
+ * Convert hex string to byte array. Uses built-in function, when available.
+ * @example hexToBytes('cafe0123') // Uint8Array.from([0xca, 0xfe, 0x01, 0x23])
+ */
+function hexToBytes$1(hex) {
+    if (typeof hex !== 'string')
+        throw new Error('hex string expected, got ' + typeof hex);
+    // @ts-ignore
+    if (hasHexBuiltin)
+        return Uint8Array.fromHex(hex);
+    const hl = hex.length;
+    const al = hl / 2;
+    if (hl % 2)
+        throw new Error('hex string expected, got unpadded hex of length ' + hl);
+    const array = new Uint8Array(al);
+    for (let ai = 0, hi = 0; ai < al; ai++, hi += 2) {
+        const n1 = asciiToBase16(hex.charCodeAt(hi));
+        const n2 = asciiToBase16(hex.charCodeAt(hi + 1));
+        if (n1 === undefined || n2 === undefined) {
+            const char = hex[hi] + hex[hi + 1];
+            throw new Error('hex string expected, got non-hex character "' + char + '" at index ' + hi);
+        }
+        array[ai] = n1 * 16 + n2; // multiply first octet, e.g. 'a3' => 10*16+3 => 160 + 3 => 163
+    }
+    return array;
+}
+/** Creates function with outputLen, blockLen, create properties from a class constructor. */
+function createHasher(hashCons, info = {}) {
+    const hashC = (msg, opts) => hashCons(opts).update(msg).digest();
+    const tmp = hashCons(undefined);
+    hashC.outputLen = tmp.outputLen;
+    hashC.blockLen = tmp.blockLen;
+    hashC.create = (opts) => hashCons(opts);
+    Object.assign(hashC, info);
+    return Object.freeze(hashC);
+}
+/** Creates OID opts for NIST hashes, with prefix 06 09 60 86 48 01 65 03 04 02. */
+const oidNist = (suffix) => ({
+    oid: Uint8Array.from([0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, suffix]),
+});
+
+/**
+ * SHA3 (keccak) hash function, based on a new "Sponge function" design.
+ * Different from older hashes, the internal state is bigger than output size.
+ *
+ * Check out [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
+ * [Website](https://keccak.team/keccak.html),
+ * [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub).
+ *
+ * Check out `sha3-addons` module for cSHAKE, k12, and others.
+ * @module
+ */
+// No __PURE__ annotations in sha3 header:
+// EVERYTHING is in fact used on every export.
+// Various per round constants calculations
+const _0n = BigInt(0);
+const _1n = BigInt(1);
+const _2n = BigInt(2);
+const _7n = BigInt(7);
+const _256n = BigInt(256);
+const _0x71n = BigInt(0x71);
+const SHA3_PI = [];
+const SHA3_ROTL = [];
+const _SHA3_IOTA = []; // no pure annotation: var is always used
+for (let round = 0, R = _1n, x = 1, y = 0; round < 24; round++) {
+    // Pi
+    [x, y] = [y, (2 * x + 3 * y) % 5];
+    SHA3_PI.push(2 * (5 * y + x));
+    // Rotational
+    SHA3_ROTL.push((((round + 1) * (round + 2)) / 2) % 64);
+    // Iota
+    let t = _0n;
+    for (let j = 0; j < 7; j++) {
+        R = ((R << _1n) ^ ((R >> _7n) * _0x71n)) % _256n;
+        if (R & _2n)
+            t ^= _1n << ((_1n << BigInt(j)) - _1n);
+    }
+    _SHA3_IOTA.push(t);
+}
+const IOTAS = split(_SHA3_IOTA, true);
+const SHA3_IOTA_H = IOTAS[0];
+const SHA3_IOTA_L = IOTAS[1];
+// Left rotation (without 0, 32, 64)
+const rotlH = (h, l, s) => (s > 32 ? rotlBH(h, l, s) : rotlSH(h, l, s));
+const rotlL = (h, l, s) => (s > 32 ? rotlBL(h, l, s) : rotlSL(h, l, s));
+/** `keccakf1600` internal function, additionally allows to adjust round count. */
+function keccakP(s, rounds = 24) {
+    const B = new Uint32Array(5 * 2);
+    // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
+    for (let round = 24 - rounds; round < 24; round++) {
+        // Theta θ
+        for (let x = 0; x < 10; x++)
+            B[x] = s[x] ^ s[x + 10] ^ s[x + 20] ^ s[x + 30] ^ s[x + 40];
+        for (let x = 0; x < 10; x += 2) {
+            const idx1 = (x + 8) % 10;
+            const idx0 = (x + 2) % 10;
+            const B0 = B[idx0];
+            const B1 = B[idx0 + 1];
+            const Th = rotlH(B0, B1, 1) ^ B[idx1];
+            const Tl = rotlL(B0, B1, 1) ^ B[idx1 + 1];
+            for (let y = 0; y < 50; y += 10) {
+                s[x + y] ^= Th;
+                s[x + y + 1] ^= Tl;
+            }
+        }
+        // Rho (ρ) and Pi (π)
+        let curH = s[2];
+        let curL = s[3];
+        for (let t = 0; t < 24; t++) {
+            const shift = SHA3_ROTL[t];
+            const Th = rotlH(curH, curL, shift);
+            const Tl = rotlL(curH, curL, shift);
+            const PI = SHA3_PI[t];
+            curH = s[PI];
+            curL = s[PI + 1];
+            s[PI] = Th;
+            s[PI + 1] = Tl;
+        }
+        // Chi (χ)
+        for (let y = 0; y < 50; y += 10) {
+            for (let x = 0; x < 10; x++)
+                B[x] = s[y + x];
+            for (let x = 0; x < 10; x++)
+                s[y + x] ^= ~B[(x + 2) % 10] & B[(x + 4) % 10];
+        }
+        // Iota (ι)
+        s[0] ^= SHA3_IOTA_H[round];
+        s[1] ^= SHA3_IOTA_L[round];
+    }
+    clean(B);
+}
+/** Keccak sponge function. */
+class Keccak {
+    state;
+    pos = 0;
+    posOut = 0;
+    finished = false;
+    state32;
+    destroyed = false;
+    blockLen;
+    suffix;
+    outputLen;
+    enableXOF = false;
+    rounds;
+    // NOTE: we accept arguments in bytes instead of bits here.
+    constructor(blockLen, suffix, outputLen, enableXOF = false, rounds = 24) {
+        this.blockLen = blockLen;
+        this.suffix = suffix;
+        this.outputLen = outputLen;
+        this.enableXOF = enableXOF;
+        this.rounds = rounds;
+        // Can be passed from user as dkLen
+        anumber(outputLen, 'outputLen');
+        // 1600 = 5x5 matrix of 64bit.  1600 bits === 200 bytes
+        // 0 < blockLen < 200
+        if (!(0 < blockLen && blockLen < 200))
+            throw new Error('only keccak-f1600 function is supported');
+        this.state = new Uint8Array(200);
+        this.state32 = u32(this.state);
+    }
+    clone() {
+        return this._cloneInto();
+    }
+    keccak() {
+        swap32IfBE(this.state32);
+        keccakP(this.state32, this.rounds);
+        swap32IfBE(this.state32);
+        this.posOut = 0;
+        this.pos = 0;
+    }
+    update(data) {
+        aexists(this);
+        abytes(data);
+        const { blockLen, state } = this;
+        const len = data.length;
+        for (let pos = 0; pos < len;) {
+            const take = Math.min(blockLen - this.pos, len - pos);
+            for (let i = 0; i < take; i++)
+                state[this.pos++] ^= data[pos++];
+            if (this.pos === blockLen)
+                this.keccak();
+        }
+        return this;
+    }
+    finish() {
+        if (this.finished)
+            return;
+        this.finished = true;
+        const { state, suffix, pos, blockLen } = this;
+        // Do the padding
+        state[pos] ^= suffix;
+        if ((suffix & 0x80) !== 0 && pos === blockLen - 1)
+            this.keccak();
+        state[blockLen - 1] ^= 0x80;
+        this.keccak();
+    }
+    writeInto(out) {
+        aexists(this, false);
+        abytes(out);
+        this.finish();
+        const bufferOut = this.state;
+        const { blockLen } = this;
+        for (let pos = 0, len = out.length; pos < len;) {
+            if (this.posOut >= blockLen)
+                this.keccak();
+            const take = Math.min(blockLen - this.posOut, len - pos);
+            out.set(bufferOut.subarray(this.posOut, this.posOut + take), pos);
+            this.posOut += take;
+            pos += take;
+        }
+        return out;
+    }
+    xofInto(out) {
+        // Sha3/Keccak usage with XOF is probably mistake, only SHAKE instances can do XOF
+        if (!this.enableXOF)
+            throw new Error('XOF is not possible for this instance');
+        return this.writeInto(out);
+    }
+    xof(bytes) {
+        anumber(bytes);
+        return this.xofInto(new Uint8Array(bytes));
+    }
+    digestInto(out) {
+        aoutput(out, this);
+        if (this.finished)
+            throw new Error('digest() was already called');
+        this.writeInto(out);
+        this.destroy();
+        return out;
+    }
+    digest() {
+        return this.digestInto(new Uint8Array(this.outputLen));
+    }
+    destroy() {
+        this.destroyed = true;
+        clean(this.state);
+    }
+    _cloneInto(to) {
+        const { blockLen, suffix, outputLen, rounds, enableXOF } = this;
+        to ||= new Keccak(blockLen, suffix, outputLen, enableXOF, rounds);
+        to.state32.set(this.state32);
+        to.pos = this.pos;
+        to.posOut = this.posOut;
+        to.finished = this.finished;
+        to.rounds = rounds;
+        // Suffix can change in cSHAKE
+        to.suffix = suffix;
+        to.outputLen = outputLen;
+        to.enableXOF = enableXOF;
+        to.destroyed = this.destroyed;
+        return to;
+    }
+}
+const genShake = (suffix, blockLen, outputLen, info = {}) => createHasher((opts = {}) => new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true), info);
+/** SHAKE128 XOF with 128-bit security. */
+const shake128 = 
+/* @__PURE__ */
+genShake(0x1f, 168, 16, /* @__PURE__ */ oidNist(0x0b));
+/** SHAKE256 XOF with 256-bit security. */
+const shake256 = 
+/* @__PURE__ */
+genShake(0x1f, 136, 32, /* @__PURE__ */ oidNist(0x0c));
+
+/**
  * FIPS 202 SHAKE functions using @noble/hashes
  * Provides streaming XOF (extendable output function) interface
  */
@@ -88,7 +464,7 @@ class KeccakState {
 // SHAKE-128 functions
 
 function shake128Init(state) {
-  state.hasher = sha3_js.shake128.create({});
+  state.hasher = shake128.create({});
   state.finalized = false;
 }
 
@@ -110,7 +486,7 @@ function shake128SqueezeBlocks(out, outputOffset, nBlocks, state) {
 // SHAKE-256 functions
 
 function shake256Init(state) {
-  state.hasher = sha3_js.shake256.create({});
+  state.hasher = shake256.create({});
   state.finalized = false;
 }
 
@@ -435,7 +811,7 @@ function polyZUnpack(rP, a, aOffset) {
     r.coeffs[2 * i + 1] = a[aOffset + 5 * i + 2] >> 4;
     r.coeffs[2 * i + 1] |= a[aOffset + 5 * i + 3] << 4;
     r.coeffs[2 * i + 1] |= a[aOffset + 5 * i + 4] << 12;
-    r.coeffs[2 * i] &= 0xfffff;
+    r.coeffs[2 * i + 1] &= 0xfffff;
 
     r.coeffs[2 * i] = GAMMA1 - r.coeffs[2 * i];
     r.coeffs[2 * i + 1] = GAMMA1 - r.coeffs[2 * i + 1];
@@ -1029,43 +1405,8 @@ function unpackSig(cP, z, hP, sig) {
 
 const MAX_BYTES = 65536;
 
-function getGlobalScope() {
-  if (typeof globalThis === 'object') return globalThis;
-  if (typeof self === 'object') return self;
-  if (typeof window === 'object') return window;
-  if (typeof global === 'object') return global;
-  return {};
-}
-
 function getWebCrypto() {
-  const scope = getGlobalScope();
-  return scope.crypto || scope.msCrypto || null;
-}
-
-function getNodeRandomBytes() {
-  /* c8 ignore next */
-  const isNode = typeof process === 'object' && process !== null && process.versions && process.versions.node;
-  if (!isNode) return null;
-
-  const req =
-    typeof module !== 'undefined' && module && typeof module.require === 'function'
-      ? module.require.bind(module)
-      : typeof module !== 'undefined' && module && typeof module.createRequire === 'function'
-        ? module.createRequire((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('mldsa87.js', document.baseURI).href)))
-        : typeof require === 'function'
-          ? require
-          : null;
-  if (!req) return null;
-
-  try {
-    const nodeCrypto = req('crypto');
-    if (nodeCrypto && typeof nodeCrypto.randomBytes === 'function') {
-      return nodeCrypto.randomBytes;
-    }
-  } catch {
-    return null;
-  }
-
+  if (typeof globalThis === 'object' && globalThis.crypto) return globalThis.crypto;
   return null;
 }
 
@@ -1080,15 +1421,69 @@ function randomBytes(size) {
     for (let i = 0; i < size; i += MAX_BYTES) {
       cryptoObj.getRandomValues(out.subarray(i, Math.min(size, i + MAX_BYTES)));
     }
+    {
+      let acc = 0;
+      for (let i = 0; i < 16; i++) acc |= out[i];
+      if (acc === 0) throw new Error('getRandomValues returned all zeros');
+    }
     return out;
   }
 
-  const nodeRandomBytes = getNodeRandomBytes();
-  if (nodeRandomBytes) {
-    return nodeRandomBytes(size);
-  }
-
   throw new Error('Secure random number generation is not supported by this environment');
+}
+
+/**
+ * Security utilities for post-quantum signature schemes
+ *
+ * IMPORTANT: JavaScript cannot guarantee secure memory zeroization.
+ * See SECURITY.md for details on limitations.
+ */
+
+/**
+ * Attempts to zero out a Uint8Array buffer.
+ *
+ * WARNING: This is a BEST-EFFORT operation. Due to JavaScript/JIT limitations:
+ * - The write may be optimized away if the buffer is unused afterward
+ * - Copies may exist in garbage collector memory
+ * - Data may have been swapped to disk
+ *
+ * For high-security applications, consider native implementations (go-qrllib)
+ * or hardware security modules.
+ *
+ * @param {Uint8Array} buffer - The buffer to zero
+ * @returns {void}
+ */
+function zeroize(buffer) {
+  if (!(buffer instanceof Uint8Array)) {
+    throw new TypeError('zeroize requires a Uint8Array');
+  }
+  // Use fill(0) for zeroing - best effort
+  buffer.fill(0);
+  // Accumulator-OR over all bytes to discourage dead-store elimination
+  // (Reading every byte makes it harder for JIT to prove fill is dead)
+  let check = 0;
+  for (let i = 0; i < buffer.length; i++) check |= buffer[i];
+  if (check !== 0) {
+    throw new Error('zeroize failed');
+  }
+}
+
+/**
+ * Checks if a buffer is all zeros.
+ * Uses constant-time comparison to avoid timing leaks.
+ *
+ * @param {Uint8Array} buffer - The buffer to check
+ * @returns {boolean} True if all bytes are zero
+ */
+function isZero(buffer) {
+  if (!(buffer instanceof Uint8Array)) {
+    throw new TypeError('isZero requires a Uint8Array');
+  }
+  let acc = 0;
+  for (let i = 0; i < buffer.length; i++) {
+    acc |= buffer[i];
+  }
+  return acc === 0;
 }
 
 /**
@@ -1130,7 +1525,7 @@ function hexToBytes(hex) {
   if (!/^[0-9a-fA-F]*$/.test(clean)) {
     throw new Error('hex string contains non-hex characters');
   }
-  return utils_js.hexToBytes(clean);
+  return hexToBytes$1(clean);
 }
 
 function messageToBytes(message) {
@@ -1195,39 +1590,50 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
 
   const outputLength = 2 * SeedBytes + CRHBytes;
   const domainSep = new Uint8Array([K, L]);
-  const seedBuf = sha3_js.shake256.create({}).update(seed).update(domainSep).xof(outputLength);
+  const seedBuf = shake256.create({}).update(seed).update(domainSep).xof(outputLength);
   const rho = seedBuf.slice(0, SeedBytes);
   const rhoPrime = seedBuf.slice(SeedBytes, SeedBytes + CRHBytes);
   const key = seedBuf.slice(SeedBytes + CRHBytes);
 
-  // Expand matrix
-  polyVecMatrixExpand(mat, rho);
+  let s1hat;
+  try {
+    // Expand matrix
+    polyVecMatrixExpand(mat, rho);
 
-  // Sample short vectors s1 and s2
-  polyVecLUniformEta(s1, rhoPrime, 0);
-  polyVecKUniformEta(s2, rhoPrime, L);
+    // Sample short vectors s1 and s2
+    polyVecLUniformEta(s1, rhoPrime, 0);
+    polyVecKUniformEta(s2, rhoPrime, L);
 
-  // Matrix-vector multiplication
-  const s1hat = new PolyVecL();
-  s1hat.copy(s1);
-  polyVecLNTT(s1hat);
-  polyVecMatrixPointWiseMontgomery(t1, mat, s1hat);
-  polyVecKReduce(t1);
-  polyVecKInvNTTToMont(t1);
+    // Matrix-vector multiplication
+    s1hat = new PolyVecL();
+    s1hat.copy(s1);
+    polyVecLNTT(s1hat);
+    polyVecMatrixPointWiseMontgomery(t1, mat, s1hat);
+    polyVecKReduce(t1);
+    polyVecKInvNTTToMont(t1);
 
-  // Add error vector s2
-  polyVecKAdd(t1, t1, s2);
+    // Add error vector s2
+    polyVecKAdd(t1, t1, s2);
 
-  // Extract t1 and write public key
-  polyVecKCAddQ(t1);
-  polyVecKPower2round(t1, t0, t1);
-  packPk(pk, rho, t1);
+    // Extract t1 and write public key
+    polyVecKCAddQ(t1);
+    polyVecKPower2round(t1, t0, t1);
+    packPk(pk, rho, t1);
 
-  // Compute tr = SHAKE256(pk) (64 bytes) and write secret key
-  const tr = sha3_js.shake256.create({}).update(pk).xof(TRBytes);
-  packSk(sk, rho, tr, key, t0, s1, s2);
+    // Compute tr = SHAKE256(pk) (64 bytes) and write secret key
+    const tr = shake256.create({}).update(pk).xof(TRBytes);
+    packSk(sk, rho, tr, key, t0, s1, s2);
 
-  return seed;
+    return seed;
+  } finally {
+    zeroize(seedBuf);
+    zeroize(rhoPrime);
+    zeroize(key);
+    for (let i = 0; i < L; i++) s1.vec[i].coeffs.fill(0);
+    for (let i = 0; i < K; i++) s2.vec[i].coeffs.fill(0);
+    if (s1hat) for (let i = 0; i < L; i++) s1hat.vec[i].coeffs.fill(0);
+    for (let i = 0; i < K; i++) t0.vec[i].coeffs.fill(0);
+  }
 }
 
 /**
@@ -1279,88 +1685,97 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT_CTX) {
   const h = new PolyVecK();
   const cp = new Poly();
 
-  unpackSk(rho, tr, key, t0, s1, s2, sk);
+  try {
+    unpackSk(rho, tr, key, t0, s1, s2, sk);
 
-  // pre = 0x00 || len(ctx) || ctx
-  const pre = new Uint8Array(2 + ctx.length);
-  pre[0] = 0;
-  pre[1] = ctx.length;
-  pre.set(ctx, 2);
+    // pre = 0x00 || len(ctx) || ctx
+    const pre = new Uint8Array(2 + ctx.length);
+    pre[0] = 0;
+    pre[1] = ctx.length;
+    pre.set(ctx, 2);
 
-  const mBytes = messageToBytes(m);
+    const mBytes = messageToBytes(m);
 
-  // mu = SHAKE256(tr || pre || m)
-  const mu = sha3_js.shake256.create({}).update(tr).update(pre).update(mBytes).xof(CRHBytes);
+    // mu = SHAKE256(tr || pre || m)
+    const mu = shake256.create({}).update(tr).update(pre).update(mBytes).xof(CRHBytes);
 
-  // rhoPrime = SHAKE256(key || rnd || mu)
-  const rnd = randomizedSigning ? randomBytes(RNDBytes) : new Uint8Array(RNDBytes);
-  rhoPrime = sha3_js.shake256.create({}).update(key).update(rnd).update(mu).xof(CRHBytes);
+    // rhoPrime = SHAKE256(key || rnd || mu)
+    const rnd = randomizedSigning ? randomBytes(RNDBytes) : new Uint8Array(RNDBytes);
+    rhoPrime = shake256.create({}).update(key).update(rnd).update(mu).xof(CRHBytes);
 
-  polyVecMatrixExpand(mat, rho);
-  polyVecLNTT(s1);
-  polyVecKNTT(s2);
-  polyVecKNTT(t0);
+    polyVecMatrixExpand(mat, rho);
+    polyVecLNTT(s1);
+    polyVecKNTT(s2);
+    polyVecKNTT(t0);
 
-  while (true) {
-    polyVecLUniformGamma1(y, rhoPrime, nonce++);
-    // Matrix-vector multiplication
-    z.copy(y);
-    polyVecLNTT(z);
-    polyVecMatrixPointWiseMontgomery(w1, mat, z);
-    polyVecKReduce(w1);
-    polyVecKInvNTTToMont(w1);
+    while (true) {
+      polyVecLUniformGamma1(y, rhoPrime, nonce++);
+      // Matrix-vector multiplication
+      z.copy(y);
+      polyVecLNTT(z);
+      polyVecMatrixPointWiseMontgomery(w1, mat, z);
+      polyVecKReduce(w1);
+      polyVecKInvNTTToMont(w1);
 
-    // Decompose w and call the random oracle
-    polyVecKCAddQ(w1);
-    polyVecKDecompose(w1, w0, w1);
-    polyVecKPackW1(sig, w1);
+      // Decompose w and call the random oracle
+      polyVecKCAddQ(w1);
+      polyVecKDecompose(w1, w0, w1);
+      polyVecKPackW1(sig, w1);
 
-    // ctilde = SHAKE256(mu || w1_packed) (64 bytes)
-    const ctilde = sha3_js.shake256
-      .create({})
-      .update(mu)
-      .update(sig.slice(0, K * PolyW1PackedBytes))
-      .xof(CTILDEBytes);
+      // ctilde = SHAKE256(mu || w1_packed) (64 bytes)
+      const ctilde = shake256
+        .create({})
+        .update(mu)
+        .update(sig.slice(0, K * PolyW1PackedBytes))
+        .xof(CTILDEBytes);
 
-    polyChallenge(cp, ctilde);
-    polyNTT(cp);
+      polyChallenge(cp, ctilde);
+      polyNTT(cp);
 
-    // Compute z, reject if it reveals secret
-    polyVecLPointWisePolyMontgomery(z, cp, s1);
-    polyVecLInvNTTToMont(z);
-    polyVecLAdd(z, z, y);
-    polyVecLReduce(z);
-    if (polyVecLChkNorm(z, GAMMA1 - BETA) !== 0) {
-      continue;
+      // Compute z, reject if it reveals secret
+      polyVecLPointWisePolyMontgomery(z, cp, s1);
+      polyVecLInvNTTToMont(z);
+      polyVecLAdd(z, z, y);
+      polyVecLReduce(z);
+      if (polyVecLChkNorm(z, GAMMA1 - BETA) !== 0) {
+        continue;
+      }
+
+      polyVecKPointWisePolyMontgomery(h, cp, s2);
+      polyVecKInvNTTToMont(h);
+      polyVecKSub(w0, w0, h);
+      polyVecKReduce(w0);
+      if (polyVecKChkNorm(w0, GAMMA2 - BETA) !== 0) {
+        continue;
+      }
+
+      polyVecKPointWisePolyMontgomery(h, cp, t0);
+      polyVecKInvNTTToMont(h);
+      polyVecKReduce(h);
+      /* c8 ignore start */
+      if (polyVecKChkNorm(h, GAMMA2) !== 0) {
+        continue;
+      }
+      /* c8 ignore stop */
+
+      polyVecKAdd(w0, w0, h);
+      const n = polyVecKMakeHint(h, w0, w1);
+      /* c8 ignore start */
+      if (n > OMEGA) {
+        continue;
+      }
+      /* c8 ignore stop */
+
+      packSig(sig, ctilde, z, h);
+      return 0;
     }
-
-    polyVecKPointWisePolyMontgomery(h, cp, s2);
-    polyVecKInvNTTToMont(h);
-    polyVecKSub(w0, w0, h);
-    polyVecKReduce(w0);
-    if (polyVecKChkNorm(w0, GAMMA2 - BETA) !== 0) {
-      continue;
-    }
-
-    polyVecKPointWisePolyMontgomery(h, cp, t0);
-    polyVecKInvNTTToMont(h);
-    polyVecKReduce(h);
-    /* c8 ignore start */
-    if (polyVecKChkNorm(h, GAMMA2) !== 0) {
-      continue;
-    }
-    /* c8 ignore stop */
-
-    polyVecKAdd(w0, w0, h);
-    const n = polyVecKMakeHint(h, w0, w1);
-    /* c8 ignore start */
-    if (n > OMEGA) {
-      continue;
-    }
-    /* c8 ignore stop */
-
-    packSig(sig, ctilde, z, h);
-    return 0;
+  } finally {
+    zeroize(key);
+    zeroize(rhoPrime);
+    for (let i = 0; i < L; i++) s1.vec[i].coeffs.fill(0);
+    for (let i = 0; i < K; i++) s2.vec[i].coeffs.fill(0);
+    for (let i = 0; i < K; i++) t0.vec[i].coeffs.fill(0);
+    for (let i = 0; i < L; i++) y.vec[i].coeffs.fill(0);
   }
 }
 
@@ -1450,7 +1865,7 @@ function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
   }
 
   /* Compute mu = SHAKE256(tr || pre || m) with tr = SHAKE256(pk) */
-  const tr = sha3_js.shake256.create({}).update(pk).xof(TRBytes);
+  const tr = shake256.create({}).update(pk).xof(TRBytes);
 
   const pre = new Uint8Array(2 + ctx.length);
   pre[0] = 0;
@@ -1463,7 +1878,7 @@ function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
   } catch {
     return false;
   }
-  const muFull = sha3_js.shake256.create({}).update(tr).update(pre).update(mBytes).xof(CRHBytes);
+  const muFull = shake256.create({}).update(tr).update(pre).update(mBytes).xof(CRHBytes);
   mu.set(muFull);
 
   /* Matrix-vector multiplication; compute Az - c2^dt1 */
@@ -1488,7 +1903,7 @@ function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
   polyVecKPackW1(buf, w1);
 
   /* Call random oracle and verify challenge */
-  const c2Hash = sha3_js.shake256.create({}).update(mu).update(buf).xof(CTILDEBytes);
+  const c2Hash = shake256.create({}).update(mu).update(buf).xof(CTILDEBytes);
   c2.set(c2Hash);
 
   // Constant-time comparison to prevent timing attacks
@@ -1529,58 +1944,6 @@ function cryptoSignOpen(sm, pk, ctx = DEFAULT_CTX) {
   }
 
   return msg;
-}
-
-/**
- * Security utilities for ML-DSA-87
- *
- * IMPORTANT: JavaScript cannot guarantee secure memory zeroization.
- * See SECURITY.md for details on limitations.
- */
-
-/**
- * Attempts to zero out a Uint8Array buffer.
- *
- * WARNING: This is a BEST-EFFORT operation. Due to JavaScript/JIT limitations:
- * - The write may be optimized away if the buffer is unused afterward
- * - Copies may exist in garbage collector memory
- * - Data may have been swapped to disk
- *
- * For high-security applications, consider native implementations (go-qrllib)
- * or hardware security modules.
- *
- * @param {Uint8Array} buffer - The buffer to zero
- * @returns {void}
- */
-function zeroize(buffer) {
-  if (!(buffer instanceof Uint8Array)) {
-    throw new TypeError('zeroize requires a Uint8Array');
-  }
-  // Use fill(0) for zeroing - best effort
-  buffer.fill(0);
-  // Additional volatile-like access to discourage optimization
-  // (This is a hint to the JIT, not a guarantee)
-  if (buffer.length > 0 && buffer[0] !== 0) {
-    throw new Error('zeroize failed'); // Should never happen
-  }
-}
-
-/**
- * Checks if a buffer is all zeros.
- * Uses constant-time comparison to avoid timing leaks.
- *
- * @param {Uint8Array} buffer - The buffer to check
- * @returns {boolean} True if all bytes are zero
- */
-function isZero(buffer) {
-  if (!(buffer instanceof Uint8Array)) {
-    throw new TypeError('isZero requires a Uint8Array');
-  }
-  let acc = 0;
-  for (let i = 0; i < buffer.length; i++) {
-    acc |= buffer[i];
-  }
-  return acc === 0;
 }
 
 exports.BETA = BETA;
