@@ -284,9 +284,9 @@ npm run build
 
 ## Requirements
 
-- **Node.js**: 18.20+, 20.x, or 22.x (requires `globalThis.crypto.getRandomValues`, available since Node.js 15)
+- **Node.js**: 20.19+, 22.x, or 24.x (requires `globalThis.crypto.getRandomValues`, available since Node.js 15)
 - **Browsers**: Any modern browser with [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) support (`crypto.getRandomValues()`) and ES2020 (BigInt). This includes Chrome 67+, Firefox 68+, Safari 14+, and Edge 79+.
-- **Not supported**: Internet Explorer, Node.js < 15, or environments without Web Crypto API
+- **Not supported**: Internet Explorer, Node.js < 20, or environments without Web Crypto API
 
 ## TypeScript
 

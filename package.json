@@ -2,7 +2,7 @@
   "name": "root",
   "type": "module",
   "engines": {
-    "node": ">=18.20.0"
+    "node": ">=20.19.0"
   },
   "private": true,
   "packageManager": "npm@10.9.2",
@@ -19,13 +19,13 @@
     "packages/*"
   ],
   "devDependencies": {
-    "@playwright/test": "^1.58.1",
+    "@playwright/test": "^1.58.2",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
     "conventional-changelog-conventionalcommits": "^9.1.0",
     "multi-semantic-release": "^3.0.2",
-    "playwright": "^1.57.0",
-    "turbo": "^2.8.1"
+    "playwright": "^1.58.2",
+    "turbo": "^2.8.3"
   }
 }
