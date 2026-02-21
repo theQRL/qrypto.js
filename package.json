@@ -26,6 +26,6 @@
     "conventional-changelog-conventionalcommits": "^9.1.0",
     "multi-semantic-release": "^3.0.2",
     "playwright": "^1.58.2",
-    "turbo": "^2.8.3"
+    "turbo": "^2.8.10"
   }
 }
