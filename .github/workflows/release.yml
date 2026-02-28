@@ -255,7 +255,7 @@ jobs:
           echo "hashes=$(sha256sum ./*.tgz | base64 -w0)" >> "$GITHUB_OUTPUT"
 
       - name: Upload tarballs
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: npm-tarballs
           path: dist/tarballs/*.tgz
