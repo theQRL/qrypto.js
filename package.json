@@ -30,7 +30,7 @@
     "playwright": "^1.58.2",
     "serialize-javascript": "7.0.3",
     "tar": "7.5.9",
-    "turbo": "^2.8.10"
+    "turbo": "^2.8.12"
   },
   "overrides": {
     "serialize-javascript": "7.0.3",
