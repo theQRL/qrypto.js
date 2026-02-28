@@ -81,8 +81,10 @@
       "src/**"
     ],
     "exclude": [
-      "dist",
-      "test"
+      "**/dist/**",
+      "**/test/**",
+      "**/browser-tests/**",
+      "**/*.d.ts"
     ],
     "all": true
   }
