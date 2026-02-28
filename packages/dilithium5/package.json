@@ -62,7 +62,7 @@
     "eslint-plugin-import-x": "^4.15.0",
     "eslint-plugin-prettier": "^5.5.4",
     "globals": "^17.3.0",
-    "minimatch": "10.2.4",
+    "minimatch": "10.2.3",
     "mocha": "^11.7.5",
     "prettier": "^3.8.1",
     "rollup": "^4.59.0",
