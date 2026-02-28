@@ -1,24 +1,22 @@
 ignore:
   - "**/dist/**"
+  - "**/test/**"
+  - "**/browser-tests/**"
+  - "**/*.d.ts"
 
 coverage:
   status:
     project:
-      default:
-        # basic
+      dilithium5:
         target: auto
         threshold: 0%
-        base: auto
-        paths:
-          - "packages/dilithium5/src"
-          - "packages/mldsa87/src"
-        # advanced
-        branches:
-          - main
-        if_not_found: success
-        if_ci_failed: error
-        informational: false
-        only_pulls: false
+        flags:
+          - dilithium5
+      mldsa87:
+        target: auto
+        threshold: 0%
+        flags:
+          - mldsa87
     patch:
       default:
         target: 0%
