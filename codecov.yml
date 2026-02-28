@@ -1,5 +1,5 @@
 ignore:
-  - "packages/*/dist/**"
+  - "**/dist/**"
 
 coverage:
   status:
@@ -19,9 +19,16 @@ coverage:
         if_ci_failed: error
         informational: false
         only_pulls: false
-        flags:
-          - dilithium5
-          - mldsa87
     patch:
       default:
         target: 0%
+
+flags:
+  dilithium5:
+    paths:
+      - packages/dilithium5/src
+    carryforward: true
+  mldsa87:
+    paths:
+      - packages/mldsa87/src
+    carryforward: true
