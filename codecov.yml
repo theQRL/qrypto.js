@@ -1,3 +1,6 @@
+ignore:
+  - "packages/*/dist/**"
+
 coverage:
   status:
     project:
@@ -7,7 +10,8 @@ coverage:
         threshold: 0%
         base: auto
         paths:
-          - "packages/dilithium5/coverage.lcov"
+          - "packages/dilithium5/src"
+          - "packages/mldsa87/src"
         # advanced
         branches:
           - main
@@ -17,6 +21,7 @@ coverage:
         only_pulls: false
         flags:
           - dilithium5
+          - mldsa87
     patch:
       default:
         target: 0%
