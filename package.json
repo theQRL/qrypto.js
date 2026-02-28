@@ -23,9 +23,25 @@
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
+    "@semantic-release/npm": "13.1.4",
     "conventional-changelog-conventionalcommits": "^9.1.0",
+    "minimatch": "10.2.4",
     "multi-semantic-release": "^3.0.2",
     "playwright": "^1.58.2",
+    "serialize-javascript": "7.0.3",
+    "tar": "7.5.9",
     "turbo": "^2.8.10"
+  },
+  "overrides": {
+    "serialize-javascript": "7.0.3",
+    "minimatch": "10.2.4",
+    "tar": "7.5.9",
+    "diff": "8.0.3",
+    "**": {
+      "serialize-javascript": "7.0.3",
+      "minimatch": "10.2.4",
+      "tar": "7.5.9",
+      "diff": "8.0.3"
+    }
   }
 }
