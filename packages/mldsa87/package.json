@@ -75,5 +75,15 @@
   "overrides": {
     "diff": "8.0.3",
     "minimatch": "10.2.4"
+  },
+  "c8": {
+    "include": [
+      "src/**"
+    ],
+    "exclude": [
+      "dist",
+      "test"
+    ],
+    "all": true
   }
 }
