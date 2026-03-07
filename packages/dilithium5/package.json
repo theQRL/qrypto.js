@@ -66,8 +66,8 @@
     "mocha": "^11.7.5",
     "prettier": "^3.8.1",
     "rollup": "^4.59.0",
-    "serialize-javascript": "7.0.3",
-    "tar": "7.5.9"
+    "serialize-javascript": "7.0.4",
+    "tar": "7.5.10"
   },
   "dependencies": {
     "@noble/hashes": "^2.0.1"
