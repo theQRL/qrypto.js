@@ -132,9 +132,9 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
     }
   } catch (e) {
     if (e instanceof TypeError) {
-      throw new Error(`pk/sk cannot be null`);
+      throw new Error(`pk/sk cannot be null`, { cause: e });
     } else {
-      throw new Error(`${e.message}`);
+      throw new Error(`${e.message}`, { cause: e });
     }
   }
 

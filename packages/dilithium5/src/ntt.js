@@ -3,7 +3,7 @@ import { montgomeryReduce } from './reduce.js';
 
 export function ntt(a) {
   let k = 0;
-  let j = 0;
+  let j;
 
   for (let len = 128; len > 0; len >>= 1) {
     for (let start = 0; start < N; start = j + len) {
@@ -19,7 +19,7 @@ export function ntt(a) {
 
 export function invNTTToMont(a) {
   const f = 41978n; // mont^2/256
-  let j = 0;
+  let j;
   let k = 256;
 
   for (let len = 1; len < N; len <<= 1) {
