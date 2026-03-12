@@ -53,24 +53,24 @@
     "node": ">=20.19.0"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@rollup/plugin-node-resolve": "^16.0.3",
-    "c8": "^11.0.0",
-    "chai": "^6.2.2",
-    "eslint": "^10.0.2",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-import-x": "^4.15.0",
-    "eslint-plugin-prettier": "^5.5.4",
-    "globals": "^17.3.0",
+    "@eslint/js": "10.0.1",
+    "@rollup/plugin-node-resolve": "16.0.3",
+    "c8": "11.0.0",
+    "chai": "6.2.2",
+    "eslint": "10.0.2",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-import-x": "4.16.2",
+    "eslint-plugin-prettier": "5.5.4",
+    "globals": "17.3.0",
     "minimatch": "10.2.4",
-    "mocha": "^11.7.5",
-    "prettier": "^3.8.1",
-    "rollup": "^4.59.0",
-    "serialize-javascript": "7.0.3",
-    "tar": "7.5.9"
+    "mocha": "11.7.5",
+    "prettier": "3.8.1",
+    "rollup": "4.59.0",
+    "serialize-javascript": "7.0.4",
+    "tar": "7.5.11"
   },
   "dependencies": {
-    "@noble/hashes": "^2.0.1"
+    "@noble/hashes": "2.0.1"
   },
   "overrides": {
     "diff": "8.0.3",

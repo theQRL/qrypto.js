@@ -44,7 +44,7 @@ const sk = new Uint8Array(CryptoSecretKeyBytes);  // 4896 bytes
 cryptoSignKeypair(null, pk, sk);
 
 // Sign a message (uses default "ZOND" context for "QRL v2.0" applications)
-const message = new TextEncoder().encode('Hello, quantum world!');
+const message = new TextEncoder().encode('The sleeper must awaken');
 const signedMessage = cryptoSign(message, sk, false);
 
 // Verify and extract
@@ -82,7 +82,7 @@ const sk = new Uint8Array(CryptoSecretKeyBytes);  // 4896 bytes
 const seed = cryptoSignKeypair(null, pk, sk);     // null = random seed
 
 // Sign a message (browser-compatible)
-const message = new TextEncoder().encode('Hello, quantum world!');
+const message = new TextEncoder().encode('The sleeper must awaken');
 const signedMessage = cryptoSign(message, sk, false);  // false = deterministic
 
 // Open signed message (verify + extract)
@@ -90,7 +90,7 @@ const extracted = cryptoSignOpen(signedMessage, pk);
 if (extracted === undefined) {
   throw new Error('Invalid signature');
 }
-console.log(new TextDecoder().decode(extracted));  // "Hello, quantum world!"
+console.log(new TextDecoder().decode(extracted));  // "The sleeper must awaken"
 
 // Alternative: detached signature verification
 const signature = signedMessage.slice(0, CryptoBytes);  // First 4595 bytes
@@ -241,7 +241,7 @@ This library is browser-compatible. It uses native `Uint8Array` throughout (no N
     cryptoSignOpen,
     CryptoPublicKeyBytes,
     CryptoSecretKeyBytes,
-  } from 'https://cdn.jsdelivr.net/npm/@theqrl/mldsa87@1.0.4/dist/mjs/mldsa87.js';
+  } from 'https://cdn.jsdelivr.net/npm/@theqrl/mldsa87@1.1.1/dist/mjs/mldsa87.js';
 
   const pk = new Uint8Array(CryptoPublicKeyBytes);
   const sk = new Uint8Array(CryptoSecretKeyBytes);
