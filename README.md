@@ -241,7 +241,7 @@ This library is browser-compatible. It uses native `Uint8Array` throughout (no N
     cryptoSignOpen,
     CryptoPublicKeyBytes,
     CryptoSecretKeyBytes,
-  } from 'https://cdn.jsdelivr.net/npm/@theqrl/mldsa87@1.1.1/dist/mjs/mldsa87.js';
+  } from 'https://cdn.jsdelivr.net/npm/@theqrl/mldsa87@1.1.2/dist/mjs/mldsa87.js';
 
   const pk = new Uint8Array(CryptoPublicKeyBytes);
   const sk = new Uint8Array(CryptoSecretKeyBytes);
