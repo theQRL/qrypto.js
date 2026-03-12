@@ -18,7 +18,7 @@ const NODE = process.execPath;
 
 function run(script, opts = {}) {
   const args = opts.cjs ? ['-e', script] : ['--input-type=module', '-e', script];
-  return exec(NODE, args, { cwd: ROOT, timeout: 30000 });
+  return exec(NODE, args, { cwd: ROOT, timeout: 30000, env: { ...process.env, NO_COLOR: '1' } });
 }
 
 describe('dist bundle smoke tests', () => {

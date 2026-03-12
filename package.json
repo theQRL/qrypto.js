@@ -8,7 +8,7 @@
   "packageManager": "npm@10.9.2",
   "scripts": {
     "build": "turbo run build",
-    "test": "FORCE_COLOR=1 turbo test",
+    "test": "FORCE_COLOR=0 turbo test",
     "test:browser": "playwright install chromium && turbo run test:browser",
     "check-shared": "node scripts/check-shared-files.js",
     "lint": "turbo lint-check",
@@ -36,7 +36,7 @@
     "playwright": "1.58.2",
     "serialize-javascript": "7.0.4",
     "tar": "7.5.11",
-    "turbo": "2.8.12"
+    "turbo": "2.8.14"
   },
   "overrides": {
     "serialize-javascript": "7.0.4",
