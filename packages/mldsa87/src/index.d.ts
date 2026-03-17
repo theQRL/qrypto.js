@@ -56,12 +56,12 @@ export function cryptoSignKeypair(
 ): Uint8Array;
 
 /**
- * Create a signature for a message with optional context
+ * Create a signature for a message
  * @param sig - Output buffer for signature (must be CryptoBytes length minimum)
  * @param m - Message to sign (hex string or Uint8Array; strings are parsed as hex only)
  * @param sk - Secret key
  * @param randomizedSigning - If true, use random nonce; if false, deterministic
- * @param ctx - Optional context string (max 255 bytes, defaults to "ZOND")
+ * @param ctx - Context string (max 255 bytes)
  * @returns 0 on success
  * @throws Error if sk is wrong size or context too long
  */
@@ -78,7 +78,7 @@ export function cryptoSignSignature(
  * @param msg - Message to sign
  * @param sk - Secret key
  * @param randomizedSigning - If true, use random nonce; if false, deterministic
- * @param ctx - Optional context string (max 255 bytes, defaults to "ZOND")
+ * @param ctx - Context string (max 255 bytes)
  * @returns Signed message (signature || message)
  * @throws Error if signing fails
  */
@@ -90,11 +90,11 @@ export function cryptoSign(
 ): Uint8Array;
 
 /**
- * Verify a signature with optional context
+ * Verify a signature
  * @param sig - Signature to verify
  * @param m - Message that was signed (hex string or Uint8Array; strings are parsed as hex only)
  * @param pk - Public key
- * @param ctx - Optional context string (max 255 bytes, defaults to "ZOND")
+ * @param ctx - Context string (max 255 bytes)
  * @returns true if signature is valid, false otherwise
  */
 export function cryptoSignVerify(
@@ -108,7 +108,7 @@ export function cryptoSignVerify(
  * Open a signed message (verify and extract message)
  * @param sm - Signed message (signature || message)
  * @param pk - Public key
- * @param ctx - Optional context string (max 255 bytes, defaults to "ZOND")
+ * @param ctx - Context string (max 255 bytes)
  * @returns Message if valid, undefined if verification fails
  */
 export function cryptoSignOpen(
