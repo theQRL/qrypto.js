@@ -52,7 +52,6 @@ import { Poly, polyChallenge, polyNTT } from './poly.js';
 import { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } from './packing.js';
 import { zeroize } from './utils.js';
 
-
 /**
  * Convert hex string to Uint8Array with strict validation.
  *
