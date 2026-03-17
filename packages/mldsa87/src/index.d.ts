@@ -70,7 +70,7 @@ export function cryptoSignSignature(
   m: Uint8Array | string,
   sk: Uint8Array,
   randomizedSigning: boolean,
-  ctx?: Uint8Array
+  ctx: Uint8Array
 ): number;
 
 /**
@@ -86,7 +86,7 @@ export function cryptoSign(
   msg: Uint8Array | string,
   sk: Uint8Array,
   randomizedSigning: boolean,
-  ctx?: Uint8Array
+  ctx: Uint8Array
 ): Uint8Array;
 
 /**
@@ -101,7 +101,7 @@ export function cryptoSignVerify(
   sig: Uint8Array,
   m: Uint8Array | string,
   pk: Uint8Array,
-  ctx?: Uint8Array
+  ctx: Uint8Array
 ): boolean;
 
 /**
@@ -114,7 +114,7 @@ export function cryptoSignVerify(
 export function cryptoSignOpen(
   sm: Uint8Array,
   pk: Uint8Array,
-  ctx?: Uint8Array
+  ctx: Uint8Array
 ): Uint8Array | undefined;
 
 // Utility functions
