@@ -198,6 +198,12 @@ describe('coverage: signing and verification branches', () => {
     expect(cryptoSignVerify(sig, new Uint8Array([1, 2, 3]), pk, new Uint8Array(0))).to.equal(false);
   });
 
+  it('should throw without ctx in cryptoSignSignature', () => {
+    const sk = new Uint8Array(CryptoSecretKeyBytes);
+    const sig = new Uint8Array(CryptoBytes);
+    expect(() => cryptoSignSignature(sig, new Uint8Array([1]), sk, false)).to.throw('ctx is required');
+  });
+
   it('should reject overlong contexts', () => {
     const pk = new Uint8Array(CryptoPublicKeyBytes);
     const sk = new Uint8Array(CryptoSecretKeyBytes);
