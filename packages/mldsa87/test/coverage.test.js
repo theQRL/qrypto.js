@@ -89,7 +89,9 @@ describe('coverage: hex string validation', () => {
     cryptoSignKeypair(null, pk, sk);
 
     const sig = new Uint8Array(CryptoBytes);
-    expect(() => cryptoSignSignature(sig, 'zz', sk, false)).to.throw('hex string contains non-hex characters');
+    expect(() => cryptoSignSignature(sig, 'zz', sk, false, new Uint8Array(0))).to.throw(
+      'hex string contains non-hex characters'
+    );
   });
 });
 
@@ -108,9 +110,9 @@ describe('coverage: signing and verification branches', () => {
 
     const msg = new Uint8Array([1, 2, 3]);
     const sig = new Uint8Array(CryptoBytes);
-    cryptoSignSignature(sig, msg, sk, true);
+    cryptoSignSignature(sig, msg, sk, true, new Uint8Array(0));
 
-    expect(cryptoSignVerify(sig, msg, pk)).to.equal(true);
+    expect(cryptoSignVerify(sig, msg, pk, new Uint8Array(0))).to.equal(true);
   });
 
   it('should return false for invalid pk length', () => {
@@ -120,10 +122,10 @@ describe('coverage: signing and verification branches', () => {
 
     const msg = new Uint8Array([4, 5, 6]);
     const sig = new Uint8Array(CryptoBytes);
-    cryptoSignSignature(sig, msg, sk, false);
+    cryptoSignSignature(sig, msg, sk, false, new Uint8Array(0));
 
     const shortPk = pk.slice(0, CryptoPublicKeyBytes - 1);
-    expect(cryptoSignVerify(sig, msg, shortPk)).to.equal(false);
+    expect(cryptoSignVerify(sig, msg, shortPk, new Uint8Array(0))).to.equal(false);
   });
 
   it('should return false for invalid message type', () => {
@@ -133,9 +135,9 @@ describe('coverage: signing and verification branches', () => {
 
     const msg = new Uint8Array([7, 8, 9]);
     const sig = new Uint8Array(CryptoBytes);
-    cryptoSignSignature(sig, msg, sk, false);
+    cryptoSignSignature(sig, msg, sk, false, new Uint8Array(0));
 
-    expect(cryptoSignVerify(sig, 123, pk)).to.equal(false);
+    expect(cryptoSignVerify(sig, 123, pk, new Uint8Array(0))).to.equal(false);
   });
 
   it('should return undefined for short signed messages', () => {
@@ -143,7 +145,7 @@ describe('coverage: signing and verification branches', () => {
     cryptoSignKeypair(null, pk, new Uint8Array(CryptoSecretKeyBytes));
 
     const shortMessage = new Uint8Array(CryptoBytes - 1);
-    expect(cryptoSignOpen(shortMessage, pk)).to.equal(undefined);
+    expect(cryptoSignOpen(shortMessage, pk, new Uint8Array(0))).to.equal(undefined);
   });
 
   it('should return undefined for invalid signed messages', () => {
@@ -153,14 +155,14 @@ describe('coverage: signing and verification branches', () => {
 
     const msg = new Uint8Array([10, 11, 12]);
     const sig = new Uint8Array(CryptoBytes);
-    cryptoSignSignature(sig, msg, sk, false);
+    cryptoSignSignature(sig, msg, sk, false, new Uint8Array(0));
 
     const sm = new Uint8Array(CryptoBytes + msg.length);
     sm.set(sig);
     sm.set(msg, CryptoBytes);
     sm[0] ^= 0x01;
 
-    expect(cryptoSignOpen(sm, pk)).to.equal(undefined);
+    expect(cryptoSignOpen(sm, pk, new Uint8Array(0))).to.equal(undefined);
   });
 
   it('should throw on invalid message type in cryptoSignSignature', () => {
@@ -169,7 +171,9 @@ describe('coverage: signing and verification branches', () => {
     cryptoSignKeypair(null, pk, sk);
 
     const sig = new Uint8Array(CryptoBytes);
-    expect(() => cryptoSignSignature(sig, 123, sk, false)).to.throw('message must be Uint8Array or hex string');
+    expect(() => cryptoSignSignature(sig, 123, sk, false, new Uint8Array(0))).to.throw(
+      'message must be Uint8Array or hex string'
+    );
   });
 
   it('should throw on invalid message type in cryptoSign', () => {
@@ -177,7 +181,7 @@ describe('coverage: signing and verification branches', () => {
     const sk = new Uint8Array(CryptoSecretKeyBytes);
     cryptoSignKeypair(null, pk, sk);
 
-    expect(() => cryptoSign(123, sk, false)).to.throw('message must be Uint8Array or hex string');
+    expect(() => cryptoSign(123, sk, false, new Uint8Array(0))).to.throw('message must be Uint8Array or hex string');
   });
 
   it('should reject invalid signature during verify', () => {
@@ -191,7 +195,13 @@ describe('coverage: signing and verification branches', () => {
     sig[sigOffset + 0] = 5;
     sig[sigOffset + 1] = 5;
 
-    expect(cryptoSignVerify(sig, new Uint8Array([1, 2, 3]), pk)).to.equal(false);
+    expect(cryptoSignVerify(sig, new Uint8Array([1, 2, 3]), pk, new Uint8Array(0))).to.equal(false);
+  });
+
+  it('should throw without ctx in cryptoSignSignature', () => {
+    const sk = new Uint8Array(CryptoSecretKeyBytes);
+    const sig = new Uint8Array(CryptoBytes);
+    expect(() => cryptoSignSignature(sig, new Uint8Array([1]), sk, false)).to.throw('ctx is required');
   });
 
   it('should reject overlong contexts', () => {

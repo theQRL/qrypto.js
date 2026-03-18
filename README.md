@@ -43,20 +43,16 @@ const pk = new Uint8Array(CryptoPublicKeyBytes);  // 2592 bytes
 const sk = new Uint8Array(CryptoSecretKeyBytes);  // 4896 bytes
 cryptoSignKeypair(null, pk, sk);
 
-// Sign a message (uses default "ZOND" context for "QRL v2.0" applications)
+// Sign a message with context for domain separation (FIPS 204)
 const message = new TextEncoder().encode('The sleeper must awaken');
-const signedMessage = cryptoSign(message, sk, false);
+const ctx = new Uint8Array([0x5a, 0x4f, 0x4e, 0x44]);  // "ZOND"
+const signedMessage = cryptoSign(message, sk, false, ctx);
 
-// Verify and extract
-const extracted = cryptoSignOpen(signedMessage, pk);
+// Verify and extract (context must match)
+const extracted = cryptoSignOpen(signedMessage, pk, ctx);
 if (extracted === undefined) {
   throw new Error('Invalid signature');
 }
-
-// With custom context (FIPS 204 feature)
-const customContext = new TextEncoder().encode('my-app-v1');
-const signedWithCtx = cryptoSign(message, sk, false, customContext);
-const extractedWithCtx = cryptoSignOpen(signedWithCtx, pk, customContext);
 ```
 
 > [!NOTE]
@@ -241,15 +237,16 @@ This library is browser-compatible. It uses native `Uint8Array` throughout (no N
     cryptoSignOpen,
     CryptoPublicKeyBytes,
     CryptoSecretKeyBytes,
-  } from 'https://cdn.jsdelivr.net/npm/@theqrl/mldsa87@1.1.1/dist/mjs/mldsa87.js';
+  } from 'https://cdn.jsdelivr.net/npm/@theqrl/mldsa87@2.0.0/dist/mjs/mldsa87.js';
 
   const pk = new Uint8Array(CryptoPublicKeyBytes);
   const sk = new Uint8Array(CryptoSecretKeyBytes);
   cryptoSignKeypair(null, pk, sk);
 
   const message = new TextEncoder().encode('Hello from browser!');
-  const signed = cryptoSign(message, sk, false);
-  const verified = cryptoSignOpen(signed, pk);
+  const ctx = new Uint8Array([0x5a, 0x4f, 0x4e, 0x44]);  // "ZOND"
+  const signed = cryptoSign(message, sk, false, ctx);
+  const verified = cryptoSignOpen(signed, pk, ctx);
   console.log('Verified:', verified !== undefined);
 </script>
 ```

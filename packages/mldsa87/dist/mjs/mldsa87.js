@@ -174,7 +174,7 @@ function cAddQ(a) {
 
 function ntt(a) {
   let k = 0;
-  let j = 0;
+  let j;
 
   for (let len = 128; len > 0; len >>= 1) {
     for (let start = 0; start < N; start = j + len) {
@@ -190,7 +190,7 @@ function ntt(a) {
 
 function invNTTToMont(a) {
   const f = 41978n; // mont^2/256
-  let j = 0;
+  let j;
   let k = 256;
 
   for (let len = 1; len < N; len <<= 1) {
@@ -1108,13 +1108,6 @@ function isZero(buffer) {
 }
 
 /**
- * Default signing context ("ZOND" in ASCII).
- * Used for domain separation per FIPS 204.
- * @constant {Uint8Array}
- */
-const DEFAULT_CTX = new Uint8Array([0x5a, 0x4f, 0x4e, 0x44]); // "ZOND"
-
-/**
  * Convert hex string to Uint8Array with strict validation.
  *
  * NOTE: This function accepts multiple hex formats (with/without 0x prefix,
@@ -1187,9 +1180,9 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
     }
   } catch (e) {
     if (e instanceof TypeError) {
-      throw new Error(`pk/sk cannot be null`);
+      throw new Error(`pk/sk cannot be null`, { cause: e });
     } else {
-      throw new Error(`${e.message}`);
+      throw new Error(`${e.message}`, { cause: e });
     }
   }
 
@@ -1268,20 +1261,21 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
  * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
  * @param {boolean} randomizedSigning - If true, use random nonce for hedged signing.
  *   If false, use deterministic nonce derived from message and key.
- * @param {Uint8Array} [ctx=DEFAULT_CTX] - Context string for domain separation (max 255 bytes).
- *   Defaults to "ZOND" for QRL compatibility.
+ * @param {Uint8Array} ctx - Context string for domain separation (max 255 bytes).
  * @returns {number} 0 on success
- * @throws {Error} If sk is wrong size or context exceeds 255 bytes
+ * @throws {Error} If ctx is missing, sk is wrong size, or context exceeds 255 bytes
  *
  * @example
  * const sig = new Uint8Array(CryptoBytes);
- * cryptoSignSignature(sig, message, sk, false);
- * // Or with custom context:
- * cryptoSignSignature(sig, message, sk, false, new Uint8Array([0x01, 0x02]));
+ * const ctx = new Uint8Array([0x01, 0x02]);
+ * cryptoSignSignature(sig, message, sk, false, ctx);
  */
-function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT_CTX) {
+function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx) {
   if (!sig || sig.length < CryptoBytes) {
     throw new Error(`sig must be at least ${CryptoBytes} bytes`);
+  }
+  if (!(ctx instanceof Uint8Array)) {
+    throw new TypeError('ctx is required and must be a Uint8Array');
   }
   if (ctx.length > 255) throw new Error(`invalid context length: ${ctx.length} (max 255)`);
   if (sk.length !== CryptoSecretKeyBytes) {
@@ -1409,16 +1403,18 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx = DEFAULT_CTX) {
  * @param {string|Uint8Array} msg - Message to sign (hex string, optional 0x prefix, or Uint8Array)
  * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
  * @param {boolean} randomizedSigning - If true, use random nonce; if false, deterministic
- * @param {Uint8Array} [ctx=DEFAULT_CTX] - Context string for domain separation (max 255 bytes).
- *   Defaults to "ZOND" for QRL compatibility.
+ * @param {Uint8Array} ctx - Context string for domain separation (max 255 bytes).
  * @returns {Uint8Array} Signed message (CryptoBytes + msg.length bytes)
  * @throws {Error} If signing fails
  *
  * @example
- * const signedMsg = cryptoSign(message, sk, false);
+ * const signedMsg = cryptoSign(message, sk, false, ctx);
  * // signedMsg contains: signature (4627 bytes) || message
  */
-function cryptoSign(msg, sk, randomizedSigning, ctx = DEFAULT_CTX) {
+function cryptoSign(msg, sk, randomizedSigning, ctx) {
+  if (!(ctx instanceof Uint8Array)) {
+    throw new TypeError('ctx is required and must be a Uint8Array');
+  }
   const msgBytes = messageToBytes(msg);
 
   const sm = new Uint8Array(CryptoBytes + msgBytes.length);
@@ -1445,17 +1441,19 @@ function cryptoSign(msg, sk, randomizedSigning, ctx = DEFAULT_CTX) {
  * @param {Uint8Array} sig - Signature to verify (must be CryptoBytes = 4627 bytes)
  * @param {string|Uint8Array} m - Message that was signed (hex string, optional 0x prefix, or Uint8Array)
  * @param {Uint8Array} pk - Public key (must be CryptoPublicKeyBytes = 2592 bytes)
- * @param {Uint8Array} [ctx=DEFAULT_CTX] - Context string used during signing (max 255 bytes).
- *   Defaults to "ZOND" for QRL compatibility.
+ * @param {Uint8Array} ctx - Context string used during signing (max 255 bytes).
  * @returns {boolean} true if signature is valid, false otherwise
  *
  * @example
- * const isValid = cryptoSignVerify(signature, message, pk);
+ * const isValid = cryptoSignVerify(signature, message, pk, ctx);
  * if (!isValid) {
  *   throw new Error('Invalid signature');
  * }
  */
-function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
+function cryptoSignVerify(sig, m, pk, ctx) {
+  if (!(ctx instanceof Uint8Array)) {
+    throw new TypeError('ctx is required and must be a Uint8Array');
+  }
   if (ctx.length > 255) return false;
   let i;
   const buf = new Uint8Array(K * PolyW1PackedBytes);
@@ -1543,17 +1541,19 @@ function cryptoSignVerify(sig, m, pk, ctx = DEFAULT_CTX) {
  *
  * @param {Uint8Array} sm - Signed message (signature || message)
  * @param {Uint8Array} pk - Public key (must be CryptoPublicKeyBytes = 2592 bytes)
- * @param {Uint8Array} [ctx=DEFAULT_CTX] - Context string used during signing (max 255 bytes).
- *   Defaults to "ZOND" for QRL compatibility.
+ * @param {Uint8Array} ctx - Context string used during signing (max 255 bytes).
  * @returns {Uint8Array|undefined} The original message if valid, undefined if verification fails
  *
  * @example
- * const message = cryptoSignOpen(signedMsg, pk);
+ * const message = cryptoSignOpen(signedMsg, pk, ctx);
  * if (message === undefined) {
  *   throw new Error('Invalid signature');
  * }
  */
-function cryptoSignOpen(sm, pk, ctx = DEFAULT_CTX) {
+function cryptoSignOpen(sm, pk, ctx) {
+  if (!(ctx instanceof Uint8Array)) {
+    throw new TypeError('ctx is required and must be a Uint8Array');
+  }
   if (sm.length < CryptoBytes) {
     return undefined;
   }
