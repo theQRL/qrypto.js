@@ -150,7 +150,7 @@ describe('cryptoSignSignature', () => {
     const sig = new Uint8Array(CryptoBytes);
 
     expect(() => {
-      cryptoSignSignature(sig, '0xabc', sk, false, Buffer.from(v0.ctx, 'hex'));
+      cryptoSignSignature(sig, '0xabc', sk, false, v0.ctx);
     }).to.throw('hex string must have an even length');
   });
 
@@ -170,7 +170,7 @@ describe('cryptoSignVerify invalid hex message', () => {
     const sig = Buffer.from(v0.derivedSig, 'hex');
     const pk = Buffer.from(v0.derivedPK, 'hex');
 
-    expect(cryptoSignVerify(sig, 'xyz', pk, Buffer.from(v0.ctx, 'hex'))).to.equal(false);
+    expect(cryptoSignVerify(sig, 'xyz', pk, v0.ctx)).to.equal(false);
   });
 });
 

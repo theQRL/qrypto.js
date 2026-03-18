@@ -1646,9 +1646,8 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
  *
  * @example
  * const sig = new Uint8Array(CryptoBytes);
- * cryptoSignSignature(sig, message, sk, false);
- * // Or with custom context:
- * cryptoSignSignature(sig, message, sk, false, new Uint8Array([0x01, 0x02]));
+ * const ctx = new Uint8Array([0x01, 0x02]);
+ * cryptoSignSignature(sig, message, sk, false, ctx);
  */
 function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx) {
   if (!sig || sig.length < CryptoBytes) {
@@ -1792,6 +1791,9 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx) {
  * // signedMsg contains: signature (4627 bytes) || message
  */
 function cryptoSign(msg, sk, randomizedSigning, ctx) {
+  if (!(ctx instanceof Uint8Array)) {
+    throw new TypeError('ctx is required and must be a Uint8Array');
+  }
   const msgBytes = messageToBytes(msg);
 
   const sm = new Uint8Array(CryptoBytes + msgBytes.length);
@@ -1928,6 +1930,9 @@ function cryptoSignVerify(sig, m, pk, ctx) {
  * }
  */
 function cryptoSignOpen(sm, pk, ctx) {
+  if (!(ctx instanceof Uint8Array)) {
+    throw new TypeError('ctx is required and must be a Uint8Array');
+  }
   if (sm.length < CryptoBytes) {
     return undefined;
   }

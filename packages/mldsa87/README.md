@@ -26,12 +26,13 @@ const pk = new Uint8Array(CryptoPublicKeyBytes);  // 2592 bytes
 const sk = new Uint8Array(CryptoSecretKeyBytes);  // 4896 bytes
 cryptoSignKeypair(null, pk, sk);  // null = random seed
 
-// Sign a message (uses default "ZOND" context)
+// Sign a message
 const message = new TextEncoder().encode('Hello, quantum world!');
-const signedMessage = cryptoSign(message, sk, false);  // false = deterministic
+const ctx = new Uint8Array([0x5a, 0x4f, 0x4e, 0x44]);  // "ZOND"
+const signedMessage = cryptoSign(message, sk, false, ctx);  // false = deterministic
 
-// Verify and extract
-const extracted = cryptoSignOpen(signedMessage, pk);
+// Verify and extract (context must match)
+const extracted = cryptoSignOpen(signedMessage, pk, ctx);
 if (extracted === undefined) {
   throw new Error('Invalid signature');
 }
@@ -40,20 +41,21 @@ console.log(new TextDecoder().decode(extracted));  // "Hello, quantum world!"
 
 ## Context Parameter
 
-ML-DSA-87 supports a context parameter for domain separation (FIPS 204 feature). This allows the same keypair to be used safely across different applications.
+ML-DSA-87 requires a context parameter for domain separation (FIPS 204 feature). This allows the same keypair to be used safely across different applications.
 
 ```javascript
-// With custom context
+// With application-specific context
 const ctx = new TextEncoder().encode('my-app-v1');
 const signed = cryptoSign(message, sk, false, ctx);
 const extracted = cryptoSignOpen(signed, pk, ctx);
 
 // Context must match for verification
-cryptoSignOpen(signed, pk);  // undefined - wrong context (default "ZOND")
-cryptoSignOpen(signed, pk, ctx);  // message - correct context
+const wrongCtx = new Uint8Array(0);
+cryptoSignOpen(signed, pk, wrongCtx);  // undefined - wrong context
+cryptoSignOpen(signed, pk, ctx);       // message - correct context
 ```
 
-The default context is `"ZOND"` (for QRL Zond network compatibility). Context can be 0-255 bytes.
+Context is a required `Uint8Array` and can be 0-255 bytes. Use an empty `Uint8Array(0)` if no domain separation is needed.
 
 ## API
 
@@ -77,26 +79,26 @@ Generate a keypair from a seed.
 - `sk`: `Uint8Array(4896)` - output buffer for secret key
 - Returns: The seed used (useful when `seed` is `null`)
 
-#### `cryptoSign(message, sk, randomized, context?)`
+#### `cryptoSign(message, sk, randomized, context)`
 
 Sign a message (combined mode: returns signature || message).
 
 - `message`: `Uint8Array` or `string` - message bytes; if `string`, it must be hex only (optional `0x`, even length). Plain-text strings are not accepted.
 - `sk`: `Uint8Array(4896)` - secret key
 - `randomized`: `boolean` - `true` for hedged signing, `false` for deterministic
-- `context`: `Uint8Array` (optional) - context string, 0-255 bytes. Default: `"ZOND"`
+- `context`: `Uint8Array` - context string for domain separation, 0-255 bytes
 - Returns: `Uint8Array` containing signature + message
 
-#### `cryptoSignOpen(signedMessage, pk, context?)`
+#### `cryptoSignOpen(signedMessage, pk, context)`
 
 Verify and extract message from signed message.
 
 - `signedMessage`: `Uint8Array` - output from `cryptoSign()`
 - `pk`: `Uint8Array(2592)` - public key
-- `context`: `Uint8Array` (optional) - must match signing context
+- `context`: `Uint8Array` - must match signing context
 - Returns: Original message if valid, `undefined` if verification fails
 
-#### `cryptoSignSignature(sig, message, sk, randomized, context?)`
+#### `cryptoSignSignature(sig, message, sk, randomized, context)`
 
 Create a detached signature.
 
@@ -104,17 +106,17 @@ Create a detached signature.
 - `message`: `Uint8Array` or `string` - message bytes; if `string`, it must be hex only (optional `0x`, even length). Plain-text strings are not accepted.
 - `sk`: `Uint8Array(4896)` - secret key
 - `randomized`: `boolean` - `true` for hedged, `false` for deterministic
-- `context`: `Uint8Array` (optional) - context string, 0-255 bytes
+- `context`: `Uint8Array` - context string for domain separation, 0-255 bytes
 - Returns: `0` on success
 
-#### `cryptoSignVerify(sig, message, pk, context?)`
+#### `cryptoSignVerify(sig, message, pk, context)`
 
 Verify a detached signature.
 
 - `sig`: `Uint8Array(4627)` - signature to verify
 - `message`: `Uint8Array` or `string` - original message bytes; if `string`, it must be hex only (optional `0x`, even length). Plain-text strings are not accepted.
 - `pk`: `Uint8Array(2592)` - public key
-- `context`: `Uint8Array` (optional) - must match signing context
+- `context`: `Uint8Array` - must match signing context
 - Returns: `true` if valid, `false` otherwise
 
 **Note:** To sign or verify plain text, convert it to bytes (e.g., `new TextEncoder().encode('Hello')`). String inputs are interpreted as hex only.

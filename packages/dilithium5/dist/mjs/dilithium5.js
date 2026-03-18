@@ -172,7 +172,7 @@ function cAddQ(a) {
 
 function ntt(a) {
   let k = 0;
-  let j = 0;
+  let j;
 
   for (let len = 128; len > 0; len >>= 1) {
     for (let start = 0; start < N; start = j + len) {
@@ -188,7 +188,7 @@ function ntt(a) {
 
 function invNTTToMont(a) {
   const f = 41978n; // mont^2/256
-  let j = 0;
+  let j;
   let k = 256;
 
   for (let len = 1; len < N; len <<= 1) {
@@ -1178,9 +1178,9 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
     }
   } catch (e) {
     if (e instanceof TypeError) {
-      throw new Error(`pk/sk cannot be null`);
+      throw new Error(`pk/sk cannot be null`, { cause: e });
     } else {
-      throw new Error(`${e.message}`);
+      throw new Error(`${e.message}`, { cause: e });
     }
   }
 
