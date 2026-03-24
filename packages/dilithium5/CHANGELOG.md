@@ -1,3 +1,9 @@
+## @theqrl/dilithium5 [1.1.2](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.1.1...@theqrl/dilithium5@1.1.2) (2026-03-24)
+
+### Bug Fixes
+
+* informational findings fixup & docs plus new CI gate ([1661eca](https://github.com/theQRL/qrypto.js/commit/1661eca47eae74cfdf4334d473ecdeb7002373f5))
+
 ## @theqrl/dilithium5 [1.1.1](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.1.0...@theqrl/dilithium5@1.1.1) (2026-02-10)
 
 ### Bug Fixes
