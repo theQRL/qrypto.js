@@ -1,3 +1,9 @@
+## @theqrl/mldsa87 [2.0.1](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.0.0...@theqrl/mldsa87@2.0.1) (2026-03-24)
+
+### Bug Fixes
+
+* informational findings fixup & docs plus new CI gate ([1661eca](https://github.com/theQRL/qrypto.js/commit/1661eca47eae74cfdf4334d473ecdeb7002373f5))
+
 ## @theqrl/mldsa87 [2.0.0](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@1.1.1...@theqrl/mldsa87@2.0.0) (2026-03-18)
 
 ### ⚠ BREAKING CHANGES
