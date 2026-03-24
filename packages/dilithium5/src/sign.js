@@ -53,16 +53,12 @@ import { zeroize } from './utils.js';
 /**
  * Convert hex string to Uint8Array with strict validation.
  *
- * NOTE: This function accepts multiple hex formats (with/without 0x prefix,
- * leading/trailing whitespace). While user-friendly, this flexibility could
- * mask input errors. Applications requiring strict format validation should
- * validate hex format before calling cryptographic functions, e.g.:
- *   - Reject strings with 0x prefix if raw hex is expected
- *   - Reject strings with whitespace
- *   - Enforce consistent casing (lowercase/uppercase)
+ * Accepts an optional 0x/0X prefix. Leading/trailing whitespace is rejected.
+ * Empty strings and whitespace-only strings are rejected.
  *
- * @param {string} hex - Hex string (optional 0x prefix, even length).
+ * @param {string} hex - Hex string (optional 0x prefix, even length, no whitespace).
  * @returns {Uint8Array} Decoded bytes.
+ * @throws {Error} If input is not a valid hex string
  * @private
  */
 function hexToBytes(hex) {
@@ -71,10 +67,15 @@ function hexToBytes(hex) {
     throw new Error('message must be a hex string');
   }
   /* c8 ignore stop */
-  let clean = hex.trim();
-  // Accepts both "0x..." and raw hex formats for convenience
+  if (hex !== hex.trim()) {
+    throw new Error('hex string must not have leading or trailing whitespace');
+  }
+  let clean = hex;
   if (clean.startsWith('0x') || clean.startsWith('0X')) {
     clean = clean.slice(2);
+  }
+  if (clean.length === 0) {
+    throw new Error('hex string must not be empty');
   }
   if (clean.length % 2 !== 0) {
     throw new Error('hex string must have an even length');
@@ -85,6 +86,14 @@ function hexToBytes(hex) {
   return nobleHexToBytes(clean);
 }
 
+/**
+ * Convert a message to Uint8Array.
+ *
+ * @param {string|Uint8Array} message - Message as hex string (optional 0x prefix) or Uint8Array.
+ * @returns {Uint8Array} Message bytes.
+ * @throws {Error} If message is not a Uint8Array or valid hex string
+ * @private
+ */
 function messageToBytes(message) {
   if (typeof message === 'string') {
     return hexToBytes(message);
@@ -98,8 +107,8 @@ function messageToBytes(message) {
 /**
  * Generate a Dilithium-5 key pair.
  *
- * @param {Uint8Array|null} passedSeed - Optional 32-byte seed for deterministic key generation.
- *   Pass null for random key generation.
+ * @param {Uint8Array|null} [passedSeed=null] - Optional 32-byte seed for deterministic key generation.
+ *   Pass null or undefined for random key generation.
  * @param {Uint8Array} pk - Output buffer for public key (must be CryptoPublicKeyBytes = 2592 bytes)
  * @param {Uint8Array} sk - Output buffer for secret key (must be CryptoSecretKeyBytes = 4896 bytes)
  * @returns {Uint8Array} The seed used for key generation (useful when passedSeed is null)
@@ -200,15 +209,25 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
  * @param {boolean} randomizedSigning - If true, use random nonce for hedged signing.
  *   If false, use deterministic nonce derived from message and key.
  * @returns {number} 0 on success
- * @throws {Error} If sk is wrong size
+ * @throws {TypeError} If sig is not a Uint8Array or is smaller than CryptoBytes
+ * @throws {TypeError} If sk is not a Uint8Array
+ * @throws {TypeError} If randomizedSigning is not a boolean
+ * @throws {Error} If sk length does not equal CryptoSecretKeyBytes
+ * @throws {Error} If message is not a Uint8Array or valid hex string
  *
  * @example
  * const sig = new Uint8Array(CryptoBytes);
  * cryptoSignSignature(sig, message, sk, false);
  */
 export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
-  if (!sig || sig.length < CryptoBytes) {
-    throw new Error(`sig must be at least ${CryptoBytes} bytes`);
+  if (!(sig instanceof Uint8Array) || sig.length < CryptoBytes) {
+    throw new TypeError(`sig must be at least ${CryptoBytes} bytes and a Uint8Array`);
+  }
+  if (!(sk instanceof Uint8Array)) {
+    throw new TypeError('sk must be a Uint8Array');
+  }
+  if (typeof randomizedSigning !== 'boolean') {
+    throw new TypeError('randomizedSigning must be a boolean');
   }
   if (sk.length !== CryptoSecretKeyBytes) {
     throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
@@ -271,7 +290,7 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
         .xof(SeedBytes);
       sig.set(cHash);
 
-      polyChallenge(cp, sig);
+      polyChallenge(cp, sig.slice(0, SeedBytes));
       polyNTT(cp);
 
       // Compute z, reject if it reveals secret
@@ -331,7 +350,8 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
  * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
  * @param {boolean} randomizedSigning - If true, use random nonce; if false, deterministic
  * @returns {Uint8Array} Signed message (CryptoBytes + msg.length bytes)
- * @throws {Error} If signing fails
+ * @throws {TypeError} If sk or randomizedSigning fail type validation (see cryptoSignSignature)
+ * @throws {Error} If signing fails or message/sk are invalid
  *
  * @example
  * const signedMsg = cryptoSign(message, sk, false);
@@ -385,10 +405,10 @@ export function cryptoSignVerify(sig, m, pk) {
   const w1 = new PolyVecK();
   const h = new PolyVecK();
 
-  if (sig.length !== CryptoBytes) {
+  if (!(sig instanceof Uint8Array) || sig.length !== CryptoBytes) {
     return false;
   }
-  if (pk.length !== CryptoPublicKeyBytes) {
+  if (!(pk instanceof Uint8Array) || pk.length !== CryptoPublicKeyBytes) {
     return false;
   }
 

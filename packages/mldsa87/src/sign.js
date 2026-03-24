@@ -55,16 +55,12 @@ import { zeroize } from './utils.js';
 /**
  * Convert hex string to Uint8Array with strict validation.
  *
- * NOTE: This function accepts multiple hex formats (with/without 0x prefix,
- * leading/trailing whitespace). While user-friendly, this flexibility could
- * mask input errors. Applications requiring strict format validation should
- * validate hex format before calling cryptographic functions, e.g.:
- *   - Reject strings with 0x prefix if raw hex is expected
- *   - Reject strings with whitespace
- *   - Enforce consistent casing (lowercase/uppercase)
+ * Accepts an optional 0x/0X prefix. Leading/trailing whitespace is rejected.
+ * Empty strings and whitespace-only strings are rejected.
  *
- * @param {string} hex - Hex string (optional 0x prefix, even length).
+ * @param {string} hex - Hex string (optional 0x prefix, even length, no whitespace).
  * @returns {Uint8Array} Decoded bytes.
+ * @throws {Error} If input is not a valid hex string
  * @private
  */
 function hexToBytes(hex) {
@@ -73,10 +69,15 @@ function hexToBytes(hex) {
     throw new Error('message must be a hex string');
   }
   /* c8 ignore stop */
-  let clean = hex.trim();
-  // Accepts both "0x..." and raw hex formats for convenience
+  if (hex !== hex.trim()) {
+    throw new Error('hex string must not have leading or trailing whitespace');
+  }
+  let clean = hex;
   if (clean.startsWith('0x') || clean.startsWith('0X')) {
     clean = clean.slice(2);
+  }
+  if (clean.length === 0) {
+    throw new Error('hex string must not be empty');
   }
   if (clean.length % 2 !== 0) {
     throw new Error('hex string must have an even length');
@@ -87,6 +88,14 @@ function hexToBytes(hex) {
   return nobleHexToBytes(clean);
 }
 
+/**
+ * Convert a message to Uint8Array.
+ *
+ * @param {string|Uint8Array} message - Message as hex string (optional 0x prefix) or Uint8Array.
+ * @returns {Uint8Array} Message bytes.
+ * @throws {Error} If message is not a Uint8Array or valid hex string
+ * @private
+ */
 function messageToBytes(message) {
   if (typeof message === 'string') {
     return hexToBytes(message);
@@ -103,8 +112,8 @@ function messageToBytes(message) {
  * Key generation follows FIPS 204, using domain separator [K, L] during
  * seed expansion to ensure algorithm binding.
  *
- * @param {Uint8Array|null} passedSeed - Optional 32-byte seed for deterministic key generation.
- *   Pass null for random key generation.
+ * @param {Uint8Array|null} [passedSeed=null] - Optional 32-byte seed for deterministic key generation.
+ *   Pass null or undefined for random key generation.
  * @param {Uint8Array} pk - Output buffer for public key (must be CryptoPublicKeyBytes = 2592 bytes)
  * @param {Uint8Array} sk - Output buffer for secret key (must be CryptoSecretKeyBytes = 4896 bytes)
  * @returns {Uint8Array} The seed used for key generation (useful when passedSeed is null)
@@ -196,7 +205,7 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
 }
 
 /**
- * Create a detached signature for a message with optional context.
+ * Create a detached signature for a message with context.
  *
  * Uses the ML-DSA-87 (FIPS 204) signing algorithm with rejection sampling.
  * The context parameter provides domain separation as required by FIPS 204.
@@ -206,9 +215,16 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
  * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
  * @param {boolean} randomizedSigning - If true, use random nonce for hedged signing.
  *   If false, use deterministic nonce derived from message and key.
- * @param {Uint8Array} ctx - Context string for domain separation (max 255 bytes).
+ * @param {Uint8Array} ctx - Context string for domain separation (required, max 255 bytes).
+ *   Pass an empty Uint8Array for no context.
  * @returns {number} 0 on success
- * @throws {Error} If ctx is missing, sk is wrong size, or context exceeds 255 bytes
+ * @throws {TypeError} If sig is not a Uint8Array or is smaller than CryptoBytes
+ * @throws {TypeError} If sk is not a Uint8Array
+ * @throws {TypeError} If ctx is not a Uint8Array
+ * @throws {TypeError} If randomizedSigning is not a boolean
+ * @throws {Error} If ctx exceeds 255 bytes
+ * @throws {Error} If sk length does not equal CryptoSecretKeyBytes
+ * @throws {Error} If message is not a Uint8Array or valid hex string
  *
  * @example
  * const sig = new Uint8Array(CryptoBytes);
@@ -216,13 +232,19 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
  * cryptoSignSignature(sig, message, sk, false, ctx);
  */
 export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx) {
-  if (!sig || sig.length < CryptoBytes) {
-    throw new Error(`sig must be at least ${CryptoBytes} bytes`);
+  if (!(sig instanceof Uint8Array) || sig.length < CryptoBytes) {
+    throw new TypeError(`sig must be at least ${CryptoBytes} bytes and a Uint8Array`);
+  }
+  if (!(sk instanceof Uint8Array)) {
+    throw new TypeError('sk must be a Uint8Array');
   }
   if (!(ctx instanceof Uint8Array)) {
     throw new TypeError('ctx is required and must be a Uint8Array');
   }
   if (ctx.length > 255) throw new Error(`invalid context length: ${ctx.length} (max 255)`);
+  if (typeof randomizedSigning !== 'boolean') {
+    throw new TypeError('randomizedSigning must be a boolean');
+  }
   if (sk.length !== CryptoSecretKeyBytes) {
     throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
   }
@@ -348,9 +370,11 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx) {
  * @param {string|Uint8Array} msg - Message to sign (hex string, optional 0x prefix, or Uint8Array)
  * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
  * @param {boolean} randomizedSigning - If true, use random nonce; if false, deterministic
- * @param {Uint8Array} ctx - Context string for domain separation (max 255 bytes).
+ * @param {Uint8Array} ctx - Context string for domain separation (required, max 255 bytes).
  * @returns {Uint8Array} Signed message (CryptoBytes + msg.length bytes)
- * @throws {Error} If signing fails
+ * @throws {TypeError} If ctx is not a Uint8Array
+ * @throws {TypeError} If sk or randomizedSigning fail type validation (see cryptoSignSignature)
+ * @throws {Error} If signing fails or message/sk/ctx are invalid
  *
  * @example
  * const signedMsg = cryptoSign(message, sk, false, ctx);
@@ -378,7 +402,7 @@ export function cryptoSign(msg, sk, randomizedSigning, ctx) {
 }
 
 /**
- * Verify a detached signature with optional context.
+ * Verify a detached signature with context.
  *
  * Performs constant-time verification to prevent timing side-channel attacks.
  * The context must match the one used during signing.
@@ -386,8 +410,9 @@ export function cryptoSign(msg, sk, randomizedSigning, ctx) {
  * @param {Uint8Array} sig - Signature to verify (must be CryptoBytes = 4627 bytes)
  * @param {string|Uint8Array} m - Message that was signed (hex string, optional 0x prefix, or Uint8Array)
  * @param {Uint8Array} pk - Public key (must be CryptoPublicKeyBytes = 2592 bytes)
- * @param {Uint8Array} ctx - Context string used during signing (max 255 bytes).
+ * @param {Uint8Array} ctx - Context string used during signing (required, max 255 bytes).
  * @returns {boolean} true if signature is valid, false otherwise
+ * @throws {TypeError} If ctx is not a Uint8Array
  *
  * @example
  * const isValid = cryptoSignVerify(signature, message, pk, ctx);
@@ -413,10 +438,10 @@ export function cryptoSignVerify(sig, m, pk, ctx) {
   const w1 = new PolyVecK();
   const h = new PolyVecK();
 
-  if (sig.length !== CryptoBytes) {
+  if (!(sig instanceof Uint8Array) || sig.length !== CryptoBytes) {
     return false;
   }
-  if (pk.length !== CryptoPublicKeyBytes) {
+  if (!(pk instanceof Uint8Array) || pk.length !== CryptoPublicKeyBytes) {
     return false;
   }
 
@@ -486,8 +511,9 @@ export function cryptoSignVerify(sig, m, pk, ctx) {
  *
  * @param {Uint8Array} sm - Signed message (signature || message)
  * @param {Uint8Array} pk - Public key (must be CryptoPublicKeyBytes = 2592 bytes)
- * @param {Uint8Array} ctx - Context string used during signing (max 255 bytes).
+ * @param {Uint8Array} ctx - Context string used during signing (required, max 255 bytes).
  * @returns {Uint8Array|undefined} The original message if valid, undefined if verification fails
+ * @throws {TypeError} If ctx is not a Uint8Array
  *
  * @example
  * const message = cryptoSignOpen(signedMsg, pk, ctx);

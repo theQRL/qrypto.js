@@ -35,6 +35,25 @@ jobs:
       - run: npm ci
       - run: npm test
 
+  dist-check:
+    name: Verify dist/ is up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22.x'
+      - run: npm ci
+      - run: npm run build
+      - name: Check for uncommitted dist changes
+        run: |
+          if [ -n "$(git diff --name-only packages/*/dist/)" ]; then
+            echo "::error::dist/ files are out of date. Run 'npm run build' and commit the result."
+            git diff --stat packages/*/dist/
+            exit 1
+          fi
+
   browser-tests:
     name: Browser Tests (Playwright)
     runs-on: ubuntu-latest

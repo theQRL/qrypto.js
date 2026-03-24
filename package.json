@@ -12,6 +12,7 @@
     "test:browser": "playwright install chromium && turbo run test:browser",
     "check-shared": "node scripts/check-shared-files.js",
     "lint": "turbo lint-check",
+    "lint:fix": "turbo lint",
     "coverage": "turbo coverage",
     "report-coverage": "turbo report-coverage"
   },

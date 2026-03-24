@@ -112,10 +112,7 @@ export function polyChkNorm(a, b) {
   }
 
   for (let i = 0; i < N; i++) {
-    let t = a.coeffs[i] >> 31;
-    t = a.coeffs[i] - (t & (2 * a.coeffs[i]));
-
-    if (t >= b) {
+    if (Math.abs(a.coeffs[i]) >= b) {
       return 1;
     }
   }
@@ -234,6 +231,8 @@ export function polyUniformGamma1(a, seed, nonce) {
 }
 
 export function polyChallenge(cP, seed) {
+  if (seed.length !== SeedBytes) throw new Error('invalid seed length');
+
   let b;
   let pos;
   const c = cP;
@@ -241,7 +240,7 @@ export function polyChallenge(cP, seed) {
 
   const state = new KeccakState();
   shake256Init(state);
-  shake256Absorb(state, seed.slice(0, SeedBytes));
+  shake256Absorb(state, seed);
   shake256Finalize(state);
   shake256SqueezeBlocks(buf, 0, 1, state);
 

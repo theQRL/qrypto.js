@@ -18,6 +18,8 @@
  *
  * @param {Uint8Array} buffer - The buffer to zero
  * @returns {void}
+ * @throws {TypeError} If buffer is not a Uint8Array
+ * @throws {Error} If zeroization verification fails
  */
 export function zeroize(buffer) {
   if (!(buffer instanceof Uint8Array)) {
@@ -40,6 +42,7 @@ export function zeroize(buffer) {
  *
  * @param {Uint8Array} buffer - The buffer to check
  * @returns {boolean} True if all bytes are zero
+ * @throws {TypeError} If buffer is not a Uint8Array
  */
 export function isZero(buffer) {
   if (!(buffer instanceof Uint8Array)) {

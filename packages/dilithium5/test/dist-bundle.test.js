@@ -42,7 +42,7 @@ describe('dist bundle smoke tests', () => {
         cryptoSignKeypair(null, pk, sk);
         const msg = new TextEncoder().encode('test');
         const sig = new Uint8Array(CryptoBytes);
-        cryptoSignSignature(sig, msg, sk);
+        cryptoSignSignature(sig, msg, sk, false);
         console.log(cryptoSignVerify(sig, msg, pk));
       `);
       expect(stdout.trim()).to.equal('true');
@@ -73,7 +73,7 @@ describe('dist bundle smoke tests', () => {
         cryptoSignKeypair(null, pk, sk);
         const msg = new TextEncoder().encode('test');
         const sig = new Uint8Array(CryptoBytes);
-        cryptoSignSignature(sig, msg, sk);
+        cryptoSignSignature(sig, msg, sk, false);
         console.log(cryptoSignVerify(sig, msg, pk));
       `,
         { cjs: true }

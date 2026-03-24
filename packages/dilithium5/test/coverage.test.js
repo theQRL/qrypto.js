@@ -11,7 +11,7 @@ import {
   SeedBytes,
 } from '../src/const.js';
 import { unpackSig } from '../src/packing.js';
-import { Poly, polyChkNorm } from '../src/poly.js';
+import { Poly, polyChallenge, polyChkNorm } from '../src/poly.js';
 import { PolyVecK, PolyVecL, polyVecMatrixExpand } from '../src/polyvec.js';
 import { cryptoSign, cryptoSignKeypair, cryptoSignOpen, cryptoSignSignature, cryptoSignVerify } from '../src/sign.js';
 import { zeroize } from '../src/utils.js';
@@ -21,6 +21,19 @@ describe('coverage: polyChkNorm', () => {
     const poly = new Poly();
     const limit = Math.floor((Q - 1) / 8) + 1;
     expect(polyChkNorm(poly, limit)).to.equal(1);
+  });
+
+  it('should reject coefficients with large negative values beyond 2^30', () => {
+    const poly = new Poly();
+    poly.coeffs[0] = -1073741825; // -(2^30 + 1)
+    expect(polyChkNorm(poly, 1)).to.equal(1);
+  });
+});
+
+describe('coverage: polyChallenge seed validation', () => {
+  it('should reject invalid seed length', () => {
+    const c = new Poly();
+    expect(() => polyChallenge(c, new Uint8Array(SeedBytes - 1))).to.throw('invalid seed length');
   });
 });
 
@@ -38,6 +51,15 @@ describe('coverage: cryptoSignKeypair seed validation', () => {
     const sk = new Uint8Array(CryptoSecretKeyBytes);
     const seed = new Uint8Array(SeedBytes - 1);
     expect(() => cryptoSignKeypair(seed, pk, sk)).to.throw('invalid seed length');
+  });
+});
+
+describe('coverage: unpack buffer validation', () => {
+  it('should reject undersized sig in unpackSig', () => {
+    const c = new Uint8Array(SeedBytes);
+    const z = new PolyVecL();
+    const h = new PolyVecK();
+    expect(() => unpackSig(c, z, h, new Uint8Array(CryptoBytes - 1))).to.throw('sig must be a Uint8Array');
   });
 });
 
@@ -77,6 +99,52 @@ describe('coverage: hex string validation', () => {
 
     const sig = new Uint8Array(CryptoBytes);
     expect(() => cryptoSignSignature(sig, 'zz', sk, false)).to.throw('hex string contains non-hex characters');
+  });
+
+  it('should reject whitespace-only strings', () => {
+    const sk = new Uint8Array(CryptoSecretKeyBytes);
+    const sig = new Uint8Array(CryptoBytes);
+    expect(() => cryptoSignSignature(sig, ' ', sk, false)).to.throw(
+      'hex string must not have leading or trailing whitespace'
+    );
+  });
+
+  it('should reject empty strings', () => {
+    const sk = new Uint8Array(CryptoSecretKeyBytes);
+    const sig = new Uint8Array(CryptoBytes);
+    expect(() => cryptoSignSignature(sig, '', sk, false)).to.throw('hex string must not be empty');
+  });
+
+  it('should reject strings with leading/trailing whitespace', () => {
+    const sk = new Uint8Array(CryptoSecretKeyBytes);
+    const sig = new Uint8Array(CryptoBytes);
+    expect(() => cryptoSignSignature(sig, ' aa ', sk, false)).to.throw(
+      'hex string must not have leading or trailing whitespace'
+    );
+  });
+});
+
+describe('coverage: randomizedSigning type validation', () => {
+  it('should reject non-boolean randomizedSigning', () => {
+    const sk = new Uint8Array(CryptoSecretKeyBytes);
+    const sig = new Uint8Array(CryptoBytes);
+    expect(() => cryptoSignSignature(sig, new Uint8Array([1]), sk, 'false')).to.throw(
+      'randomizedSigning must be a boolean'
+    );
+  });
+});
+
+describe('coverage: Uint8Array type validation', () => {
+  it('should reject non-Uint8Array sk in cryptoSignSignature', () => {
+    const sig = new Uint8Array(CryptoBytes);
+    expect(() => cryptoSignSignature(sig, new Uint8Array([1]), { length: CryptoSecretKeyBytes }, false)).to.throw(
+      'sk must be a Uint8Array'
+    );
+  });
+
+  it('should reject non-Uint8Array sig in cryptoSignSignature', () => {
+    const sk = new Uint8Array(CryptoSecretKeyBytes);
+    expect(() => cryptoSignSignature(null, new Uint8Array([1]), sk, false)).to.throw('sig must be at least');
   });
 });
 
