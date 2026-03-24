@@ -1,4 +1,7 @@
 import {
+  CryptoBytes,
+  CryptoPublicKeyBytes,
+  CryptoSecretKeyBytes,
   K,
   L,
   N,
@@ -33,6 +36,9 @@ export function packPk(pkp, rho, t1) {
 }
 
 export function unpackPk(rhop, t1, pk) {
+  if (!(pk instanceof Uint8Array) || pk.length !== CryptoPublicKeyBytes) {
+    throw new Error(`pk must be a Uint8Array of ${CryptoPublicKeyBytes} bytes`);
+  }
   const rho = rhop;
   for (let i = 0; i < SeedBytes; ++i) {
     rho[i] = pk[i];
@@ -77,6 +83,9 @@ export function packSk(skp, rho, tr, key, t0, s1, s2) {
 }
 
 export function unpackSk(rhoP, trP, keyP, t0, s1, s2, sk) {
+  if (!(sk instanceof Uint8Array) || sk.length !== CryptoSecretKeyBytes) {
+    throw new Error(`sk must be a Uint8Array of ${CryptoSecretKeyBytes} bytes`);
+  }
   let skOffset = 0;
   const rho = rhoP;
   const tr = trP;
@@ -140,7 +149,12 @@ export function packSig(sigP, ctilde, z, h) {
   }
 }
 
+// Returns 0 on success, 1 on failure. On failure, output buffers (c, z, h)
+// may contain partial data and must not be used.
 export function unpackSig(cP, z, hP, sig) {
+  if (!(sig instanceof Uint8Array) || sig.length !== CryptoBytes) {
+    throw new Error(`sig must be a Uint8Array of ${CryptoBytes} bytes`);
+  }
   let sigOffset = 0;
   const c = cP; // ctilde
   const h = hP;

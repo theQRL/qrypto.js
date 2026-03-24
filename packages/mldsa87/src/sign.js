@@ -55,16 +55,12 @@ import { zeroize } from './utils.js';
 /**
  * Convert hex string to Uint8Array with strict validation.
  *
- * NOTE: This function accepts multiple hex formats (with/without 0x prefix,
- * leading/trailing whitespace). While user-friendly, this flexibility could
- * mask input errors. Applications requiring strict format validation should
- * validate hex format before calling cryptographic functions, e.g.:
- *   - Reject strings with 0x prefix if raw hex is expected
- *   - Reject strings with whitespace
- *   - Enforce consistent casing (lowercase/uppercase)
+ * Accepts an optional 0x/0X prefix. Leading/trailing whitespace is rejected.
+ * Empty strings and whitespace-only strings are rejected.
  *
- * @param {string} hex - Hex string (optional 0x prefix, even length).
+ * @param {string} hex - Hex string (optional 0x prefix, even length, no whitespace).
  * @returns {Uint8Array} Decoded bytes.
+ * @throws {Error} If input is not a valid hex string
  * @private
  */
 function hexToBytes(hex) {
@@ -73,10 +69,15 @@ function hexToBytes(hex) {
     throw new Error('message must be a hex string');
   }
   /* c8 ignore stop */
-  let clean = hex.trim();
-  // Accepts both "0x..." and raw hex formats for convenience
+  if (hex !== hex.trim()) {
+    throw new Error('hex string must not have leading or trailing whitespace');
+  }
+  let clean = hex;
   if (clean.startsWith('0x') || clean.startsWith('0X')) {
     clean = clean.slice(2);
+  }
+  if (clean.length === 0) {
+    throw new Error('hex string must not be empty');
   }
   if (clean.length % 2 !== 0) {
     throw new Error('hex string must have an even length');
@@ -216,13 +217,19 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
  * cryptoSignSignature(sig, message, sk, false, ctx);
  */
 export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx) {
-  if (!sig || sig.length < CryptoBytes) {
-    throw new Error(`sig must be at least ${CryptoBytes} bytes`);
+  if (!(sig instanceof Uint8Array) || sig.length < CryptoBytes) {
+    throw new TypeError(`sig must be at least ${CryptoBytes} bytes and a Uint8Array`);
+  }
+  if (!(sk instanceof Uint8Array)) {
+    throw new TypeError('sk must be a Uint8Array');
   }
   if (!(ctx instanceof Uint8Array)) {
     throw new TypeError('ctx is required and must be a Uint8Array');
   }
   if (ctx.length > 255) throw new Error(`invalid context length: ${ctx.length} (max 255)`);
+  if (typeof randomizedSigning !== 'boolean') {
+    throw new TypeError('randomizedSigning must be a boolean');
+  }
   if (sk.length !== CryptoSecretKeyBytes) {
     throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
   }
@@ -413,10 +420,10 @@ export function cryptoSignVerify(sig, m, pk, ctx) {
   const w1 = new PolyVecK();
   const h = new PolyVecK();
 
-  if (sig.length !== CryptoBytes) {
+  if (!(sig instanceof Uint8Array) || sig.length !== CryptoBytes) {
     return false;
   }
-  if (pk.length !== CryptoPublicKeyBytes) {
+  if (!(pk instanceof Uint8Array) || pk.length !== CryptoPublicKeyBytes) {
     return false;
   }
 

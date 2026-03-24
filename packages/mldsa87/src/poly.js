@@ -112,10 +112,7 @@ export function polyChkNorm(a, b) {
   }
 
   for (let i = 0; i < N; i++) {
-    let t = a.coeffs[i] >> 31;
-    t = a.coeffs[i] - (t & (2 * a.coeffs[i]));
-
-    if (t >= b) {
+    if (Math.abs(a.coeffs[i]) >= b) {
       return 1;
     }
   }

@@ -158,12 +158,16 @@ function montgomeryReduce(a) {
   return t;
 }
 
+// Partial reduction modulo Q. Input must satisfy |a| < 2^31 - 2^22.
+// Output is in (-Q, Q). Mirrors the reference C implementation.
 function reduce32(a) {
   let t = (a + (1 << 22)) >> 23;
   t = a - t * Q;
   return t;
 }
 
+// Conditional add Q: if a is negative, add Q. Input must satisfy -Q < a < 2^31.
+// Output is in [0, Q). Mirrors the reference C implementation.
 function cAddQ(a) {
   let ar = a;
   ar += (ar >> 31) & Q;
@@ -325,10 +329,7 @@ function polyChkNorm(a, b) {
   }
 
   for (let i = 0; i < N; i++) {
-    let t = a.coeffs[i] >> 31;
-    t = a.coeffs[i] - (t & (2 * a.coeffs[i]));
-
-    if (t >= b) {
+    if (Math.abs(a.coeffs[i]) >= b) {
       return 1;
     }
   }
@@ -447,6 +448,8 @@ function polyUniformGamma1(a, seed, nonce) {
 }
 
 function polyChallenge(cP, seed) {
+  if (seed.length !== SeedBytes) throw new Error('invalid seed length');
+
   let b;
   let pos;
   const c = cP;
@@ -454,7 +457,7 @@ function polyChallenge(cP, seed) {
 
   const state = new KeccakState();
   shake256Init(state);
-  shake256Absorb(state, seed.slice(0, SeedBytes));
+  shake256Absorb(state, seed);
   shake256Finalize(state);
   shake256SqueezeBlocks(buf, 0, 1, state);
 
@@ -867,6 +870,9 @@ function packPk(pkp, rho, t1) {
 }
 
 function unpackPk(rhop, t1, pk) {
+  if (!(pk instanceof Uint8Array) || pk.length !== CryptoPublicKeyBytes) {
+    throw new Error(`pk must be a Uint8Array of ${CryptoPublicKeyBytes} bytes`);
+  }
   const rho = rhop;
   for (let i = 0; i < SeedBytes; ++i) {
     rho[i] = pk[i];
@@ -911,6 +917,9 @@ function packSk(skp, rho, tr, key, t0, s1, s2) {
 }
 
 function unpackSk(rhoP, trP, keyP, t0, s1, s2, sk) {
+  if (!(sk instanceof Uint8Array) || sk.length !== CryptoSecretKeyBytes) {
+    throw new Error(`sk must be a Uint8Array of ${CryptoSecretKeyBytes} bytes`);
+  }
   let skOffset = 0;
   const rho = rhoP;
   const tr = trP;
@@ -974,7 +983,12 @@ function packSig(sigP, c, z, h) {
   }
 }
 
+// Returns 0 on success, 1 on failure. On failure, output buffers (c, z, h)
+// may contain partial data and must not be used.
 function unpackSig(cP, z, hP, sig) {
+  if (!(sig instanceof Uint8Array) || sig.length !== CryptoBytes) {
+    throw new Error(`sig must be a Uint8Array of ${CryptoBytes} bytes`);
+  }
   let sigOffset = 0;
   const c = cP;
   const h = hP;
@@ -1111,16 +1125,12 @@ function isZero(buffer) {
 /**
  * Convert hex string to Uint8Array with strict validation.
  *
- * NOTE: This function accepts multiple hex formats (with/without 0x prefix,
- * leading/trailing whitespace). While user-friendly, this flexibility could
- * mask input errors. Applications requiring strict format validation should
- * validate hex format before calling cryptographic functions, e.g.:
- *   - Reject strings with 0x prefix if raw hex is expected
- *   - Reject strings with whitespace
- *   - Enforce consistent casing (lowercase/uppercase)
+ * Accepts an optional 0x/0X prefix. Leading/trailing whitespace is rejected.
+ * Empty strings and whitespace-only strings are rejected.
  *
- * @param {string} hex - Hex string (optional 0x prefix, even length).
+ * @param {string} hex - Hex string (optional 0x prefix, even length, no whitespace).
  * @returns {Uint8Array} Decoded bytes.
+ * @throws {Error} If input is not a valid hex string
  * @private
  */
 function hexToBytes(hex) {
@@ -1129,10 +1139,15 @@ function hexToBytes(hex) {
     throw new Error('message must be a hex string');
   }
   /* c8 ignore stop */
-  let clean = hex.trim();
-  // Accepts both "0x..." and raw hex formats for convenience
+  if (hex !== hex.trim()) {
+    throw new Error('hex string must not have leading or trailing whitespace');
+  }
+  let clean = hex;
   if (clean.startsWith('0x') || clean.startsWith('0X')) {
     clean = clean.slice(2);
+  }
+  if (clean.length === 0) {
+    throw new Error('hex string must not be empty');
   }
   if (clean.length % 2 !== 0) {
     throw new Error('hex string must have an even length');
@@ -1265,8 +1280,14 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
  * cryptoSignSignature(sig, message, sk, false);
  */
 function cryptoSignSignature(sig, m, sk, randomizedSigning) {
-  if (!sig || sig.length < CryptoBytes) {
-    throw new Error(`sig must be at least ${CryptoBytes} bytes`);
+  if (!(sig instanceof Uint8Array) || sig.length < CryptoBytes) {
+    throw new TypeError(`sig must be at least ${CryptoBytes} bytes and a Uint8Array`);
+  }
+  if (!(sk instanceof Uint8Array)) {
+    throw new TypeError('sk must be a Uint8Array');
+  }
+  if (typeof randomizedSigning !== 'boolean') {
+    throw new TypeError('randomizedSigning must be a boolean');
   }
   if (sk.length !== CryptoSecretKeyBytes) {
     throw new Error(`invalid sk length ${sk.length} | Expected length ${CryptoSecretKeyBytes}`);
@@ -1329,7 +1350,7 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning) {
         .xof(SeedBytes);
       sig.set(cHash);
 
-      polyChallenge(cp, sig);
+      polyChallenge(cp, sig.slice(0, SeedBytes));
       polyNTT(cp);
 
       // Compute z, reject if it reveals secret
@@ -1443,10 +1464,10 @@ function cryptoSignVerify(sig, m, pk) {
   const w1 = new PolyVecK();
   const h = new PolyVecK();
 
-  if (sig.length !== CryptoBytes) {
+  if (!(sig instanceof Uint8Array) || sig.length !== CryptoBytes) {
     return false;
   }
-  if (pk.length !== CryptoPublicKeyBytes) {
+  if (!(pk instanceof Uint8Array) || pk.length !== CryptoPublicKeyBytes) {
     return false;
   }
 
