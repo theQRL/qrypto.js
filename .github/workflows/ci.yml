@@ -54,6 +54,19 @@ jobs:
             exit 1
           fi
 
+  fuzz:
+    name: Fuzz (quick)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22.x'
+      - run: npm ci
+      - run: npm run build
+      - run: node scripts/fuzz/run-campaign.mjs --profile quick --seed 42
+
   browser-tests:
     name: Browser Tests (Playwright)
     runs-on: ubuntu-latest
