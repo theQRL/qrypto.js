@@ -86,6 +86,14 @@ function hexToBytes(hex) {
   return nobleHexToBytes(clean);
 }
 
+/**
+ * Convert a message to Uint8Array.
+ *
+ * @param {string|Uint8Array} message - Message as hex string (optional 0x prefix) or Uint8Array.
+ * @returns {Uint8Array} Message bytes.
+ * @throws {Error} If message is not a Uint8Array or valid hex string
+ * @private
+ */
 function messageToBytes(message) {
   if (typeof message === 'string') {
     return hexToBytes(message);
@@ -99,8 +107,8 @@ function messageToBytes(message) {
 /**
  * Generate a Dilithium-5 key pair.
  *
- * @param {Uint8Array|null} passedSeed - Optional 32-byte seed for deterministic key generation.
- *   Pass null for random key generation.
+ * @param {Uint8Array|null} [passedSeed=null] - Optional 32-byte seed for deterministic key generation.
+ *   Pass null or undefined for random key generation.
  * @param {Uint8Array} pk - Output buffer for public key (must be CryptoPublicKeyBytes = 2592 bytes)
  * @param {Uint8Array} sk - Output buffer for secret key (must be CryptoSecretKeyBytes = 4896 bytes)
  * @returns {Uint8Array} The seed used for key generation (useful when passedSeed is null)
@@ -201,7 +209,11 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
  * @param {boolean} randomizedSigning - If true, use random nonce for hedged signing.
  *   If false, use deterministic nonce derived from message and key.
  * @returns {number} 0 on success
- * @throws {Error} If sk is wrong size
+ * @throws {TypeError} If sig is not a Uint8Array or is smaller than CryptoBytes
+ * @throws {TypeError} If sk is not a Uint8Array
+ * @throws {TypeError} If randomizedSigning is not a boolean
+ * @throws {Error} If sk length does not equal CryptoSecretKeyBytes
+ * @throws {Error} If message is not a Uint8Array or valid hex string
  *
  * @example
  * const sig = new Uint8Array(CryptoBytes);
@@ -338,7 +350,8 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
  * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
  * @param {boolean} randomizedSigning - If true, use random nonce; if false, deterministic
  * @returns {Uint8Array} Signed message (CryptoBytes + msg.length bytes)
- * @throws {Error} If signing fails
+ * @throws {TypeError} If sk or randomizedSigning fail type validation (see cryptoSignSignature)
+ * @throws {Error} If signing fails or message/sk are invalid
  *
  * @example
  * const signedMsg = cryptoSign(message, sk, false);

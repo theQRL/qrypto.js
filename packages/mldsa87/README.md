@@ -74,7 +74,7 @@ Context is a required `Uint8Array` and can be 0-255 bytes. Use an empty `Uint8Ar
 
 Generate a keypair from a seed.
 
-- `seed`: `Uint8Array(32)` or `null` for random
+- `seed`: `Uint8Array(32)`, `null`, or `undefined` for random
 - `pk`: `Uint8Array(2592)` - output buffer for public key
 - `sk`: `Uint8Array(4896)` - output buffer for secret key
 - Returns: The seed used (useful when `seed` is `null`)
@@ -125,9 +125,16 @@ Verify a detached signature.
 
 Zero out sensitive data (best-effort, see security notes).
 
+- `buffer`: `Uint8Array` - the buffer to zero
+- Throws: `TypeError` if buffer is not a `Uint8Array`
+
 #### `isZero(buffer)`
 
 Check if buffer is all zeros (constant-time).
+
+- `buffer`: `Uint8Array` - the buffer to check
+- Returns: `true` if all bytes are zero
+- Throws: `TypeError` if buffer is not a `Uint8Array`
 
 ## Interoperability
 

@@ -115,7 +115,7 @@ Generate a keypair from a seed.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `seed` | `Uint8Array` or `null` | 32-byte seed, or `null` for random |
+| `seed` | `Uint8Array`, `null`, or `undefined` | 32-byte seed, or `null`/`undefined` for random |
 | `pk` | `Uint8Array` | Output buffer for public key (2592 bytes) |
 | `sk` | `Uint8Array` | Output buffer for secret key (4896 bytes) |
 | **Returns** | `Uint8Array` | The seed used (useful when `seed` is `null`) |
@@ -126,10 +126,12 @@ Generate a keypair from a seed.
 
 ```javascript
 // Sign: returns signature || message
-cryptoSign(message, sk, randomized, [context]) → Uint8Array
+cryptoSign(message, sk, randomized, context) → Uint8Array    // ML-DSA-87
+cryptoSign(message, sk, randomized) → Uint8Array              // Dilithium5
 
 // Open: verifies and extracts message
-cryptoSignOpen(signedMessage, pk, [context]) → Uint8Array | undefined
+cryptoSignOpen(signedMessage, pk, context) → Uint8Array | undefined    // ML-DSA-87
+cryptoSignOpen(signedMessage, pk) → Uint8Array | undefined              // Dilithium5
 ```
 
 | Parameter | Type | Description |
@@ -137,7 +139,7 @@ cryptoSignOpen(signedMessage, pk, [context]) → Uint8Array | undefined
 | `message` | `Uint8Array` or `string` | Message bytes; if `string`, it must be hex only (optional `0x`, even length). Plain-text strings are not accepted. |
 | `sk` | `Uint8Array` | Secret key (4896 bytes) |
 | `randomized` | `boolean` | `true` for hedged signing, `false` for deterministic |
-| `context` | `Uint8Array` | (ML-DSA only) Context string, 0-255 bytes. Default: "ZOND" (for "QRL v2.0" applications) |
+| `context` | `Uint8Array` | (ML-DSA-87 only, required) Context string, 0-255 bytes. Use `new Uint8Array(0)` for no context. |
 | `signedMessage` | `Uint8Array` | Output from `cryptoSign()` |
 | `pk` | `Uint8Array` | Public key (2592 bytes) |
 
@@ -149,10 +151,12 @@ cryptoSignOpen(signedMessage, pk, [context]) → Uint8Array | undefined
 
 ```javascript
 // Create detached signature
-cryptoSignSignature(sig, message, sk, randomized, [context]) → number
+cryptoSignSignature(sig, message, sk, randomized, context) → number    // ML-DSA-87
+cryptoSignSignature(sig, message, sk, randomized) → number              // Dilithium5
 
 // Verify detached signature
-cryptoSignVerify(sig, message, pk, [context]) → boolean
+cryptoSignVerify(sig, message, pk, context) → boolean    // ML-DSA-87
+cryptoSignVerify(sig, message, pk) → boolean              // Dilithium5
 ```
 
 | Parameter | Type | Description |
@@ -162,7 +166,7 @@ cryptoSignVerify(sig, message, pk, [context]) → boolean
 | `sk` | `Uint8Array` | Secret key (4896 bytes) |
 | `pk` | `Uint8Array` | Public key (2592 bytes) |
 | `randomized` | `boolean` | `true` for hedged, `false` for deterministic |
-| `context` | `Uint8Array` | (ML-DSA only) Context string, 0-255 bytes |
+| `context` | `Uint8Array` | (ML-DSA-87 only, required) Context string, 0-255 bytes |
 
 **Returns:**
 - `cryptoSignSignature`: `0` on success
@@ -192,7 +196,7 @@ if (!isZero(buffer)) {
 |---------|-----------|------------|
 | Standard | FIPS 204 | CRYSTALS Round 3 |
 | Signature size | 4627 bytes | 4595 bytes |
-| Context parameter | Required (default: "ZOND" for "QRL v2.0" applications) | Not supported |
+| Context parameter | Required (`Uint8Array`, 0-255 bytes) | Not supported |
 | Challenge size | 64 bytes | 32 bytes |
 | Use case | New implementations | Legacy/go-qrllib compat |
 
