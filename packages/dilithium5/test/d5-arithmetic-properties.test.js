@@ -1,21 +1,31 @@
+/* eslint-disable no-unused-vars */
 import { expect } from 'chai';
 import { montgomeryReduce, reduce32, cAddQ } from '../src/reduce.js';
 import { power2round, decompose, makeHint, useHint } from '../src/rounding.js';
 import { ntt, invNTTToMont } from '../src/ntt.js';
 import {
-  Poly, polyChkNorm, polyReduce, polyCAddQ, polyAdd, polySub,
-  polyNTT, polyInvNTTToMont, polyPointWiseMontgomery,
-  polyChallenge, rejUniform, rejEta,
+  Poly,
+  polyChkNorm,
+  polyReduce,
+  polyCAddQ,
+  polyAdd,
+  polySub,
+  polyNTT,
+  polyInvNTTToMont,
+  polyPointWiseMontgomery,
+  polyChallenge,
+  rejUniform,
+  rejEta,
 } from '../src/poly.js';
 import {
-  PolyVecL, PolyVecK,
-  polyVecLChkNorm, polyVecKChkNorm,
-  polyVecLUniformEta, polyVecKUniformEta,
+  PolyVecL,
+  PolyVecK,
+  polyVecLChkNorm,
+  polyVecKChkNorm,
+  polyVecLUniformEta,
+  polyVecKUniformEta,
 } from '../src/polyvec.js';
-import {
-  Q, N, D, ETA, TAU, GAMMA1, GAMMA2, BETA, OMEGA,
-  CRHBytes, SeedBytes,
-} from '../src/const.js';
+import { Q, N, D, ETA, TAU, GAMMA1, GAMMA2, BETA, OMEGA, CRHBytes, SeedBytes } from '../src/const.js';
 
 /* ------------------------------------------------------------------ *
  *  D5 — Arithmetic, Helper, and Property-Based Tests                  *
@@ -167,7 +177,7 @@ describe('D5-5: decompose / makeHint / useHint relationships', function () {
     for (let a = 0; a < Q; a += Math.floor(Q / 500)) {
       const a0 = new Int32Array(1);
       const a1 = decompose(a0, 0, a);
-      const reconstructed = ((a1 * 2 * GAMMA2 + a0[0]) % Q + Q) % Q;
+      const reconstructed = (((a1 * 2 * GAMMA2 + a0[0]) % Q) + Q) % Q;
       expect(reconstructed).to.equal(a % Q);
     }
   });
@@ -221,7 +231,7 @@ describe('D5-5: decompose / makeHint / useHint relationships', function () {
       const adjusted = useHint(a, 1);
       expect(adjusted).to.be.at.least(0);
       expect(adjusted).to.be.at.most(15);
-      const diff = ((adjusted - a1) + 16) % 16;
+      const diff = (adjusted - a1 + 16) % 16;
       expect(diff === 1 || diff === 15).to.equal(true);
     }
   });
@@ -292,7 +302,7 @@ describe('D5-6: polyChkNorm() boundary and overflow tests', function () {
 describe('D5-7: NTT / invNTT round-trip invariant', function () {
   it('invNTT(NTT(a)) recovers a in Montgomery domain', function () {
     const a = new Int32Array(N);
-    for (let i = 0; i < N; i++) a[i] = ((i * 17 - 128) % Q + Q) % Q;
+    for (let i = 0; i < N; i++) a[i] = (((i * 17 - 128) % Q) + Q) % Q;
     const original = new Int32Array(a);
     ntt(a);
     invNTTToMont(a);
@@ -343,13 +353,20 @@ describe('D5-8: polyChallenge() determinism and structure', function () {
   });
 
   it('different seeds produce different polynomials', function () {
-    const s1 = new Uint8Array(SeedBytes); s1.fill(0x01);
-    const s2 = new Uint8Array(SeedBytes); s2.fill(0x02);
-    const c1 = new Poly(); const c2 = new Poly();
+    const s1 = new Uint8Array(SeedBytes);
+    s1.fill(0x01);
+    const s2 = new Uint8Array(SeedBytes);
+    s2.fill(0x02);
+    const c1 = new Poly();
+    const c2 = new Poly();
     polyChallenge(c1, s1);
     polyChallenge(c2, s2);
     let differ = false;
-    for (let i = 0; i < N; i++) if (c1.coeffs[i] !== c2.coeffs[i]) { differ = true; break; }
+    for (let i = 0; i < N; i++)
+      if (c1.coeffs[i] !== c2.coeffs[i]) {
+        differ = true;
+        break;
+      }
     expect(differ).to.equal(true);
   });
 

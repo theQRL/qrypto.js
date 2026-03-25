@@ -975,6 +975,12 @@ function packSig(sigP, c, z, h) {
   for (let i = 0; i < K; ++i) {
     for (let j = 0; j < N; ++j) {
       if (h.vec[i].coeffs[j] !== 0) {
+        if (h.vec[i].coeffs[j] !== 1) {
+          throw new Error('hint coefficients must be binary (0 or 1)');
+        }
+        if (k >= OMEGA) {
+          throw new Error(`hint count exceeds OMEGA (${OMEGA})`);
+        }
         sig[sigOffset + k++] = j;
       }
     }

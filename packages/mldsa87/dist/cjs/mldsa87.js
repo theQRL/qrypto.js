@@ -1356,6 +1356,12 @@ function packSig(sigP, ctilde, z, h) {
   for (let i = 0; i < K; ++i) {
     for (let j = 0; j < N; ++j) {
       if (h.vec[i].coeffs[j] !== 0) {
+        if (h.vec[i].coeffs[j] !== 1) {
+          throw new Error('hint coefficients must be binary (0 or 1)');
+        }
+        if (k >= OMEGA) {
+          throw new Error(`hint count exceeds OMEGA (${OMEGA})`);
+        }
         sig[sigOffset + k++] = j;
       }
     }
@@ -1733,6 +1739,7 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx) {
     // rhoPrime = SHAKE256(key || rnd || mu)
     const rnd = randomizedSigning ? randomBytes(RNDBytes) : new Uint8Array(RNDBytes);
     rhoPrime = shake256.create({}).update(key).update(rnd).update(mu).xof(CRHBytes);
+    zeroize(rnd);
 
     polyVecMatrixExpand(mat, rho);
     polyVecLNTT(s1);
