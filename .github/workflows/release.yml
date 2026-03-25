@@ -62,7 +62,7 @@ jobs:
           echo "dilithium5=$(node -p "require('./packages/dilithium5/package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Setup SSH Agent
-        uses: webfactory/ssh-agent@v0.9.1
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.BYPASS_SSH_KEY }}
 
