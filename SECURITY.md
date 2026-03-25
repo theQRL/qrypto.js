@@ -62,19 +62,39 @@ for (i = 0; i < length; ++i) {
 return diff === 0;
 ```
 
-### Timing Considerations for Arithmetic Operations
+### Timing Considerations for Signing
 
-The Montgomery reduction and other arithmetic operations use JavaScript's `BigInt` type. **Important**: The JavaScript specification does not guarantee that `BigInt` operations are constant-time. The execution time of operations like multiplication and division may vary based on operand values.
+**Signing is not constant-time.** The `cryptoSignSignature()` path exhibits measurable timing variability across different secret keys, even when signing the same fixed message. This is not a bug in the implementation — it is an inherent property of the Dilithium/ML-DSA algorithm, which uses rejection sampling during signing.
 
-**Implications:**
-- Signing operations that use these arithmetic functions may have timing variations
-- This is a known limitation of JavaScript cryptographic implementations
-- Signature verification uses constant-time comparison (see above), which is the critical path for timing attacks
+#### Sources of timing variability
 
-**Mitigations for sensitive deployments:**
-- For applications with strict constant-time requirements, consider using the Go implementation (go-qrllib) which provides better timing guarantees
-- Rate-limit signature operations at the application layer to reduce timing attack feasibility
-- Run signing operations in isolated environments where timing cannot be observed
+1. **Rejection sampling loop** (dominant source): The signing function contains a `while (true)` loop that generates candidate signatures and rejects those that would leak information about the secret key. The number of iterations before a valid signature is found depends on the secret key's internal structure (the s1, s2, and t0 polynomials). Different keys produce different rejection rates at the norm checks on z, w0, and the hint vector. This is by design — the rejection sampling is what makes the signature zero-knowledge — but it means signing time is inherently key-dependent.
+
+2. **JavaScript arithmetic** (secondary source): The Montgomery reduction and other arithmetic operations use JavaScript number types. The JavaScript specification does not guarantee that these operations are constant-time, and execution time may vary based on operand values.
+
+#### Measured impact
+
+Under controlled local measurement using `process.hrtime.bigint()` with deterministic seed-derived keypairs, warmup runs, and fixed 32-byte messages:
+
+- **ML-DSA-87**: Cross-key median signing time ranged from ~4.9 ms to ~34.4 ms (~7x spread)
+- **Dilithium5**: Cross-key median signing time ranged from ~4.9 ms to ~23.1 ms (~4.7x spread)
+
+The effect persists under round-robin measurement ordering with retained raw samples, ruling out simple benchmark-order artifacts. A timing regression harness is available at `scripts/timing-sign.mjs`.
+
+#### What this means for deployments
+
+- **Signature verification is constant-time** (see above) — this issue affects signing only
+- An attacker with repeated signing access and high-resolution timing may be able to distinguish keys or infer information about the secret key's rejection behavior
+- Practical impact depends on deployment context: local or same-host observers are more plausible than network-only observers, where jitter typically drowns out the signal
+- No practical key-recovery exploit has been demonstrated from this timing signal
+
+#### Mitigations for sensitive deployments
+
+- For applications with strict constant-time requirements, use the Go implementation ([go-qrllib](https://github.com/theQRL/go-qrllib)) which provides better timing guarantees through constant-time arithmetic primitives
+- Rate-limit signing operations at the application layer to reduce timing attack feasibility
+- Run signing operations in isolated environments where timing cannot be observed by adversaries
+- Use randomized (hedged) signing to add per-signature randomness, which increases same-key timing variance and makes cross-key correlation harder
+- Do not expose a signing oracle directly to untrusted users without authentication and rate limiting
 
 ### 3. Input Validation
 

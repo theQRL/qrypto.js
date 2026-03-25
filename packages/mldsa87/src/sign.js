@@ -284,6 +284,7 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx) {
     // rhoPrime = SHAKE256(key || rnd || mu)
     const rnd = randomizedSigning ? randomBytes(RNDBytes) : new Uint8Array(RNDBytes);
     rhoPrime = shake256.create({}).update(key).update(rnd).update(mu).xof(CRHBytes);
+    zeroize(rnd);
 
     polyVecMatrixExpand(mat, rho);
     polyVecLNTT(s1);

@@ -144,6 +144,7 @@ See [SECURITY.md](../../SECURITY.md) for important information about:
 
 - JavaScript memory security limitations
 - Constant-time verification
+- **Signing timing variability** — signing is not constant-time due to the algorithm's rejection sampling loop; see SECURITY.md for measured impact and deployment mitigations
 - Secure key handling recommendations
 
 ## Requirements
