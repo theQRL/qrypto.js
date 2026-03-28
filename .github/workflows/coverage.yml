@@ -24,7 +24,7 @@ jobs:
       - run: npm run report-coverage
       - name: Upload dilithium5 coverage to Codecov
         if: github.repository == 'theQRL/qrypto.js' && github.event_name == 'push'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./packages/dilithium5/coverage.lcov
@@ -32,7 +32,7 @@ jobs:
           fail_ci_if_error: true
       - name: Upload mldsa87 coverage to Codecov
         if: github.repository == 'theQRL/qrypto.js' && github.event_name == 'push'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./packages/mldsa87/coverage.lcov
