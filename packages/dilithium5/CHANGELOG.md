@@ -1,3 +1,9 @@
+## @theqrl/dilithium5 [1.1.5](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.1.4...@theqrl/dilithium5@1.1.5) (2026-05-09)
+
+### Bug Fixes
+
+* trusted publishing ([ef5e7bf](https://github.com/theQRL/qrypto.js/commit/ef5e7bf5d6cbacc7b0c8870067a47c3a52c772b2))
+
 ## @theqrl/dilithium5 [1.1.4](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.1.3...@theqrl/dilithium5@1.1.4) (2026-05-09)
 
 ### Bug Fixes
