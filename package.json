@@ -14,7 +14,8 @@
     "lint": "turbo lint-check",
     "lint:fix": "turbo lint",
     "coverage": "turbo coverage",
-    "report-coverage": "turbo report-coverage"
+    "report-coverage": "turbo report-coverage",
+    "release:touch-packages": "node scripts/release/touch-packages.js"
   },
   "workspaces": [
     "packages/*"
