@@ -9,3 +9,8 @@ cat >dist/mjs/package.json <<!EOF
     "type": "module"
 }
 !EOF
+
+# Emit per-format type declarations so TS infers ESM/CJS correctly under
+# nodenext/node16 resolution and avoids the dual-package types hazard.
+cp src/index.d.ts dist/mjs/dilithium5.d.mts
+cp src/index.d.ts dist/cjs/dilithium5.d.cts

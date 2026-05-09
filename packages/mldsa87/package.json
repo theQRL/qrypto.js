@@ -44,8 +44,14 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/mjs/mldsa87.js",
-      "require": "./dist/cjs/mldsa87.js"
+      "import": {
+        "types": "./dist/mjs/mldsa87.d.mts",
+        "default": "./dist/mjs/mldsa87.js"
+      },
+      "require": {
+        "types": "./dist/cjs/mldsa87.d.cts",
+        "default": "./dist/cjs/mldsa87.js"
+      }
     }
   },
   "type": "module",
