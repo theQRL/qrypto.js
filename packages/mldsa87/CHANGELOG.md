@@ -1,3 +1,9 @@
+## @theqrl/mldsa87 [2.0.4](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.0.3...@theqrl/mldsa87@2.0.4) (2026-05-09)
+
+### Bug Fixes
+
+* trusted publishing ([ef5e7bf](https://github.com/theQRL/qrypto.js/commit/ef5e7bf5d6cbacc7b0c8870067a47c3a52c772b2))
+
 ## @theqrl/mldsa87 [2.0.3](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.0.2...@theqrl/mldsa87@2.0.3) (2026-05-09)
 
 ### Bug Fixes
