@@ -31,6 +31,9 @@ jobs:
       issues: write
       pull-requests: write
       id-token: write
+    env:
+      NPM_CONFIG_PROVENANCE: "true"
+      NPM_CONFIG_ACCESS: public
     outputs:
       mldsa87_released: ${{ steps.versions-before.outputs.mldsa87 != steps.versions-after.outputs.mldsa87 }}
       dilithium5_released: ${{ steps.versions-before.outputs.dilithium5 != steps.versions-after.outputs.dilithium5 }}
@@ -48,6 +51,11 @@ jobs:
         with:
           node-version: '22.x'
           registry-url: 'https://registry.npmjs.org/'
+
+      - name: Use npm 11 for trusted publishing
+        run: |
+          npm install -g npm@^11.5.1
+          npm --version
 
       - name: Install dependencies
         run: npm ci
@@ -93,19 +101,15 @@ jobs:
           echo "mldsa87=$NEW_MLDSA87" >> "$GITHUB_OUTPUT"
           echo "dilithium5=$NEW_DILITHIUM5" >> "$GITHUB_OUTPUT"
 
-      - name: Publish @theqrl/mldsa87 with OIDC
+      - name: Publish @theqrl/mldsa87 with trusted publishing
         if: steps.versions-before.outputs.mldsa87 != steps.versions-after.outputs.mldsa87
         working-directory: packages/mldsa87
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --provenance --access public
+        run: npm publish
 
-      - name: Publish @theqrl/dilithium5 with OIDC
+      - name: Publish @theqrl/dilithium5 with trusted publishing
         if: steps.versions-before.outputs.dilithium5 != steps.versions-after.outputs.dilithium5
         working-directory: packages/dilithium5
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --provenance --access public
+        run: npm publish
 
   # ===========================================================================
   # Supply Chain: SBOM, Checksums, GitHub Attestations
