@@ -44,8 +44,14 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/mjs/dilithium5.js",
-      "require": "./dist/cjs/dilithium5.js"
+      "import": {
+        "types": "./dist/mjs/dilithium5.d.mts",
+        "default": "./dist/mjs/dilithium5.js"
+      },
+      "require": {
+        "types": "./dist/cjs/dilithium5.d.cts",
+        "default": "./dist/cjs/dilithium5.js"
+      }
     }
   },
   "type": "module",
