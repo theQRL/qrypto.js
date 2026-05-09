@@ -1,3 +1,9 @@
+## @theqrl/dilithium5 [1.1.3](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.1.2...@theqrl/dilithium5@1.1.3) (2026-05-09)
+
+### Bug Fixes
+
+* typescript enhancements ([4aeb042](https://github.com/theQRL/qrypto.js/commit/4aeb042bbb0cdb5be4bf513d79ebeb9301def590))
+
 ## @theqrl/dilithium5 [1.1.2](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.1.1...@theqrl/dilithium5@1.1.2) (2026-03-24)
 
 ### Bug Fixes
