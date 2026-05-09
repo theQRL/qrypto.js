@@ -1,3 +1,9 @@
+## @theqrl/mldsa87 [2.0.2](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.0.1...@theqrl/mldsa87@2.0.2) (2026-05-09)
+
+### Bug Fixes
+
+* typescript enhancements ([4aeb042](https://github.com/theQRL/qrypto.js/commit/4aeb042bbb0cdb5be4bf513d79ebeb9301def590))
+
 ## @theqrl/mldsa87 [2.0.1](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.0.0...@theqrl/mldsa87@2.0.1) (2026-03-24)
 
 ### Bug Fixes
