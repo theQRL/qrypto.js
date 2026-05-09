@@ -18,10 +18,13 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   # ===========================================================================
-  # Release: Semantic Release + npm Publish
+  # Prepare: build, run multi-semantic-release, pack tarballs, hand off as
+  # an artifact to downstream smoke/publish/slsa jobs. The artifact is the
+  # single source of truth for what gets shipped — every later job consumes
+  # the same bytes that were inspected here.
   # ===========================================================================
-  release:
-    name: Release
+  prepare:
+    name: Prepare Release
     needs: ci
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'theQRL/qrypto.js'
@@ -30,15 +33,10 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
-      id-token: write
-    env:
-      NPM_CONFIG_PROVENANCE: "true"
-      NPM_CONFIG_ACCESS: public
     outputs:
-      mldsa87_released: ${{ steps.versions-before.outputs.mldsa87 != steps.versions-after.outputs.mldsa87 }}
-      dilithium5_released: ${{ steps.versions-before.outputs.dilithium5 != steps.versions-after.outputs.dilithium5 }}
-      mldsa87_version: ${{ steps.versions-after.outputs.mldsa87 }}
-      dilithium5_version: ${{ steps.versions-after.outputs.dilithium5 }}
+      released: ${{ steps.released.outputs.released }}
+      count: ${{ steps.released.outputs.count }}
+      packages: ${{ steps.released.outputs.packages }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -47,27 +45,25 @@ jobs:
           persist-credentials: false
 
       - name: Setup Node.js
+        # Pinned to 22.14.0 to match the bundled npm version that can cleanly
+        # self-update to npm@^11.5.1 in the publish job. Newer Node 22.x
+        # patches ship an npm where the global self-install corrupts its own
+        # node_modules (missing promise-retry).
         uses: actions/setup-node@v6
         with:
-          node-version: '22.x'
-          registry-url: 'https://registry.npmjs.org/'
-
-      - name: Use npm 11 for trusted publishing
-        run: |
-          npm install -g npm@^11.5.1
-          npm --version
+          node-version: 22.14.0
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build packages before release analysis
         run: npm run build
 
-      - name: Get current versions
-        id: versions-before
-        run: |
-          echo "mldsa87=$(node -p "require('./packages/mldsa87/package.json').version")" >> "$GITHUB_OUTPUT"
-          echo "dilithium5=$(node -p "require('./packages/dilithium5/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Inspect package tarballs before release analysis
+        run: npm run release:inspect-packages
+
+      - name: Snapshot package versions
+        run: node scripts/release/packages.js snapshot .release/release-versions-before.json
 
       - name: Setup SSH Agent
         uses: webfactory/ssh-agent@v0.9.1
@@ -83,196 +79,223 @@ jobs:
           git config --global url."git@github.com:".insteadOf "https://github.com/"
           git remote set-url origin git@github.com:${{ github.repository }}.git
 
-      - name: Semantic Release (version & changelog)
+      - name: Run multi-semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_AUTHOR_NAME: github-actions[bot]
           GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
-        run: ./node_modules/.bin/multi-semantic-release --repository-url git@github.com:${{ github.repository }}.git
+        run: npm run release -- --repository-url git@github.com:${{ github.repository }}.git
 
-      - name: Get new versions
-        id: versions-after
+      - name: Detect released packages
+        id: released
+        run: node scripts/release/packages.js diff .release/release-versions-before.json .release/released-packages.json
+
+      - name: Rebuild packages after version updates
+        if: steps.released.outputs.released == 'true'
+        run: npm run build
+
+      - name: Inspect package tarballs after version updates
+        if: steps.released.outputs.released == 'true'
+        run: npm run release:inspect-packages
+
+      - name: Pack released packages
+        if: steps.released.outputs.released == 'true'
         run: |
-          NEW_MLDSA87=$(node -p "require('./packages/mldsa87/package.json').version")
-          NEW_DILITHIUM5=$(node -p "require('./packages/dilithium5/package.json').version")
-          echo "Detected new versions: mldsa87=$NEW_MLDSA87, dilithium5=$NEW_DILITHIUM5"
-          echo "mldsa87=$NEW_MLDSA87" >> "$GITHUB_OUTPUT"
-          echo "dilithium5=$NEW_DILITHIUM5" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          mkdir -p dist/tarballs
+          test -s .release/released-packages.tsv
+          tarball_dir="$(pwd)/dist/tarballs"
+          while IFS=$'\t' read -r package_path package_name package_version _release_tag _tarball_name; do
+            echo "Packing ${package_name}@${package_version}"
+            (cd "${package_path}" && npm pack --pack-destination "${tarball_dir}")
+          done < .release/released-packages.tsv
+          cp .release/released-packages.json .release/released-packages.tsv dist/
 
-      - name: Publish @theqrl/mldsa87 with trusted publishing
-        if: steps.versions-before.outputs.mldsa87 != steps.versions-after.outputs.mldsa87
-        working-directory: packages/mldsa87
-        run: npm publish
+      - name: Generate checksums
+        if: steps.released.outputs.released == 'true'
+        run: |
+          set -euo pipefail
+          (cd dist/tarballs && sha256sum ./*.tgz) > dist/checksums-sha256.txt
+          (cd dist/tarballs && sha512sum ./*.tgz) > dist/checksums-sha512.txt
 
-      - name: Publish @theqrl/dilithium5 with trusted publishing
-        if: steps.versions-before.outputs.dilithium5 != steps.versions-after.outputs.dilithium5
-        working-directory: packages/dilithium5
-        run: npm publish
+      - name: Upload release candidate tarballs
+        if: steps.released.outputs.released == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-candidate-tarballs
+          path: |
+            dist/tarballs/*.tgz
+            dist/released-packages.json
+            dist/released-packages.tsv
+            dist/checksums-sha256.txt
+            dist/checksums-sha512.txt
+          retention-days: 5
 
   # ===========================================================================
-  # Supply Chain: SBOM, Checksums, GitHub Attestations
+  # Smoke test: install each tarball into throwaway CJS + ESM projects on
+  # a different Node major than `prepare` used to catch packaging regressions
+  # (missing files, broken exports map, type:module mismatch) before publish.
   # ===========================================================================
-  supply-chain-artifacts:
-    name: Supply Chain Artifacts
+  smoke-node20:
+    name: Smoke Tarballs (Node 20)
+    needs: prepare
+    if: needs.prepare.outputs.released == 'true'
     runs-on: ubuntu-latest
-    needs: release
-    if: needs.release.outputs.mldsa87_released == 'true' || needs.release.outputs.dilithium5_released == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20.x
+
+      - name: Download release candidate tarballs
+        uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-tarballs
+          path: dist
+
+      - name: Smoke test packed tarballs
+        run: node scripts/release/smoke-tarballs.js dist/released-packages.tsv dist/tarballs
+
+  # ===========================================================================
+  # Publish: download the prepared tarballs and publish each with npm trusted
+  # publishing. The npm 11 self-install lives only in this job, isolated from
+  # any other npm operations that could leave its node_modules in a bad
+  # state.
+  # ===========================================================================
+  publish:
+    name: Publish
+    needs: [prepare, smoke-node20]
+    if: needs.prepare.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    environment: npm-publish
     permissions:
       contents: write
       id-token: write
       attestations: write
+    env:
+      NPM_CONFIG_PROVENANCE: "true"
+      NPM_CONFIG_ACCESS: public
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
           ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '22.x'
+          node-version: 22.14.0
+          registry-url: https://registry.npmjs.org/
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate checksums
+      - name: Use npm 11 for trusted publishing
         run: |
-          mkdir -p dist
-          sha256sum package.json package-lock.json > dist/checksums-sha256.txt
-          sha512sum package.json package-lock.json > dist/checksums-sha512.txt
-          find packages -name "*.js" -type f | sort | xargs sha256sum >> dist/source-checksums-sha256.txt
+          npm install -g npm@^11.5.1
+          npm --version
 
-      - name: Generate SBOM (SPDX)
+      - name: Download release candidate tarballs
+        uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-tarballs
+          path: dist
+
+      - name: Publish tarballs with trusted publishing
+        run: |
+          set -euo pipefail
+          while IFS=$'\t' read -r _package_path package_name package_version _release_tag tarball_name; do
+            echo "Publishing ${package_name}@${package_version}"
+            npm publish "dist/tarballs/${tarball_name}" --access public
+          done < dist/released-packages.tsv
+
+      - name: Generate SBOM SPDX
         uses: anchore/sbom-action@v0
         with:
           format: spdx-json
           output-file: dist/sbom-spdx.json
           artifact-name: sbom-spdx.json
 
-      - name: Generate SBOM (CycloneDX)
+      - name: Generate SBOM CycloneDX
         uses: anchore/sbom-action@v0
         with:
           format: cyclonedx-json
           output-file: dist/sbom-cyclonedx.json
           artifact-name: sbom-cyclonedx.json
 
-      - name: Attest checksums
+      - name: Attest release artefacts
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
+            dist/tarballs/*.tgz
             dist/checksums-sha256.txt
             dist/checksums-sha512.txt
 
-      - name: Attest SBOM (SPDX)
+      - name: Attest SBOM SPDX
         uses: actions/attest-sbom@v4
         with:
           subject-path: dist/sbom-spdx.json
           sbom-path: dist/sbom-spdx.json
 
-      - name: Attest SBOM (CycloneDX)
+      - name: Attest SBOM CycloneDX
         uses: actions/attest-sbom@v4
         with:
           subject-path: dist/sbom-cyclonedx.json
           sbom-path: dist/sbom-cyclonedx.json
 
-      - name: Attest package files
-        uses: actions/attest-build-provenance@v4
-        with:
-          subject-path: |
-            package.json
-            package-lock.json
-
-      - name: Upload to mldsa87 release
-        if: needs.release.outputs.mldsa87_released == 'true'
+      - name: Upload release artefacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "@theqrl/mldsa87@${{ needs.release.outputs.mldsa87_version }}" \
-            dist/checksums-sha256.txt \
-            dist/checksums-sha512.txt \
-            dist/sbom-spdx.json \
-            dist/sbom-cyclonedx.json \
-            --clobber
-
-      - name: Upload to dilithium5 release
-        if: needs.release.outputs.dilithium5_released == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload "@theqrl/dilithium5@${{ needs.release.outputs.dilithium5_version }}" \
-            dist/checksums-sha256.txt \
-            dist/checksums-sha512.txt \
-            dist/sbom-spdx.json \
-            dist/sbom-cyclonedx.json \
-            --clobber
+          set -euo pipefail
+          while IFS=$'\t' read -r _package_path _package_name _package_version release_tag tarball_name; do
+            gh release upload "${release_tag}" \
+              "dist/tarballs/${tarball_name}" \
+              dist/checksums-sha256.txt \
+              dist/checksums-sha512.txt \
+              dist/sbom-spdx.json \
+              dist/sbom-cyclonedx.json \
+              --clobber \
+              --repo "${GITHUB_REPOSITORY}"
+          done < dist/released-packages.tsv
 
   # ===========================================================================
   # SLSA Level 3 Provenance
   # ===========================================================================
   slsa-subjects:
     name: Compute SLSA Subjects
+    needs: prepare
+    if: needs.prepare.outputs.released == 'true'
     runs-on: ubuntu-latest
-    needs: release
-    if: needs.release.outputs.mldsa87_released == 'true' || needs.release.outputs.dilithium5_released == 'true'
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - name: Download release candidate tarballs
+        uses: actions/download-artifact@v8
         with:
-          ref: main
+          name: release-candidate-tarballs
+          path: dist
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22.x'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build packages
-        run: npm run build
-
-      - name: Pack npm tarballs
-        run: |
-          mkdir -p dist/tarballs
-          if [ "${{ needs.release.outputs.mldsa87_released }}" == "true" ]; then
-            cd packages/mldsa87
-            npm pack --pack-destination ../../dist/tarballs
-            cd ../..
-          fi
-          if [ "${{ needs.release.outputs.dilithium5_released }}" == "true" ]; then
-            cd packages/dilithium5
-            npm pack --pack-destination ../../dist/tarballs
-            cd ../..
-          fi
-          ls -la dist/tarballs/
-
-      - name: Generate subject hashes
+      - name: Generate SLSA subject hashes
         id: hash
         run: |
           set -euo pipefail
           cd dist/tarballs
           echo "hashes=$(sha256sum ./*.tgz | base64 -w0)" >> "$GITHUB_OUTPUT"
 
-      - name: Upload tarballs
-        uses: actions/upload-artifact@v7
-        with:
-          name: npm-tarballs
-          path: dist/tarballs/*.tgz
-          retention-days: 5
-
   slsa-provenance:
     name: SLSA Provenance
-    needs: [release, slsa-subjects]
-    if: needs.release.outputs.mldsa87_released == 'true' || needs.release.outputs.dilithium5_released == 'true'
+    needs: [prepare, publish, slsa-subjects]
+    if: needs.prepare.outputs.released == 'true'
     permissions:
       actions: read
       id-token: write
       contents: write
+    # NOTE: SLSA generator must be referenced by tag, not SHA — the reusable
+    # workflow inspects its own caller-ref to embed the version into the
+    # provenance and aborts when called by digest.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
       base64-subjects: ${{ needs.slsa-subjects.outputs.hashes }}
@@ -281,41 +304,32 @@ jobs:
 
   slsa-upload:
     name: Upload SLSA Provenance
+    needs: [prepare, publish, slsa-provenance]
+    if: needs.prepare.outputs.released == 'true'
     runs-on: ubuntu-latest
-    needs: [release, slsa-provenance]
-    if: needs.release.outputs.mldsa87_released == 'true' || needs.release.outputs.dilithium5_released == 'true'
     permissions:
       contents: write
     steps:
-      - name: Download provenance
+      - name: Download release metadata
+        uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-tarballs
+          path: dist
+
+      - name: Download SLSA provenance
         uses: actions/download-artifact@v8
         with:
           name: provenance.intoto.jsonl
+          path: dist
 
-      - name: Download npm tarballs
-        uses: actions/download-artifact@v8
-        with:
-          name: npm-tarballs
-          path: tarballs
-
-      - name: Upload to mldsa87 release
-        if: needs.release.outputs.mldsa87_released == 'true'
+      - name: Upload SLSA provenance to package releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "@theqrl/mldsa87@${{ needs.release.outputs.mldsa87_version }}" \
-            provenance.intoto.jsonl \
-            tarballs/theqrl-mldsa87-*.tgz \
-            --repo ${{ github.repository }} \
-            --clobber
-
-      - name: Upload to dilithium5 release
-        if: needs.release.outputs.dilithium5_released == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload "@theqrl/dilithium5@${{ needs.release.outputs.dilithium5_version }}" \
-            provenance.intoto.jsonl \
-            tarballs/theqrl-dilithium5-*.tgz \
-            --repo ${{ github.repository }} \
-            --clobber
+          set -euo pipefail
+          while IFS=$'\t' read -r _package_path _package_name _package_version release_tag _tarball_name; do
+            gh release upload "${release_tag}" \
+              dist/provenance.intoto.jsonl \
+              --clobber \
+              --repo "${GITHUB_REPOSITORY}"
+          done < dist/released-packages.tsv

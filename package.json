@@ -15,6 +15,11 @@
     "lint:fix": "turbo lint",
     "coverage": "turbo coverage",
     "report-coverage": "turbo report-coverage",
+    "release": "multi-semantic-release --ignore-private-packages",
+    "release:dry-run": "multi-semantic-release --ignore-private-packages --dry-run",
+    "release:inspect-packages": "node scripts/release/inspect-packages.js",
+    "release:packages": "node scripts/release/packages.js list",
+    "release:smoke-tarballs": "node scripts/release/smoke-tarballs.js",
     "release:touch-packages": "node scripts/release/touch-packages.js"
   },
   "workspaces": [
