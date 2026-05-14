@@ -1,0 +1,20 @@
+# zizmor configuration for qrypto.js
+#
+# zizmor (https://docs.zizmor.sh) is a static-analysis linter for GitHub
+# Actions workflow files. We run it as a CI gate
+# (.github/workflows/actionlint.yml) in --persona=pedantic mode at all
+# severities — any new finding fails the build.
+#
+# Adding new exceptions to this file should be rare and well-justified;
+# the default is to fix the underlying finding in the workflow rather
+# than suppress it here.
+
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # SLSA reusable workflows MUST be tag-pinned so the slsa-verifier
+        # can validate the generator's identity against the signed release.
+        # SHA-pinning here would break SLSA Level 3 provenance verification.
+        # https://github.com/slsa-framework/slsa-github-generator/blob/main/SECURITY.md
+        slsa-framework/slsa-github-generator/*: ref-pin
