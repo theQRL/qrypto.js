@@ -15,6 +15,7 @@ permissions:
 
 jobs:
   coverage:
+    name: Coverage
     runs-on: ubuntu-latest
 
     steps:

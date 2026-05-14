@@ -34,9 +34,9 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'theQRL/qrypto.js'
     environment: npm-publish
     permissions:
-      contents: write
-      issues: write
-      pull-requests: write
+      contents: write # push release commits and tags via multi-semantic-release
+      issues: write # semantic-release opens issues for release failures
+      pull-requests: write # semantic-release comments on released PRs
     outputs:
       released: ${{ steps.released.outputs.released }}
       count: ${{ steps.released.outputs.count }}
@@ -81,7 +81,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global url."git@github.com:".insteadOf "https://github.com/"
-          git remote set-url origin git@github.com:${{ github.repository }}.git
+          git remote set-url origin "git@github.com:${GITHUB_REPOSITORY}.git"
 
       - name: Run multi-semantic-release
         env:
@@ -90,7 +90,7 @@ jobs:
           GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
-        run: npm run release -- --repository-url git@github.com:${{ github.repository }}.git
+        run: npm run release -- --repository-url "git@github.com:${GITHUB_REPOSITORY}.git"
 
       - name: Detect released packages
         id: released
@@ -180,9 +180,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: npm-publish
     permissions:
-      contents: write
-      id-token: write
-      attestations: write
+      contents: write # upload SBOMs and checksums to GitHub Releases
+      id-token: write # npm trusted publishing OIDC token + provenance signing
+      attestations: write # create build-provenance attestations
     env:
       NPM_CONFIG_PROVENANCE: "true"
       NPM_CONFIG_ACCESS: public
@@ -297,9 +297,9 @@ jobs:
     needs: [prepare, publish, slsa-subjects]
     if: needs.prepare.outputs.released == 'true'
     permissions:
-      actions: read
-      id-token: write
-      contents: write
+      actions: read # SLSA generator inspects the run's workflow definition
+      id-token: write # SLSA provenance is signed via OIDC
+      contents: write # upload provenance to GitHub Releases
     # NOTE: SLSA generator must be referenced by tag, not SHA — the reusable
     # workflow inspects its own caller-ref to embed the version into the
     # provenance and aborts when called by digest.
@@ -315,7 +315,7 @@ jobs:
     if: needs.prepare.outputs.released == 'true'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # attach SLSA provenance asset to package GitHub Releases
     steps:
       - name: Download release metadata
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
