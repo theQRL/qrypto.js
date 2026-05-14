@@ -5,6 +5,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     groups:
       dev-dependencies:
         patterns:
@@ -18,6 +20,8 @@ updates:
     directory: "/packages/dilithium5"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     groups:
       dev-dependencies:
         patterns:
@@ -29,6 +33,8 @@ updates:
     directory: "/packages/mldsa87"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     groups:
       dev-dependencies:
         patterns:
@@ -41,5 +47,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "ci"
