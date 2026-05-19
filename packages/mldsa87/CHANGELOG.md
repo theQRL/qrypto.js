@@ -1,3 +1,21 @@
+## @theqrl/mldsa87 [2.0.4](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.0.3...@theqrl/mldsa87@2.0.4) (2026-05-09)
+
+### Bug Fixes
+
+* trusted publishing ([ef5e7bf](https://github.com/theQRL/qrypto.js/commit/ef5e7bf5d6cbacc7b0c8870067a47c3a52c772b2))
+
+## @theqrl/mldsa87 [2.0.3](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.0.2...@theqrl/mldsa87@2.0.3) (2026-05-09)
+
+### Bug Fixes
+
+* trigger release ([603498b](https://github.com/theQRL/qrypto.js/commit/603498b1d23c83800dbb429deaeb35b7894377e8))
+
+## @theqrl/mldsa87 [2.0.2](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.0.1...@theqrl/mldsa87@2.0.2) (2026-05-09)
+
+### Bug Fixes
+
+* typescript enhancements ([4aeb042](https://github.com/theQRL/qrypto.js/commit/4aeb042bbb0cdb5be4bf513d79ebeb9301def590))
+
 ## @theqrl/mldsa87 [2.0.1](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.0.0...@theqrl/mldsa87@2.0.1) (2026-03-24)
 
 ### Bug Fixes
