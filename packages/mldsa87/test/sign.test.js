@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { CryptoPublicKeyBytes, CryptoSecretKeyBytes, CryptoBytes } from '../src/const.js';
-import { cryptoSign, cryptoSignOpen, cryptoSignVerify, cryptoSignSignature, cryptoSignKeypair } from '../src/sign.js';
+import { cryptoSign, cryptoSignOpen, cryptoSignOpenWithReason, cryptoSignVerify, cryptoSignSignature, cryptoSignKeypair } from '../src/sign.js';
 
 const TEST_VECTORS = [
   // Test vectors taken from https://github.com/theQRL/go-qrllib/blob/main/wallet/ml_dsa_87/wallet_test.go#L25
@@ -103,6 +103,68 @@ describe('cryptoSignOpen', () => {
       expect(() => cryptoSignOpen(sigMessage, pk)).to.throw('ctx is required');
     });
   }
+
+  // TOB-QRLLIB-11: null/wrong-type sm returns undefined rather than throwing.
+  it('returns undefined for null sm (TOB-QRLLIB-11)', () => {
+    const pk = Buffer.from(TEST_VECTORS[0].derivedPK, 'hex');
+    expect(cryptoSignOpen(null, pk, TEST_VECTORS[0].ctx)).to.be.undefined;
+    expect(cryptoSignOpen(undefined, pk, TEST_VECTORS[0].ctx)).to.be.undefined;
+    expect(cryptoSignOpen('not bytes', pk, TEST_VECTORS[0].ctx)).to.be.undefined;
+  });
+});
+
+// TOB-QRLLIB-14: distinct failure modes via cryptoSignOpenWithReason.
+describe('cryptoSignOpenWithReason', () => {
+  const vector = TEST_VECTORS[0];
+  const sigMessage = Buffer.from(vector.derivedSig + vector.msg, 'hex');
+  const pk = Buffer.from(vector.derivedPK, 'hex');
+
+  it('returns ok=true with the recovered message on the happy path', () => {
+    const result = cryptoSignOpenWithReason(sigMessage, pk, vector.ctx);
+    expect(result.ok).to.equal(true);
+    expect(Buffer.from(result.message, 'binary').toString('hex')).to.equal(vector.msg);
+  });
+
+  it('distinguishes invalid-ctx-type', () => {
+    const result = cryptoSignOpenWithReason(sigMessage, pk, 'not a Uint8Array');
+    expect(result.ok).to.equal(false);
+    expect(result.reason).to.equal('invalid-ctx-type');
+  });
+
+  it('distinguishes invalid-ctx-length (>255)', () => {
+    const longCtx = new Uint8Array(256);
+    const result = cryptoSignOpenWithReason(sigMessage, pk, longCtx);
+    expect(result.ok).to.equal(false);
+    expect(result.reason).to.equal('invalid-ctx-length');
+  });
+
+  it('distinguishes invalid-sm-type', () => {
+    const result = cryptoSignOpenWithReason(null, pk, vector.ctx);
+    expect(result.ok).to.equal(false);
+    expect(result.reason).to.equal('invalid-sm-type');
+  });
+
+  it('distinguishes invalid-sm-length', () => {
+    const shortSm = new Uint8Array(10);
+    const result = cryptoSignOpenWithReason(shortSm, pk, vector.ctx);
+    expect(result.ok).to.equal(false);
+    expect(result.reason).to.equal('invalid-sm-length');
+  });
+
+  it('distinguishes invalid-pk', () => {
+    const result = cryptoSignOpenWithReason(sigMessage, new Uint8Array(10), vector.ctx);
+    expect(result.ok).to.equal(false);
+    expect(result.reason).to.equal('invalid-pk');
+  });
+
+  it('distinguishes verification-failed', () => {
+    // Same input shape, tampered last byte → verify fails.
+    const tampered = Buffer.from(sigMessage);
+    tampered[0] ^= 0x01;
+    const result = cryptoSignOpenWithReason(tampered, pk, vector.ctx);
+    expect(result.ok).to.equal(false);
+    expect(result.reason).to.equal('verification-failed');
+  });
 });
 
 describe('cryptoSignVerify', () => {

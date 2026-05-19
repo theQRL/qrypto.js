@@ -163,6 +163,23 @@ If your threat model requires strong memory protection:
 - Key sizes: PK=2592, SK=4896, Sig=4627 bytes
 - Includes context parameter for domain separation
 - Cross-verified against pq-crystals reference (latest)
+- Verified against NIST ACVP keyGen + sigGen vectors (`.github/workflows/acvp.yml`)
+- Verified against C2SP/wycheproof verify vectors (`.github/workflows/wycheproof.yml`)
+
+### Signing Modes (ML-DSA-87 and Dilithium5)
+
+Both `cryptoSignSignature` (detached) and `cryptoSign` (attached) take an explicit `randomizedSigning: boolean` parameter:
+
+- **`randomizedSigning: true` (hedged) — recommended.** Per FIPS 204 §3.4, the per-signature nonce is mixed with fresh randomness from the system RNG (`crypto.getRandomValues`) on every call. Two signs over the same `(sk, ctx, message)` produce **distinct** signature bytes; both verify under the same public key. Hedged signing frustrates the fault-injection attack class against deterministic signing where an adversary who can flip a single bit during the `z` computation can differentiate two signatures of the same message and recover `s1`/`s2` by lattice differential analysis. Hardware wallets, cloud signers on untrusted silicon, and any deployment with a plausible fault-model should prefer hedged signing. (TOB-QRLLIB-6.)
+
+- **`randomizedSigning: false` (deterministic, FIPS 204 §3.5) — opt-in.** The per-signature nonce is derived deterministically from the secret key and message, so the same `(sk, ctx, message)` always yields byte-identical signatures. **Use only when the deterministic property is itself a security or protocol requirement** — for example, RANDAO-style verifiable beacon contributions where each validator must produce the same signature for the same input, ACVP / KAT vector reproduction, or deterministic-test fixtures.
+
+For the deterministic opt-in case, prefer the named convenience helpers:
+
+- `cryptoSignSignatureDeterministic(sig, m, sk, ctx)` — detached, deterministic.
+- `cryptoSignDeterministic(msg, sk, ctx)` — attached, deterministic.
+
+Both are thin wrappers around the boolean-form API that signal caller intent at the type-system level rather than via a positional bool flag. Verification is unchanged regardless of signing mode — hedged and deterministic signatures verify under the same public key.
 
 ## Reporting Security Issues
 

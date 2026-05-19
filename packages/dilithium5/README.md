@@ -26,9 +26,12 @@ const pk = new Uint8Array(CryptoPublicKeyBytes);  // 2592 bytes
 const sk = new Uint8Array(CryptoSecretKeyBytes);  // 4896 bytes
 cryptoSignKeypair(null, pk, sk);  // null = random seed
 
-// Sign a message
+// Sign a message (hedged by default — recommended per TOB-QRLLIB-6).
+// Pass `false` only when deterministic signatures are themselves a
+// protocol requirement (e.g. KAT vector reproduction); for that case
+// use `cryptoSignDeterministic`.
 const message = new TextEncoder().encode('Hello, quantum world!');
-const signedMessage = cryptoSign(message, sk, false);  // false = deterministic
+const signedMessage = cryptoSign(message, sk, true);  // true = hedged (recommended)
 
 // Verify and extract
 const extracted = cryptoSignOpen(signedMessage, pk);

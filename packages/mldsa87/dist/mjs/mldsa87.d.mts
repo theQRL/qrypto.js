@@ -90,6 +90,35 @@ export function cryptoSign(
 ): Uint8Array;
 
 /**
+ * Create a deterministic ML-DSA-87 detached signature
+ * (FIPS 204 §3.5 — `randomizedSigning = false` wrapper).
+ *
+ * **Use only when the deterministic property is itself a requirement**
+ * — RANDAO-style verifiable beacon contributions, ACVP / KAT vector
+ * reproduction. For general-purpose signing prefer `cryptoSignSignature`
+ * with `randomizedSigning = true` (hedged, FIPS 204 §3.4 recommended).
+ * (TOB-QRLLIB-6.)
+ */
+export function cryptoSignSignatureDeterministic(
+  sig: Uint8Array,
+  m: Uint8Array | string,
+  sk: Uint8Array,
+  ctx: Uint8Array
+): number;
+
+/**
+ * Attached-form deterministic ML-DSA-87 signing
+ * (FIPS 204 §3.5 — `randomizedSigning = false` wrapper for `cryptoSign`).
+ * Same recommendation as `cryptoSignSignatureDeterministic`.
+ * (TOB-QRLLIB-6.)
+ */
+export function cryptoSignDeterministic(
+  msg: Uint8Array | string,
+  sk: Uint8Array,
+  ctx: Uint8Array
+): Uint8Array;
+
+/**
  * Verify a signature
  * @param sig - Signature to verify
  * @param m - Message that was signed (hex string or Uint8Array; strings are parsed as hex only)
@@ -109,13 +138,50 @@ export function cryptoSignVerify(
  * @param sm - Signed message (signature || message)
  * @param pk - Public key
  * @param ctx - Context string (max 255 bytes)
- * @returns Message if valid, undefined if verification fails
+ * @returns Message if valid, undefined if verification fails (or if
+ *   sm is null / undefined / non-Uint8Array / shorter than
+ *   CryptoBytes — see `cryptoSignOpenWithReason` for distinct
+ *   failure-mode reporting)
  */
 export function cryptoSignOpen(
   sm: Uint8Array,
   pk: Uint8Array,
   ctx: Uint8Array
 ): Uint8Array | undefined;
+
+/**
+ * Failure-mode discriminator returned by `cryptoSignOpenWithReason`.
+ * (TOB-QRLLIB-14: distinct failure modes for Open.)
+ */
+export type CryptoSignOpenReason =
+  | 'invalid-ctx-type'
+  | 'invalid-ctx-length'
+  | 'invalid-sm-type'
+  | 'invalid-sm-length'
+  | 'invalid-pk'
+  | 'verification-failed';
+
+/**
+ * Open a signed message with a typed failure-mode report.
+ * (TOB-QRLLIB-14.) Behavioural twin of `cryptoSignOpen` that
+ * distinguishes API-shape problems (input wrong type / length /
+ * shape) from genuine verification failures.
+ *
+ * `cryptoSignOpen` is kept unchanged and continues to return
+ * `undefined` for any failure mode. Use this variant when you need
+ * to log or route on specific failure modes.
+ *
+ * @param sm - Signed message (signature || message)
+ * @param pk - Public key
+ * @param ctx - Context string (max 255 bytes)
+ */
+export function cryptoSignOpenWithReason(
+  sm: Uint8Array,
+  pk: Uint8Array,
+  ctx: Uint8Array
+):
+  | { ok: true; message: Uint8Array }
+  | { ok: false; reason: CryptoSignOpenReason };
 
 // Utility functions
 

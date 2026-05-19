@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ===========================================================================
   # CI: Lint, Test, Browser Tests (reusable workflow)
@@ -30,16 +35,16 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'theQRL/qrypto.js'
     environment: npm-publish
     permissions:
-      contents: write
-      issues: write
-      pull-requests: write
+      contents: write       # multi-semantic-release writes version bumps + CHANGELOG.md + creates the git tag
+      issues: write         # multi-semantic-release comments on issues referenced by released commits
+      pull-requests: write  # multi-semantic-release comments on PRs referenced by released commits
     outputs:
       released: ${{ steps.released.outputs.released }}
       count: ${{ steps.released.outputs.count }}
       packages: ${{ steps.released.outputs.packages }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -49,7 +54,7 @@ jobs:
         # self-update to npm@^11.5.1 in the publish job. Newer Node 22.x
         # patches ship an npm where the global self-install corrupts its own
         # node_modules (missing promise-retry).
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 22.14.0
 
@@ -66,27 +71,34 @@ jobs:
         run: node scripts/release/packages.js snapshot .release/release-versions-before.json
 
       - name: Setup SSH Agent
-        uses: webfactory/ssh-agent@v0.9.1
+        uses: webfactory/ssh-agent@a6f90b1f127823b31d4d4a8d96047790581349bd # v0.9.1
         with:
           ssh-private-key: ${{ secrets.BYPASS_SSH_KEY }}
 
       - name: Configure Git for SSH
+        # Route the repository value through an env var rather than
+        # expanding `${{ github.repository }}` directly in the shell —
+        # the env-var path neutralises any shell metacharacters in the
+        # value (zizmor template-injection finding).
+        env:
+          GITHUB_REPOSITORY_VAR: ${{ github.repository }}
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global url."git@github.com:".insteadOf "https://github.com/"
-          git remote set-url origin git@github.com:${{ github.repository }}.git
+          git remote set-url origin "git@github.com:${GITHUB_REPOSITORY_VAR}.git"
 
       - name: Run multi-semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY_VAR: ${{ github.repository }}
           GIT_AUTHOR_NAME: github-actions[bot]
           GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
-        run: npm run release -- --repository-url git@github.com:${{ github.repository }}.git
+        run: npm run release -- --repository-url "git@github.com:${GITHUB_REPOSITORY_VAR}.git"
 
       - name: Detect released packages
         id: released
@@ -122,7 +134,7 @@ jobs:
 
       - name: Upload release candidate tarballs
         if: steps.released.outputs.released == 'true'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: release-candidate-tarballs
           path: |
@@ -145,15 +157,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 20.x
 
       - name: Download release candidate tarballs
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: release-candidate-tarballs
           path: dist
@@ -174,20 +188,21 @@ jobs:
     runs-on: ubuntu-latest
     environment: npm-publish
     permissions:
-      contents: write
-      id-token: write
-      attestations: write
+      contents: write      # upload tarball assets + checksums to the GitHub release
+      id-token: write      # mint the npm trusted-publishing OIDC token
+      attestations: write  # write npm-provenance / SLSA attestations to the repo's attestation store
     env:
       NPM_CONFIG_PROVENANCE: "true"
       NPM_CONFIG_ACCESS: public
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
+          persist-credentials: false
           ref: main
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 22.14.0
           registry-url: https://registry.npmjs.org/
@@ -198,7 +213,7 @@ jobs:
           npm --version
 
       - name: Download release candidate tarballs
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: release-candidate-tarballs
           path: dist
@@ -212,21 +227,21 @@ jobs:
           done < dist/released-packages.tsv
 
       - name: Generate SBOM SPDX
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
           format: spdx-json
           output-file: dist/sbom-spdx.json
           artifact-name: sbom-spdx.json
 
       - name: Generate SBOM CycloneDX
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
           format: cyclonedx-json
           output-file: dist/sbom-cyclonedx.json
           artifact-name: sbom-cyclonedx.json
 
       - name: Attest release artefacts
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@b3e506e8c389afc651c5bacf2b8f2a1ea0557215 # v4
         with:
           subject-path: |
             dist/tarballs/*.tgz
@@ -234,13 +249,13 @@ jobs:
             dist/checksums-sha512.txt
 
       - name: Attest SBOM SPDX
-        uses: actions/attest-sbom@v4
+        uses: actions/attest-sbom@36590ecaf038d6630c74f2da259095627d52ac11 # v4
         with:
           subject-path: dist/sbom-spdx.json
           sbom-path: dist/sbom-spdx.json
 
       - name: Attest SBOM CycloneDX
-        uses: actions/attest-sbom@v4
+        uses: actions/attest-sbom@36590ecaf038d6630c74f2da259095627d52ac11 # v4
         with:
           subject-path: dist/sbom-cyclonedx.json
           sbom-path: dist/sbom-cyclonedx.json
@@ -273,7 +288,7 @@ jobs:
       hashes: ${{ steps.hash.outputs.hashes }}
     steps:
       - name: Download release candidate tarballs
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: release-candidate-tarballs
           path: dist
@@ -290,9 +305,9 @@ jobs:
     needs: [prepare, publish, slsa-subjects]
     if: needs.prepare.outputs.released == 'true'
     permissions:
-      actions: read
-      id-token: write
-      contents: write
+      actions: read     # required by slsa-github-generator to read this workflow run's metadata
+      id-token: write   # required by slsa-github-generator to mint the SLSA provenance OIDC token
+      contents: write   # required by slsa-github-generator to upload the provenance file to the release
     # NOTE: SLSA generator must be referenced by tag, not SHA — the reusable
     # workflow inspects its own caller-ref to embed the version into the
     # provenance and aborts when called by digest.
@@ -308,16 +323,16 @@ jobs:
     if: needs.prepare.outputs.released == 'true'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write   # upload SLSA provenance + SBOM attestation assets to the GitHub release
     steps:
       - name: Download release metadata
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: release-candidate-tarballs
           path: dist
 
       - name: Download SLSA provenance
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: provenance.intoto.jsonl
           path: dist

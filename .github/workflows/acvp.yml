@@ -1,0 +1,59 @@
+name: NIST ACVP Test Vectors
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mldsa87-acvp:
+    name: ML-DSA-87 ACVP Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22.x
+
+      - name: Clone NIST ACVP-Server (sparse)
+        run: |
+          # Sparse checkout of just the ML-DSA keyGen + sigGen vector
+          # directories — the repo is large. Tracking master gives us
+          # upstream additions automatically; pin to a specific commit
+          # here if a future vector starts producing legitimate failures.
+          git clone --depth 1 --no-checkout --filter=blob:none \
+            https://github.com/usnistgov/ACVP-Server.git /tmp/acvp-server
+          cd /tmp/acvp-server
+          git sparse-checkout init --cone
+          git sparse-checkout set \
+            gen-val/json-files/ML-DSA-keyGen-FIPS204 \
+            gen-val/json-files/ML-DSA-sigGen-FIPS204
+          git checkout
+          echo "ACVP-Server commit: $(git rev-parse --short HEAD)"
+          echo "ACVP-Server date:   $(git log -1 --format=%ci)"
+          ls -la gen-val/json-files/ML-DSA-keyGen-FIPS204/prompt.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build
+
+      - name: Run ACVP ML-DSA-87 tests
+        working-directory: packages/mldsa87
+        env:
+          ACVP_VECTORS_DIR: /tmp/acvp-server/gen-val/json-files
+        run: npx mocha test/acvp.test.js --reporter spec

@@ -1286,11 +1286,31 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
  * Uses the ML-DSA-87 (FIPS 204) signing algorithm with rejection sampling.
  * The context parameter provides domain separation as required by FIPS 204.
  *
+ * # Signing-mode recommendation (TOB-QRLLIB-6)
+ *
+ * **Hedged signing (`randomizedSigning = true`) is the recommended mode**
+ * per FIPS 204 §3.4: the per-signature nonce mixes fresh `crypto.getRandomValues`
+ * randomness, which frustrates the fault-injection attack class against
+ * deterministic signing where an adversary who can flip a single bit during
+ * the `z` computation can differentiate two same-message signatures and
+ * recover `s1`/`s2` by lattice differential analysis. Verification is
+ * unchanged — hedged and deterministic signatures verify under the same
+ * public key.
+ *
+ * **Use deterministic signing (`randomizedSigning = false`) only when the
+ * deterministic property is itself a security or protocol requirement** —
+ * e.g. RANDAO-style verifiable beacon contributions where each validator
+ * must produce the same signature for the same input, or test-vector
+ * reproduction. Consider the [cryptoSignDeterministic] convenience wrapper
+ * for those cases.
+ *
  * @param {Uint8Array} sig - Output buffer for signature (must be at least CryptoBytes = 4627 bytes)
  * @param {string|Uint8Array} m - Message to sign (hex string, optional 0x prefix, or Uint8Array)
  * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes = 4896 bytes)
- * @param {boolean} randomizedSigning - If true, use random nonce for hedged signing.
- *   If false, use deterministic nonce derived from message and key.
+ * @param {boolean} randomizedSigning - **Recommended: `true` (hedged, FIPS 204 §3.4).**
+ *   If true, mix fresh `crypto.getRandomValues` randomness into the
+ *   per-signature nonce. If false, use a deterministic nonce derived from
+ *   message and key (FIPS 204 §3.5).
  * @param {Uint8Array} ctx - Context string for domain separation (required, max 255 bytes).
  *   Pass an empty Uint8Array for no context.
  * @returns {number} 0 on success
@@ -1439,6 +1459,31 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx) {
 }
 
 /**
+ * Create a **deterministic** ML-DSA-87 detached signature
+ * (FIPS 204 §3.5 — `randomizedSigning = false`).
+ *
+ * Convenience wrapper that hard-wires the deterministic mode so callers
+ * who *need* byte-identical signatures for the same `(sk, ctx, message)`
+ * — RANDAO-style verifiable beacon contributions, ACVP / KAT vector
+ * reproduction, deterministic-test fixtures — get a clearly-named
+ * entry point rather than passing a bare boolean.
+ *
+ * **Use only when the deterministic property is itself a requirement.**
+ * For general-purpose signing prefer [cryptoSignSignature] with
+ * `randomizedSigning = true` (FIPS 204 §3.4 hedged, the recommended
+ * mode). (TOB-QRLLIB-6.)
+ *
+ * @param {Uint8Array} sig - Output buffer for signature (must be at least CryptoBytes bytes)
+ * @param {string|Uint8Array} m - Message to sign
+ * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes bytes)
+ * @param {Uint8Array} ctx - Context string for domain separation (required, max 255 bytes)
+ * @returns {number} 0 on success
+ */
+function cryptoSignSignatureDeterministic(sig, m, sk, ctx) {
+  return cryptoSignSignature(sig, m, sk, /* randomizedSigning */ false, ctx);
+}
+
+/**
  * Sign a message, returning signature concatenated with message.
  *
  * This is the combined sign operation that produces a "signed message" containing
@@ -1476,6 +1521,26 @@ function cryptoSign(msg, sk, randomizedSigning, ctx) {
   }
   /* c8 ignore stop */
   return sm;
+}
+
+/**
+ * Attached-form **deterministic** ML-DSA-87 signing
+ * (FIPS 204 §3.5 — `randomizedSigning = false`).
+ *
+ * Convenience wrapper that hard-wires the deterministic mode for the
+ * attached `signature || message` form. Same recommendation as
+ * [cryptoSignSignatureDeterministic]: use only when determinism is a
+ * protocol requirement; for general-purpose signing prefer
+ * [cryptoSign] with `randomizedSigning = true` (FIPS 204 §3.4 hedged).
+ * (TOB-QRLLIB-6.)
+ *
+ * @param {string|Uint8Array} msg - Message to sign
+ * @param {Uint8Array} sk - Secret key (must be CryptoSecretKeyBytes bytes)
+ * @param {Uint8Array} ctx - Context string for domain separation (required, max 255 bytes)
+ * @returns {Uint8Array} Signed message (signature || message)
+ */
+function cryptoSignDeterministic(msg, sk, ctx) {
+  return cryptoSign(msg, sk, /* randomizedSigning */ false, ctx);
 }
 
 /**
@@ -1602,7 +1667,12 @@ function cryptoSignOpen(sm, pk, ctx) {
   if (!(ctx instanceof Uint8Array)) {
     throw new TypeError('ctx is required and must be a Uint8Array');
   }
-  if (sm.length < CryptoBytes) {
+  // Type-guard `sm` so callers passing `null` / `undefined` / non-Uint8Array
+  // get a clean `undefined` return rather than a `Cannot read properties of
+  // null (reading 'length')` thrown deep in the call chain. Mirrors the
+  // existing `pk` / `sig` instanceof checks in `cryptoSignVerify`.
+  // (TOB-QRLLIB-11.)
+  if (!(sm instanceof Uint8Array) || sm.length < CryptoBytes) {
     return undefined;
   }
 
@@ -1615,4 +1685,51 @@ function cryptoSignOpen(sm, pk, ctx) {
   return msg;
 }
 
-export { BETA, CRHBytes, CTILDEBytes, CryptoBytes, CryptoPublicKeyBytes, CryptoSecretKeyBytes, D, ETA, GAMMA1, GAMMA2, K, KeccakState, L, N, OMEGA, Poly, PolyETAPackedBytes, PolyT0PackedBytes, PolyT1PackedBytes, PolyUniformETANBlocks, PolyUniformGamma1NBlocks, PolyUniformNBlocks, PolyVecHPackedBytes, PolyVecK, PolyVecL, PolyW1PackedBytes, PolyZPackedBytes, Q, QInv, RNDBytes, SeedBytes, Shake128Rate, Shake256Rate, Stream128BlockBytes, Stream256BlockBytes, TAU, TRBytes, cAddQ, cryptoSign, cryptoSignKeypair, cryptoSignOpen, cryptoSignSignature, cryptoSignVerify, decompose, invNTTToMont, isZero, makeHint, mldsaShake128StreamInit, mldsaShake256StreamInit, montgomeryReduce, ntt, packPk, packSig, packSk, polyAdd, polyCAddQ, polyChallenge, polyChkNorm, polyDecompose, polyEtaPack, polyEtaUnpack, polyInvNTTToMont, polyMakeHint, polyNTT, polyPointWiseMontgomery, polyPower2round, polyReduce, polyShiftL, polySub, polyT0Pack, polyT0Unpack, polyT1Pack, polyT1Unpack, polyUniform, polyUniformEta, polyUniformGamma1, polyUseHint, polyVecKAdd, polyVecKCAddQ, polyVecKChkNorm, polyVecKDecompose, polyVecKInvNTTToMont, polyVecKMakeHint, polyVecKNTT, polyVecKPackW1, polyVecKPointWisePolyMontgomery, polyVecKPower2round, polyVecKReduce, polyVecKShiftL, polyVecKSub, polyVecKUniformEta, polyVecKUseHint, polyVecLAdd, polyVecLChkNorm, polyVecLInvNTTToMont, polyVecLNTT, polyVecLPointWiseAccMontgomery, polyVecLPointWisePolyMontgomery, polyVecLReduce, polyVecLUniformEta, polyVecLUniformGamma1, polyVecMatrixExpand, polyVecMatrixPointWiseMontgomery, polyW1Pack, polyZPack, polyZUnpack, power2round, reduce32, rejEta, rejUniform, shake128Absorb, shake128Finalize, shake128Init, shake128SqueezeBlocks, shake256Absorb, shake256Finalize, shake256Init, shake256SqueezeBlocks, unpackPk, unpackSig, unpackSk, useHint, zeroize, zetas };
+/**
+ * Open a signed message with a typed failure-mode report.
+ *
+ * Behavioural twin of [cryptoSignOpen], but returns a discriminated
+ * union so callers can distinguish between API-shape problems (input
+ * was the wrong type / length / shape) and genuine cryptographic
+ * verification failures. Use this when you need to log or route on
+ * specific failure modes — e.g. an attestation pipeline that wants to
+ * alarm on "input shape valid but signature did not verify" but
+ * silently reject "input shape was wrong".
+ *
+ * The legacy [cryptoSignOpen] returns `undefined` for every failure
+ * mode and is kept unchanged for backward compatibility. Both helpers
+ * call into the same underlying verifier — they only differ in how
+ * the failure modes are reported.
+ *
+ * (TOB-QRLLIB-14: distinct failure modes for Open.)
+ *
+ * @param {Uint8Array} sm Signed message (signature || message).
+ * @param {Uint8Array} pk Public key.
+ * @param {Uint8Array} ctx FIPS 204 context (max 255 bytes).
+ * @returns {{ok: true, message: Uint8Array} | {ok: false, reason: 'invalid-ctx-type'|'invalid-ctx-length'|'invalid-sm-type'|'invalid-sm-length'|'invalid-pk'|'verification-failed'}}
+ */
+function cryptoSignOpenWithReason(sm, pk, ctx) {
+  if (!(ctx instanceof Uint8Array)) {
+    return { ok: false, reason: 'invalid-ctx-type' };
+  }
+  if (ctx.length > 255) {
+    return { ok: false, reason: 'invalid-ctx-length' };
+  }
+  if (!(sm instanceof Uint8Array)) {
+    return { ok: false, reason: 'invalid-sm-type' };
+  }
+  if (sm.length < CryptoBytes) {
+    return { ok: false, reason: 'invalid-sm-length' };
+  }
+  if (!(pk instanceof Uint8Array) || pk.length !== CryptoPublicKeyBytes) {
+    return { ok: false, reason: 'invalid-pk' };
+  }
+  const sig = sm.slice(0, CryptoBytes);
+  const msg = sm.slice(CryptoBytes);
+  if (!cryptoSignVerify(sig, msg, pk, ctx)) {
+    return { ok: false, reason: 'verification-failed' };
+  }
+  return { ok: true, message: msg };
+}
+
+export { BETA, CRHBytes, CTILDEBytes, CryptoBytes, CryptoPublicKeyBytes, CryptoSecretKeyBytes, D, ETA, GAMMA1, GAMMA2, K, KeccakState, L, N, OMEGA, Poly, PolyETAPackedBytes, PolyT0PackedBytes, PolyT1PackedBytes, PolyUniformETANBlocks, PolyUniformGamma1NBlocks, PolyUniformNBlocks, PolyVecHPackedBytes, PolyVecK, PolyVecL, PolyW1PackedBytes, PolyZPackedBytes, Q, QInv, RNDBytes, SeedBytes, Shake128Rate, Shake256Rate, Stream128BlockBytes, Stream256BlockBytes, TAU, TRBytes, cAddQ, cryptoSign, cryptoSignDeterministic, cryptoSignKeypair, cryptoSignOpen, cryptoSignOpenWithReason, cryptoSignSignature, cryptoSignSignatureDeterministic, cryptoSignVerify, decompose, invNTTToMont, isZero, makeHint, mldsaShake128StreamInit, mldsaShake256StreamInit, montgomeryReduce, ntt, packPk, packSig, packSk, polyAdd, polyCAddQ, polyChallenge, polyChkNorm, polyDecompose, polyEtaPack, polyEtaUnpack, polyInvNTTToMont, polyMakeHint, polyNTT, polyPointWiseMontgomery, polyPower2round, polyReduce, polyShiftL, polySub, polyT0Pack, polyT0Unpack, polyT1Pack, polyT1Unpack, polyUniform, polyUniformEta, polyUniformGamma1, polyUseHint, polyVecKAdd, polyVecKCAddQ, polyVecKChkNorm, polyVecKDecompose, polyVecKInvNTTToMont, polyVecKMakeHint, polyVecKNTT, polyVecKPackW1, polyVecKPointWisePolyMontgomery, polyVecKPower2round, polyVecKReduce, polyVecKShiftL, polyVecKSub, polyVecKUniformEta, polyVecKUseHint, polyVecLAdd, polyVecLChkNorm, polyVecLInvNTTToMont, polyVecLNTT, polyVecLPointWiseAccMontgomery, polyVecLPointWisePolyMontgomery, polyVecLReduce, polyVecLUniformEta, polyVecLUniformGamma1, polyVecMatrixExpand, polyVecMatrixPointWiseMontgomery, polyW1Pack, polyZPack, polyZUnpack, power2round, reduce32, rejEta, rejUniform, shake128Absorb, shake128Finalize, shake128Init, shake128SqueezeBlocks, shake256Absorb, shake256Finalize, shake256Init, shake256SqueezeBlocks, unpackPk, unpackSig, unpackSk, useHint, zeroize, zetas };
