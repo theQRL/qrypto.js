@@ -14,13 +14,9 @@ on:
 permissions:
   contents: read
 
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
-permissions:
-  contents: read
 
 jobs:
   actionlint:
