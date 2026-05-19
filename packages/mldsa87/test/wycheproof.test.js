@@ -31,7 +31,7 @@ describe('Wycheproof - ML-DSA-87 verify', function describeWycheproof() {
     return;
   }
 
-  this.timeout(60_000);
+  this.timeout(60000);
 
   const vectorFile = path.join(vectorsDir, 'mldsa_87_verify_test.json');
   if (!fs.existsSync(vectorFile)) {
@@ -94,8 +94,6 @@ describe('Wycheproof - ML-DSA-87 verify', function describeWycheproof() {
   }
 
   after(() => {
-    console.log(
-      `Wycheproof ML-DSA-87 Verify summary: pass=${totalPass} acceptable=${totalAcceptable}`
-    );
+    console.log(`Wycheproof ML-DSA-87 Verify summary: pass=${totalPass} acceptable=${totalAcceptable}`);
   });
 });

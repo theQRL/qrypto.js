@@ -16,12 +16,7 @@ import { expect } from 'chai';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import {
-  CryptoBytes,
-  CryptoPublicKeyBytes,
-  CryptoSecretKeyBytes,
-  SeedBytes,
-} from '../src/const.js';
+import { CryptoBytes, CryptoPublicKeyBytes, CryptoSecretKeyBytes, SeedBytes } from '../src/const.js';
 import { cryptoSignKeypair, cryptoSignSignature } from '../src/sign.js';
 
 // Helper: decode hex into a Uint8Array.
@@ -60,7 +55,7 @@ describe('ACVP - ML-DSA-87', function describeAcvp() {
 
   // Allow longer timeouts; vector counts can be in the dozens and each
   // sigGen call is a full ML-DSA-87 sign.
-  this.timeout(120_000);
+  this.timeout(120000);
 
   const keygenPath = path.join(vectorsDir, 'ML-DSA-keyGen-FIPS204');
   const siggenPath = path.join(vectorsDir, 'ML-DSA-sigGen-FIPS204');
