@@ -18,12 +18,7 @@
 // cross-cutting: ToB-handoff metamorphic fuzzer port.)
 
 import { expect } from 'chai';
-import {
-  CryptoBytes,
-  CryptoPublicKeyBytes,
-  CryptoSecretKeyBytes,
-  SeedBytes,
-} from '../src/const.js';
+import { CryptoBytes, CryptoPublicKeyBytes, CryptoSecretKeyBytes, SeedBytes } from '../src/const.js';
 import {
   cryptoSign,
   cryptoSignKeypair,
@@ -82,10 +77,9 @@ describe('metamorphic: verify rejects mauled public key (TOB-QRLLIB-handoff)', (
         // Try a few different bit indices spread across the pk.
         for (const bit of [0, 7, 100, CryptoPublicKeyBytes * 4, CryptoPublicKeyBytes * 8 - 1]) {
           const mauledPk = flipSingleBit(pk, bit);
-          expect(
-            cryptoSignVerify(sig, msg, mauledPk, ctx),
-            `single-bit mauled pk verified at bit ${bit}`
-          ).to.equal(false);
+          expect(cryptoSignVerify(sig, msg, mauledPk, ctx), `single-bit mauled pk verified at bit ${bit}`).to.equal(
+            false
+          );
         }
       });
     }

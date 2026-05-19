@@ -107,7 +107,7 @@ describe('cryptoSignDeterministic (TOB-QRLLIB-6 opt-in)', () => {
     const msg = Buffer.from(vector.msg, 'hex');
     const helper = cryptoSignDeterministic(msg, sk, vector.ctx);
     const explicit = cryptoSign(msg, sk, false, vector.ctx);
-    expect(Buffer.from(helper).equals(Buffer.from(explicit))).to.equal(true);
+    expect(Buffer.from(helper).toString('hex') === Buffer.from(explicit).toString('hex')).to.equal(true);
   });
 
   it('produces byte-identical signed messages on repeated calls', () => {
@@ -116,7 +116,7 @@ describe('cryptoSignDeterministic (TOB-QRLLIB-6 opt-in)', () => {
     const msg = Buffer.from(vector.msg, 'hex');
     const a = cryptoSignDeterministic(msg, sk, vector.ctx);
     const b = cryptoSignDeterministic(msg, sk, vector.ctx);
-    expect(Buffer.from(a).equals(Buffer.from(b))).to.equal(true);
+    expect(Buffer.from(a).toString('hex') === Buffer.from(b).toString('hex')).to.equal(true);
   });
 
   it('signed message verifies via cryptoSignOpen', () => {
@@ -127,7 +127,7 @@ describe('cryptoSignDeterministic (TOB-QRLLIB-6 opt-in)', () => {
     const sm = cryptoSignDeterministic(msg, sk, vector.ctx);
     const opened = cryptoSignOpen(sm, pk, vector.ctx);
     expect(opened).to.not.equal(undefined);
-    expect(Buffer.from(opened).equals(Buffer.from(msg))).to.equal(true);
+    expect(Buffer.from(opened).toString('hex') === Buffer.from(msg).toString('hex')).to.equal(true);
   });
 });
 

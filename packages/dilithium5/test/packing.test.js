@@ -97,15 +97,15 @@ describe('packing internal length guards (defense-in-depth)', () => {
   it('unpackPk rejects wrong-length pk', () => {
     const rho = new Uint8Array(SeedBytes);
     const t1 = new PolyVecK();
-    expect(() => unpackPk(rho, t1, new Uint8Array(CryptoPublicKeyBytes - 1)))
-      .to.throw(`pk must be a Uint8Array of ${CryptoPublicKeyBytes} bytes`);
+    expect(() => unpackPk(rho, t1, new Uint8Array(CryptoPublicKeyBytes - 1))).to.throw(
+      `pk must be a Uint8Array of ${CryptoPublicKeyBytes} bytes`
+    );
   });
 
   it('unpackPk rejects non-Uint8Array pk', () => {
     const rho = new Uint8Array(SeedBytes);
     const t1 = new PolyVecK();
-    expect(() => unpackPk(rho, t1, 'not-bytes'))
-      .to.throw(`pk must be a Uint8Array of ${CryptoPublicKeyBytes} bytes`);
+    expect(() => unpackPk(rho, t1, 'not-bytes')).to.throw(`pk must be a Uint8Array of ${CryptoPublicKeyBytes} bytes`);
   });
 
   it('unpackSk rejects wrong-length sk', () => {
@@ -115,8 +115,9 @@ describe('packing internal length guards (defense-in-depth)', () => {
     const t0 = new PolyVecK();
     const s1 = new PolyVecL();
     const s2 = new PolyVecK();
-    expect(() => unpackSk(rho, tr, key, t0, s1, s2, new Uint8Array(CryptoSecretKeyBytes - 1)))
-      .to.throw(`sk must be a Uint8Array of ${CryptoSecretKeyBytes} bytes`);
+    expect(() => unpackSk(rho, tr, key, t0, s1, s2, new Uint8Array(CryptoSecretKeyBytes - 1))).to.throw(
+      `sk must be a Uint8Array of ${CryptoSecretKeyBytes} bytes`
+    );
   });
 
   it('unpackSk rejects non-Uint8Array sk', () => {
@@ -126,7 +127,8 @@ describe('packing internal length guards (defense-in-depth)', () => {
     const t0 = new PolyVecK();
     const s1 = new PolyVecL();
     const s2 = new PolyVecK();
-    expect(() => unpackSk(rho, tr, key, t0, s1, s2, null))
-      .to.throw(`sk must be a Uint8Array of ${CryptoSecretKeyBytes} bytes`);
+    expect(() => unpackSk(rho, tr, key, t0, s1, s2, null)).to.throw(
+      `sk must be a Uint8Array of ${CryptoSecretKeyBytes} bytes`
+    );
   });
 });

@@ -21,12 +21,7 @@
 // addition), so the corpus collapses to seeds × messages.
 
 import { expect } from 'chai';
-import {
-  CryptoBytes,
-  CryptoPublicKeyBytes,
-  CryptoSecretKeyBytes,
-  SeedBytes,
-} from '../src/const.js';
+import { CryptoBytes, CryptoPublicKeyBytes, CryptoSecretKeyBytes, SeedBytes } from '../src/const.js';
 import {
   cryptoSign,
   cryptoSignKeypair,
@@ -47,11 +42,7 @@ function corpusSeeds() {
 }
 
 function corpusMessages() {
-  return [
-    new TextEncoder().encode(''),
-    new TextEncoder().encode('Hello'),
-    new TextEncoder().encode('M'.repeat(64)),
-  ];
+  return [new TextEncoder().encode(''), new TextEncoder().encode('Hello'), new TextEncoder().encode('M'.repeat(64))];
 }
 
 function flipSingleBit(src, bitIndex) {
@@ -84,10 +75,7 @@ describe('metamorphic: verify rejects mauled public key (TOB-QRLLIB-handoff)', (
 
         for (const bit of [0, 7, 100, CryptoPublicKeyBytes * 4, CryptoPublicKeyBytes * 8 - 1]) {
           const mauledPk = flipSingleBit(pk, bit);
-          expect(
-            cryptoSignVerify(sig, msg, mauledPk),
-            `single-bit mauled pk verified at bit ${bit}`
-          ).to.equal(false);
+          expect(cryptoSignVerify(sig, msg, mauledPk), `single-bit mauled pk verified at bit ${bit}`).to.equal(false);
         }
       });
     }
@@ -105,10 +93,9 @@ describe('metamorphic: verify rejects mauled message', () => {
 
         for (let bit = 0; bit < Math.min(64, msg.length * 8); bit += 11) {
           const mauledMsg = flipSingleBit(msg, bit);
-          expect(
-            cryptoSignVerify(sig, mauledMsg, pk),
-            `single-bit mauled message verified at bit ${bit}`
-          ).to.equal(false);
+          expect(cryptoSignVerify(sig, mauledMsg, pk), `single-bit mauled message verified at bit ${bit}`).to.equal(
+            false
+          );
         }
       });
     }
@@ -125,10 +112,9 @@ describe('metamorphic: verify rejects mauled signature', () => {
 
         for (const bit of [0, 1, 127, CryptoBytes * 4, CryptoBytes * 8 - 1]) {
           const mauledSig = flipSingleBit(sig, bit);
-          expect(
-            cryptoSignVerify(mauledSig, msg, pk),
-            `single-bit mauled signature verified at bit ${bit}`
-          ).to.equal(false);
+          expect(cryptoSignVerify(mauledSig, msg, pk), `single-bit mauled signature verified at bit ${bit}`).to.equal(
+            false
+          );
         }
       });
     }

@@ -146,7 +146,7 @@ describe('cryptoSignDeterministic (TOB-QRLLIB-6 opt-in)', () => {
     const msg = Buffer.from(MESSAGE, 'hex');
     const a = cryptoSignDeterministic(msg, sk);
     const b = cryptoSignDeterministic(msg, sk);
-    expect(Buffer.from(a).equals(Buffer.from(b))).to.equal(true);
+    expect(Buffer.from(a).toString('hex') === Buffer.from(b).toString('hex')).to.equal(true);
   });
 
   it('matches the boolean-form deterministic output exactly', () => {
@@ -154,7 +154,7 @@ describe('cryptoSignDeterministic (TOB-QRLLIB-6 opt-in)', () => {
     const msg = Buffer.from(MESSAGE, 'hex');
     const helper = cryptoSignDeterministic(msg, sk);
     const explicit = cryptoSign(msg, sk, false);
-    expect(Buffer.from(helper).equals(Buffer.from(explicit))).to.equal(true);
+    expect(Buffer.from(helper).toString('hex') === Buffer.from(explicit).toString('hex')).to.equal(true);
   });
 
   it('signed message verifies under the matching pk via cryptoSignOpen', () => {
@@ -164,7 +164,7 @@ describe('cryptoSignDeterministic (TOB-QRLLIB-6 opt-in)', () => {
     const sm = cryptoSignDeterministic(msg, sk);
     const opened = cryptoSignOpen(sm, pk);
     expect(opened).to.not.equal(undefined);
-    expect(Buffer.from(opened).equals(Buffer.from(msg))).to.equal(true);
+    expect(Buffer.from(opened).toString('hex') === Buffer.from(msg).toString('hex')).to.equal(true);
   });
 });
 
@@ -183,7 +183,7 @@ describe('cryptoSignOpenWithReason (TOB-QRLLIB-14)', () => {
     const pk = Buffer.from(PK, 'hex');
     const result = cryptoSignOpenWithReason(sm, pk);
     expect(result.ok).to.equal(true);
-    expect(Buffer.from(result.message).equals(Buffer.from(msg))).to.equal(true);
+    expect(Buffer.from(result.message).toString('hex') === Buffer.from(msg).toString('hex')).to.equal(true);
   });
 
   it('distinguishes invalid-sm-type', () => {
