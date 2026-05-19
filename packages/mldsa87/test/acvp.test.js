@@ -30,6 +30,16 @@ function hex(s) {
   return Uint8Array.from(Buffer.from(s, 'hex'));
 }
 
+// Hex is hex regardless of case — normalize both sides to lowercase
+// for byte-equality assertions. The NIST ACVP-Server emits its
+// expected pk/sk/signature blobs in UPPERCASE hex, while Node's
+// `Buffer#toString('hex')` always produces lowercase, so a naive
+// chai `.to.equal(exp.pk)` would fail purely on letter case even
+// when the bytes are byte-identical.
+function lc(s) {
+  return typeof s === 'string' ? s.toLowerCase() : s;
+}
+
 // Helper: build a map of tcId → expected from an `expectedResults.json` group.
 function indexExpected(expectedJson) {
   const out = new Map();
@@ -79,8 +89,8 @@ describe('ACVP - ML-DSA-87', function describeAcvp() {
           const pk = new Uint8Array(CryptoPublicKeyBytes);
           const sk = new Uint8Array(CryptoSecretKeyBytes);
           cryptoSignKeypair(seed, pk, sk);
-          expect(Buffer.from(pk).toString('hex')).to.equal(exp.pk);
-          expect(Buffer.from(sk).toString('hex')).to.equal(exp.sk);
+          expect(Buffer.from(pk).toString('hex')).to.equal(lc(exp.pk));
+          expect(Buffer.from(sk).toString('hex')).to.equal(lc(exp.sk));
         });
       }
     }
@@ -103,10 +113,15 @@ describe('ACVP - ML-DSA-87', function describeAcvp() {
       if (group.parameterSet !== 'ML-DSA-87') continue;
       // Only test deterministic, external-interface, pure (non-preHash)
       // vectors — the qrypto.js public API supports that mode by
-      // passing randomizedSigning=false.
+      // passing randomizedSigning=false. NIST encodes the pre-hash mode
+      // as a STRING enum (`"pure"` | `"preHash"`), not a boolean — so
+      // the filter checks for the string sentinel `"pure"`. A naive
+      // `preHash === true` check silently lets the HashML-DSA group
+      // through and produces 15 spurious byte-mismatch failures
+      // (group 6 in the current ML-DSA-sigGen-FIPS204 vectors, tcs 76-90).
       if (group.deterministic !== true) continue;
       if (group.signatureInterface && group.signatureInterface !== 'external') continue;
-      if (group.preHash === true) continue;
+      if (group.preHash && group.preHash !== 'pure') continue;
 
       for (const tc of group.tests || []) {
         const exp = expectedById.get(tc.tcId);
@@ -118,7 +133,7 @@ describe('ACVP - ML-DSA-87', function describeAcvp() {
           const ctx = hex(tc.context);
           const sig = new Uint8Array(CryptoBytes);
           cryptoSignSignature(sig, msg, sk, /* randomizedSigning */ false, ctx);
-          expect(Buffer.from(sig).toString('hex')).to.equal(exp.signature);
+          expect(Buffer.from(sig).toString('hex')).to.equal(lc(exp.signature));
         });
       }
     }

@@ -1,6 +1,14 @@
 import { expect } from 'chai';
 import { CryptoPublicKeyBytes, CryptoSecretKeyBytes, CryptoBytes } from '../src/const.js';
-import { cryptoSign, cryptoSignOpen, cryptoSignOpenWithReason, cryptoSignVerify, cryptoSignSignature, cryptoSignKeypair } from '../src/sign.js';
+import {
+  cryptoSign,
+  cryptoSignDeterministic,
+  cryptoSignOpen,
+  cryptoSignOpenWithReason,
+  cryptoSignVerify,
+  cryptoSignSignature,
+  cryptoSignKeypair,
+} from '../src/sign.js';
 
 const TEST_VECTORS = [
   // Test vectors taken from https://github.com/theQRL/go-qrllib/blob/main/wallet/ml_dsa_87/wallet_test.go#L25
@@ -85,6 +93,41 @@ describe('cryptoSign', () => {
     expect(() => {
       cryptoSign('0xabc', sk, false, new Uint8Array(0));
     }).to.throw('hex string must have an even length');
+  });
+});
+
+// TOB-QRLLIB-6 (ToB-handoff): the attached `cryptoSignDeterministic`
+// helper signals deterministic-mode intent at the call site, replacing
+// the positional boolean. It must be byte-equivalent to the boolean form
+// and verify against the same pk + ctx.
+describe('cryptoSignDeterministic (TOB-QRLLIB-6 opt-in)', () => {
+  it('matches the boolean-form deterministic output exactly', () => {
+    const vector = TEST_VECTORS[0];
+    const sk = Buffer.from(vector.derivedSK, 'hex');
+    const msg = Buffer.from(vector.msg, 'hex');
+    const helper = cryptoSignDeterministic(msg, sk, vector.ctx);
+    const explicit = cryptoSign(msg, sk, false, vector.ctx);
+    expect(Buffer.from(helper).equals(Buffer.from(explicit))).to.equal(true);
+  });
+
+  it('produces byte-identical signed messages on repeated calls', () => {
+    const vector = TEST_VECTORS[0];
+    const sk = Buffer.from(vector.derivedSK, 'hex');
+    const msg = Buffer.from(vector.msg, 'hex');
+    const a = cryptoSignDeterministic(msg, sk, vector.ctx);
+    const b = cryptoSignDeterministic(msg, sk, vector.ctx);
+    expect(Buffer.from(a).equals(Buffer.from(b))).to.equal(true);
+  });
+
+  it('signed message verifies via cryptoSignOpen', () => {
+    const vector = TEST_VECTORS[0];
+    const sk = Buffer.from(vector.derivedSK, 'hex');
+    const pk = Buffer.from(vector.derivedPK, 'hex');
+    const msg = Buffer.from(vector.msg, 'hex');
+    const sm = cryptoSignDeterministic(msg, sk, vector.ctx);
+    const opened = cryptoSignOpen(sm, pk, vector.ctx);
+    expect(opened).to.not.equal(undefined);
+    expect(Buffer.from(opened).equals(Buffer.from(msg))).to.equal(true);
   });
 });
 
