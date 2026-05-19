@@ -1,3 +1,13 @@
+## @theqrl/mldsa87 [2.1.0](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.0.4...@theqrl/mldsa87@2.1.0) (2026-05-19)
+
+### Features
+
+* default hedged signing ([ed9b827](https://github.com/theQRL/qrypto.js/commit/ed9b82773a998a6a9c432a9bc3537d8c0730b1fc))
+
+### Bug Fixes
+
+* ACVP tests ([8d4c967](https://github.com/theQRL/qrypto.js/commit/8d4c967117201ef929a8070abae57c9032e6ce2b))
+
 ## @theqrl/mldsa87 [2.0.4](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.0.3...@theqrl/mldsa87@2.0.4) (2026-05-09)
 
 ### Bug Fixes
