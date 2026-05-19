@@ -1,6 +1,14 @@
 import { expect } from 'chai';
 import { CryptoPublicKeyBytes, CryptoSecretKeyBytes, CryptoBytes } from '../src/const.js';
-import { cryptoSign, cryptoSignKeypair, cryptoSignOpen, cryptoSignVerify, cryptoSignSignature } from '../src/sign.js';
+import {
+  cryptoSign,
+  cryptoSignDeterministic,
+  cryptoSignKeypair,
+  cryptoSignOpen,
+  cryptoSignOpenWithReason,
+  cryptoSignVerify,
+  cryptoSignSignature,
+} from '../src/sign.js';
 
 const HASHEDSEED = '8078f74eb51029b5b96cfbe2bd0ab8433252bf4c6c8fbad92789add5e3cca216';
 const PK =
@@ -124,6 +132,104 @@ describe('cryptoSignVerify', () => {
     const pk = Buffer.from(PK, 'hex');
 
     expect(cryptoSignVerify(sig, 'xyz', pk)).to.equal(false);
+  });
+});
+
+// TOB-QRLLIB-6 (ToB-handoff): the attached `cryptoSignDeterministic`
+// helper is a thin wrapper around `cryptoSign(..., randomized = false)`
+// that signals intent at the call site rather than via a positional
+// boolean. The same `(sk, msg)` pair must yield byte-identical signed
+// messages, and those messages must verify under the matching pk.
+describe('cryptoSignDeterministic (TOB-QRLLIB-6 opt-in)', () => {
+  it('produces byte-identical signed messages on repeated calls', () => {
+    const sk = Buffer.from(SK, 'hex');
+    const msg = Buffer.from(MESSAGE, 'hex');
+    const a = cryptoSignDeterministic(msg, sk);
+    const b = cryptoSignDeterministic(msg, sk);
+    expect(Buffer.from(a).toString('hex') === Buffer.from(b).toString('hex')).to.equal(true);
+  });
+
+  it('matches the boolean-form deterministic output exactly', () => {
+    const sk = Buffer.from(SK, 'hex');
+    const msg = Buffer.from(MESSAGE, 'hex');
+    const helper = cryptoSignDeterministic(msg, sk);
+    const explicit = cryptoSign(msg, sk, false);
+    expect(Buffer.from(helper).toString('hex') === Buffer.from(explicit).toString('hex')).to.equal(true);
+  });
+
+  it('signed message verifies under the matching pk via cryptoSignOpen', () => {
+    const sk = Buffer.from(SK, 'hex');
+    const pk = Buffer.from(PK, 'hex');
+    const msg = Buffer.from(MESSAGE, 'hex');
+    const sm = cryptoSignDeterministic(msg, sk);
+    const opened = cryptoSignOpen(sm, pk);
+    expect(opened).to.not.equal(undefined);
+    expect(Buffer.from(opened).toString('hex') === Buffer.from(msg).toString('hex')).to.equal(true);
+  });
+});
+
+// TOB-QRLLIB-14 (ToB-handoff): cryptoSignOpenWithReason exposes a
+// discriminated union of failure reasons for diagnostic / UI use
+// cases. The boolean cryptoSignOpen is unchanged.
+describe('cryptoSignOpenWithReason (TOB-QRLLIB-14)', () => {
+  function happySignedMessage() {
+    const sk = Buffer.from(SK, 'hex');
+    const msg = Buffer.from(MESSAGE, 'hex');
+    return { sm: cryptoSign(msg, sk, false), msg };
+  }
+
+  it('returns ok=true with the recovered message on the happy path', () => {
+    const { sm, msg } = happySignedMessage();
+    const pk = Buffer.from(PK, 'hex');
+    const result = cryptoSignOpenWithReason(sm, pk);
+    expect(result.ok).to.equal(true);
+    expect(Buffer.from(result.message).toString('hex') === Buffer.from(msg).toString('hex')).to.equal(true);
+  });
+
+  it('distinguishes invalid-sm-type', () => {
+    const pk = Buffer.from(PK, 'hex');
+    const result = cryptoSignOpenWithReason('not a Uint8Array', pk);
+    expect(result.ok).to.equal(false);
+    expect(result.reason).to.equal('invalid-sm-type');
+  });
+
+  it('distinguishes invalid-sm-type for null sm (TOB-QRLLIB-11)', () => {
+    const pk = Buffer.from(PK, 'hex');
+    const result = cryptoSignOpenWithReason(null, pk);
+    expect(result.ok).to.equal(false);
+    expect(result.reason).to.equal('invalid-sm-type');
+  });
+
+  it('distinguishes invalid-sm-length (shorter than CryptoBytes)', () => {
+    const pk = Buffer.from(PK, 'hex');
+    const shortSm = new Uint8Array(CryptoBytes - 1);
+    const result = cryptoSignOpenWithReason(shortSm, pk);
+    expect(result.ok).to.equal(false);
+    expect(result.reason).to.equal('invalid-sm-length');
+  });
+
+  it('distinguishes invalid-pk (wrong length)', () => {
+    const { sm } = happySignedMessage();
+    const result = cryptoSignOpenWithReason(sm, new Uint8Array(10));
+    expect(result.ok).to.equal(false);
+    expect(result.reason).to.equal('invalid-pk');
+  });
+
+  it('distinguishes invalid-pk (wrong type)', () => {
+    const { sm } = happySignedMessage();
+    const result = cryptoSignOpenWithReason(sm, 'not-bytes');
+    expect(result.ok).to.equal(false);
+    expect(result.reason).to.equal('invalid-pk');
+  });
+
+  it('distinguishes verification-failed on a tampered signature', () => {
+    const { sm } = happySignedMessage();
+    const pk = Buffer.from(PK, 'hex');
+    const tampered = new Uint8Array(sm);
+    tampered[0] ^= 0x01;
+    const result = cryptoSignOpenWithReason(tampered, pk);
+    expect(result.ok).to.equal(false);
+    expect(result.reason).to.equal('verification-failed');
   });
 });
 

@@ -11,12 +11,12 @@ on:
       - '.github/workflows/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
-permissions:
-  contents: read
 
 jobs:
   actionlint:
@@ -43,8 +43,16 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install zizmor
+        run: pipx install zizmor
+
       - name: Run zizmor
         uses: zizmorcore/zizmor-action@b1d7e1fb5de872772f31590499237e7cce841e8e # v0.5.3
+        # about, including stylistic findings like missing job concurrency
+        # limits, undocumented permissions, and template-injection
+        # candidates. We hold the entire workflow surface to that bar —
+        # any new finding at any severity fails the build. Configuration
         with:
+        # reusable workflow ref-pin).
           persona: pedantic
           config: .github/zizmor.yml

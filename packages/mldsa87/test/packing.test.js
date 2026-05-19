@@ -1,7 +1,17 @@
 import { expect } from 'chai';
-import { packSig, unpackSig } from '../src/packing.js';
+import { packSig, unpackPk, unpackSig, unpackSk } from '../src/packing.js';
 import { PolyVecK, PolyVecL } from '../src/polyvec.js';
-import { K, N, OMEGA, CTILDEBytes, CryptoBytes } from '../src/const.js';
+import {
+  CryptoBytes,
+  CryptoPublicKeyBytes,
+  CryptoSecretKeyBytes,
+  CTILDEBytes,
+  K,
+  N,
+  OMEGA,
+  SeedBytes,
+  TRBytes,
+} from '../src/const.js';
 
 describe('packSig hint validation (FIND-009)', function () {
   this.timeout(10000);
@@ -76,5 +86,51 @@ describe('packSig hint validation (FIND-009)', function () {
       }
     }
     expect(() => packSig(sig, ctilde, z, h)).to.throw(/OMEGA/);
+  });
+});
+
+// Defense-in-depth: unpackPk / unpackSk are internal helpers whose
+// callers (cryptoSignVerify / cryptoSignSignatureInternal) already
+// validate pk / sk lengths. The internal length guards are reachable
+// only via direct programmatic use of the helpers, but they are the
+// last line of defense if a refactor ever removes the upstream check —
+// so we exercise them explicitly.
+describe('packing internal length guards (defense-in-depth)', () => {
+  it('unpackPk rejects wrong-length pk', () => {
+    const rho = new Uint8Array(SeedBytes);
+    const t1 = new PolyVecK();
+    expect(() => unpackPk(rho, t1, new Uint8Array(CryptoPublicKeyBytes - 1))).to.throw(
+      `pk must be a Uint8Array of ${CryptoPublicKeyBytes} bytes`
+    );
+  });
+
+  it('unpackPk rejects non-Uint8Array pk', () => {
+    const rho = new Uint8Array(SeedBytes);
+    const t1 = new PolyVecK();
+    expect(() => unpackPk(rho, t1, 'not-bytes')).to.throw(`pk must be a Uint8Array of ${CryptoPublicKeyBytes} bytes`);
+  });
+
+  it('unpackSk rejects wrong-length sk', () => {
+    const rho = new Uint8Array(SeedBytes);
+    const tr = new Uint8Array(TRBytes);
+    const key = new Uint8Array(SeedBytes);
+    const t0 = new PolyVecK();
+    const s1 = new PolyVecL();
+    const s2 = new PolyVecK();
+    expect(() => unpackSk(rho, tr, key, t0, s1, s2, new Uint8Array(CryptoSecretKeyBytes - 1))).to.throw(
+      `sk must be a Uint8Array of ${CryptoSecretKeyBytes} bytes`
+    );
+  });
+
+  it('unpackSk rejects non-Uint8Array sk', () => {
+    const rho = new Uint8Array(SeedBytes);
+    const tr = new Uint8Array(TRBytes);
+    const key = new Uint8Array(SeedBytes);
+    const t0 = new PolyVecK();
+    const s1 = new PolyVecL();
+    const s2 = new PolyVecK();
+    expect(() => unpackSk(rho, tr, key, t0, s1, s2, null)).to.throw(
+      `sk must be a Uint8Array of ${CryptoSecretKeyBytes} bytes`
+    );
   });
 });
