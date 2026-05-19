@@ -1,10 +1,11 @@
 name: Release
 
+# Publishes on push to main; branch protection + the preflight job below
+# gate the publish path so unverified code never reaches npm.
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -14,12 +15,37 @@ permissions:
   contents: read
 
 jobs:
-  # ===========================================================================
-  # CI: Lint, Test, Browser Tests (reusable workflow)
-  # ===========================================================================
-  ci:
-    name: CI
-    uses: ./.github/workflows/ci.yml
+  # Defence-in-depth: re-runs lint + tests + build + dist-clean on the
+  # checked-out commit before the publish path begins.
+  preflight:
+    name: Preflight (lint + test + build + dist-clean)
+    runs-on: ubuntu-latest
+    if: github.repository == 'theQRL/qrypto.js'
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22.x'
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Verify dist/ is up to date
+        run: |
+          if [ -n "$(git diff --name-only packages/*/dist/)" ]; then
+            echo "::error::dist/ files are out of date relative to src/. Run 'npm run build' and commit the result before merging."
+            git diff --stat packages/*/dist/
+            exit 1
+          fi
 
   # ===========================================================================
   # Prepare: build, run multi-semantic-release, pack tarballs, hand off as
@@ -29,9 +55,9 @@ jobs:
   # ===========================================================================
   prepare:
     name: Prepare Release
-    needs: ci
+    needs: preflight
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'theQRL/qrypto.js'
+    if: github.repository == 'theQRL/qrypto.js'
     environment: npm-publish
     permissions:
       contents: write # push release commits and tags via multi-semantic-release
@@ -45,6 +71,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          # Always release from tip of main, not the triggering commit.
+          ref: main
           fetch-depth: 0
           persist-credentials: false
 
