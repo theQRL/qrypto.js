@@ -1,11 +1,19 @@
 name: CI
 
+# Standalone test matrix — runs lint, tests (Node 20.x + 22.x), dist-check,
+# browser tests, and fuzz on every push and pull_request to main.
 on:
-  workflow_call:
-    # No inputs needed - runs lint, test, browser-tests
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
