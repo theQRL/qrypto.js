@@ -73,7 +73,7 @@
     "prettier": "3.8.3",
     "rollup": "4.60.3",
     "serialize-javascript": "7.0.5",
-    "tar": "7.5.14"
+    "tar": "7.5.15"
   },
   "dependencies": {
     "@noble/hashes": "2.2.0"
