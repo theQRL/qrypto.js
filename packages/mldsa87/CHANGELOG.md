@@ -1,3 +1,9 @@
+## @theqrl/mldsa87 [2.1.1](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.1.0...@theqrl/mldsa87@2.1.1) (2026-05-20)
+
+### Bug Fixes
+
+* dependency update ([b5e6ebd](https://github.com/theQRL/qrypto.js/commit/b5e6ebd101ce9581aaaad329a28ddd5dde4c8d8e))
+
 ## @theqrl/mldsa87 [2.1.0](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.0.4...@theqrl/mldsa87@2.1.0) (2026-05-19)
 
 ### Features
