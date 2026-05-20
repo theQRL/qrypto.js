@@ -64,18 +64,17 @@ const zetas = [
   -1362209, 3937738, 1400424, -846154, 1976782,
 ];
 
-/**
- * Internal helpers for u64. BigUint64Array is too slow as per 2025, so we implement it using Uint32Array.
- * @todo re-check https://issues.chromium.org/issues/42212588
- * @module
- */
 const U32_MASK64 = /* @__PURE__ */ BigInt(2 ** 32 - 1);
 const _32n = /* @__PURE__ */ BigInt(32);
+// Split bigint into two 32-bit halves. With `le=true`, returned fields become `{ h: low, l: high
+// }` to match little-endian word order rather than the property names.
 function fromBig(n, le = false) {
     if (le)
         return { h: Number(n & U32_MASK64), l: Number((n >> _32n) & U32_MASK64) };
     return { h: Number((n >> _32n) & U32_MASK64) | 0, l: Number(n & U32_MASK64) | 0 };
 }
+// Split bigint list into `[highWords, lowWords]` when `le=false`; with `le=true`, the first array
+// holds the low halves because `fromBig(...)` swaps the semantic meaning of `h` and `l`.
 function split(lst, le = false) {
     const len = lst.length;
     let Ah = new Uint32Array(len);
@@ -86,30 +85,72 @@ function split(lst, le = false) {
     }
     return [Ah, Al];
 }
-// Left rotate for Shift in [1, 32)
+// High 32-bit half of a 64-bit left rotate, valid for `s` in `1..31`.
 const rotlSH = (h, l, s) => (h << s) | (l >>> (32 - s));
+// Low 32-bit half of a 64-bit left rotate, valid for `s` in `1..31`.
 const rotlSL = (h, l, s) => (l << s) | (h >>> (32 - s));
-// Left rotate for Shift in (32, 64), NOTE: 32 is special case.
+// High 32-bit half of a 64-bit left rotate, valid for `s` in `33..63`; `32` uses `rotr32*`.
 const rotlBH = (h, l, s) => (l << (s - 32)) | (h >>> (64 - s));
+// Low 32-bit half of a 64-bit left rotate, valid for `s` in `33..63`; `32` uses `rotr32*`.
 const rotlBL = (h, l, s) => (h << (s - 32)) | (l >>> (64 - s));
 
 /**
- * Utilities for hex, bytes, CSPRNG.
- * @module
+ * Checks if something is Uint8Array. Be careful: nodejs Buffer will return true.
+ * @param a - value to test
+ * @returns `true` when the value is a Uint8Array-compatible view.
+ * @example
+ * Check whether a value is a Uint8Array-compatible view.
+ * ```ts
+ * isBytes(new Uint8Array([1, 2, 3]));
+ * ```
  */
-/*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-/** Checks if something is Uint8Array. Be careful: nodejs Buffer will return true. */
 function isBytes(a) {
-    return a instanceof Uint8Array || (ArrayBuffer.isView(a) && a.constructor.name === 'Uint8Array');
+    // Plain `instanceof Uint8Array` is too strict for some Buffer / proxy / cross-realm cases.
+    // The fallback still requires a real ArrayBuffer view, so plain
+    // JSON-deserialized `{ constructor: ... }` spoofing is rejected, and
+    // `BYTES_PER_ELEMENT === 1` keeps the fallback on byte-oriented views.
+    return (a instanceof Uint8Array ||
+        (ArrayBuffer.isView(a) &&
+            a.constructor.name === 'Uint8Array' &&
+            'BYTES_PER_ELEMENT' in a &&
+            a.BYTES_PER_ELEMENT === 1));
 }
-/** Asserts something is positive integer. */
+/**
+ * Asserts something is a non-negative integer.
+ * @param n - number to validate
+ * @param title - label included in thrown errors
+ * @throws On wrong argument types. {@link TypeError}
+ * @throws On wrong argument ranges or values. {@link RangeError}
+ * @example
+ * Validate a non-negative integer option.
+ * ```ts
+ * anumber(32, 'length');
+ * ```
+ */
 function anumber(n, title = '') {
+    if (typeof n !== 'number') {
+        const prefix = title && `"${title}" `;
+        throw new TypeError(`${prefix}expected number, got ${typeof n}`);
+    }
     if (!Number.isSafeInteger(n) || n < 0) {
         const prefix = title && `"${title}" `;
-        throw new Error(`${prefix}expected integer >= 0, got ${n}`);
+        throw new RangeError(`${prefix}expected integer >= 0, got ${n}`);
     }
 }
-/** Asserts something is Uint8Array. */
+/**
+ * Asserts something is Uint8Array.
+ * @param value - value to validate
+ * @param length - optional exact length constraint
+ * @param title - label included in thrown errors
+ * @returns The validated byte array.
+ * @throws On wrong argument types. {@link TypeError}
+ * @throws On wrong argument ranges or values. {@link RangeError}
+ * @example
+ * Validate that a value is a byte array.
+ * ```ts
+ * abytes(new Uint8Array([1, 2, 3]));
+ * ```
+ */
 function abytes(value, length, title = '') {
     const bytes = isBytes(value);
     const len = value?.length;
@@ -118,51 +159,130 @@ function abytes(value, length, title = '') {
         const prefix = title && `"${title}" `;
         const ofLen = '';
         const got = bytes ? `length=${len}` : `type=${typeof value}`;
-        throw new Error(prefix + 'expected Uint8Array' + ofLen + ', got ' + got);
+        const message = prefix + 'expected Uint8Array' + ofLen + ', got ' + got;
+        if (!bytes)
+            throw new TypeError(message);
+        throw new RangeError(message);
     }
     return value;
 }
-/** Asserts a hash instance has not been destroyed / finished */
+/**
+ * Asserts a hash instance has not been destroyed or finished.
+ * @param instance - hash instance to validate
+ * @param checkFinished - whether to reject finalized instances
+ * @throws If the hash instance has already been destroyed or finalized. {@link Error}
+ * @example
+ * Validate that a hash instance is still usable.
+ * ```ts
+ * import { aexists } from '@noble/hashes/utils.js';
+ * import { sha256 } from '@noble/hashes/sha2.js';
+ * const hash = sha256.create();
+ * aexists(hash);
+ * ```
+ */
 function aexists(instance, checkFinished = true) {
     if (instance.destroyed)
         throw new Error('Hash instance has been destroyed');
     if (checkFinished && instance.finished)
         throw new Error('Hash#digest() has already been called');
 }
-/** Asserts output is properly-sized byte array */
+/**
+ * Asserts output is a sufficiently-sized byte array.
+ * @param out - destination buffer
+ * @param instance - hash instance providing output length
+ * Oversized buffers are allowed; downstream code only promises to fill the first `outputLen` bytes.
+ * @throws On wrong argument types. {@link TypeError}
+ * @throws On wrong argument ranges or values. {@link RangeError}
+ * @example
+ * Validate a caller-provided digest buffer.
+ * ```ts
+ * import { aoutput } from '@noble/hashes/utils.js';
+ * import { sha256 } from '@noble/hashes/sha2.js';
+ * const hash = sha256.create();
+ * aoutput(new Uint8Array(hash.outputLen), hash);
+ * ```
+ */
 function aoutput(out, instance) {
     abytes(out, undefined, 'digestInto() output');
     const min = instance.outputLen;
     if (out.length < min) {
-        throw new Error('"digestInto() output" expected to be of length >=' + min);
+        throw new RangeError('"digestInto() output" expected to be of length >=' + min);
     }
 }
-/** Cast u8 / u16 / u32 to u32. */
+/**
+ * Casts a typed array view to Uint32Array.
+ * `arr.byteOffset` must already be 4-byte aligned or the platform
+ * Uint32Array constructor will throw.
+ * @param arr - source typed array
+ * @returns Uint32Array view over the same buffer.
+ * @example
+ * Reinterpret a byte array as 32-bit words.
+ * ```ts
+ * u32(new Uint8Array(8));
+ * ```
+ */
 function u32(arr) {
     return new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
 }
-/** Zeroize a byte array. Warning: JS provides no guarantees. */
+/**
+ * Zeroizes typed arrays in place. Warning: JS provides no guarantees.
+ * @param arrays - arrays to overwrite with zeros
+ * @example
+ * Zeroize sensitive buffers in place.
+ * ```ts
+ * clean(new Uint8Array([1, 2, 3]));
+ * ```
+ */
 function clean(...arrays) {
     for (let i = 0; i < arrays.length; i++) {
         arrays[i].fill(0);
     }
 }
-/** Is current platform little-endian? Most are. Big-Endian platform: IBM */
+/** Whether the current platform is little-endian. */
 const isLE = /* @__PURE__ */ (() => new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44)();
-/** The byte swap operation for uint32 */
+/**
+ * Byte-swap operation for uint32 values.
+ * @param word - source word
+ * @returns Word with reversed byte order.
+ * @example
+ * Reverse the byte order of a 32-bit word.
+ * ```ts
+ * byteSwap(0x11223344);
+ * ```
+ */
 function byteSwap(word) {
     return (((word << 24) & 0xff000000) |
         ((word << 8) & 0xff0000) |
         ((word >>> 8) & 0xff00) |
         ((word >>> 24) & 0xff));
 }
-/** In place byte swap for Uint32Array */
+/**
+ * Byte-swaps every word of a Uint32Array in place.
+ * @param arr - array to mutate
+ * @returns The same array after mutation; callers pass live state arrays here.
+ * @example
+ * Reverse the byte order of every word in place.
+ * ```ts
+ * byteSwap32(new Uint32Array([0x11223344]));
+ * ```
+ */
 function byteSwap32(arr) {
     for (let i = 0; i < arr.length; i++) {
         arr[i] = byteSwap(arr[i]);
     }
     return arr;
 }
+/**
+ * Conditionally byte-swaps a Uint32Array on big-endian platforms.
+ * @param u - array to normalize for host endianness
+ * @returns Original or byte-swapped array depending on platform endianness.
+ *   On big-endian runtimes this mutates `u` in place via `byteSwap32(...)`.
+ * @example
+ * Normalize a word array for host endianness.
+ * ```ts
+ * swap32IfBE(new Uint32Array([0x11223344]));
+ * ```
+ */
 const swap32IfBE = isLE
     ? (u) => u
     : byteSwap32;
@@ -183,42 +303,89 @@ function asciiToBase16(ch) {
 }
 /**
  * Convert hex string to byte array. Uses built-in function, when available.
- * @example hexToBytes('cafe0123') // Uint8Array.from([0xca, 0xfe, 0x01, 0x23])
+ * @param hex - hexadecimal string to decode
+ * @returns Decoded bytes.
+ * @throws On wrong argument types. {@link TypeError}
+ * @throws On wrong argument ranges or values. {@link RangeError}
+ * @example
+ * Decode lowercase hexadecimal into bytes.
+ * ```ts
+ * hexToBytes('cafe0123'); // Uint8Array.from([0xca, 0xfe, 0x01, 0x23])
+ * ```
  */
 function hexToBytes$1(hex) {
     if (typeof hex !== 'string')
-        throw new Error('hex string expected, got ' + typeof hex);
-    // @ts-ignore
-    if (hasHexBuiltin)
-        return Uint8Array.fromHex(hex);
+        throw new TypeError('hex string expected, got ' + typeof hex);
+    if (hasHexBuiltin) {
+        try {
+            return Uint8Array.fromHex(hex);
+        }
+        catch (error) {
+            if (error instanceof SyntaxError)
+                throw new RangeError(error.message);
+            throw error;
+        }
+    }
     const hl = hex.length;
     const al = hl / 2;
     if (hl % 2)
-        throw new Error('hex string expected, got unpadded hex of length ' + hl);
+        throw new RangeError('hex string expected, got unpadded hex of length ' + hl);
     const array = new Uint8Array(al);
     for (let ai = 0, hi = 0; ai < al; ai++, hi += 2) {
         const n1 = asciiToBase16(hex.charCodeAt(hi));
         const n2 = asciiToBase16(hex.charCodeAt(hi + 1));
         if (n1 === undefined || n2 === undefined) {
             const char = hex[hi] + hex[hi + 1];
-            throw new Error('hex string expected, got non-hex character "' + char + '" at index ' + hi);
+            throw new RangeError('hex string expected, got non-hex character "' + char + '" at index ' + hi);
         }
         array[ai] = n1 * 16 + n2; // multiply first octet, e.g. 'a3' => 10*16+3 => 160 + 3 => 163
     }
     return array;
 }
-/** Creates function with outputLen, blockLen, create properties from a class constructor. */
+/**
+ * Creates a callable hash function from a stateful class constructor.
+ * @param hashCons - hash constructor or factory
+ * @param info - optional metadata such as DER OID
+ * @returns Frozen callable hash wrapper with `.create()`.
+ *   Wrapper construction eagerly calls `hashCons(undefined)` once to read
+ *   `outputLen` / `blockLen`, so constructor side effects happen at module
+ *   init time.
+ * @example
+ * Wrap a stateful hash constructor into a callable helper.
+ * ```ts
+ * import { createHasher } from '@noble/hashes/utils.js';
+ * import { sha256 } from '@noble/hashes/sha2.js';
+ * const wrapped = createHasher(sha256.create, { oid: sha256.oid });
+ * wrapped(new Uint8Array([1]));
+ * ```
+ */
 function createHasher(hashCons, info = {}) {
-    const hashC = (msg, opts) => hashCons(opts).update(msg).digest();
+    const hashC = (msg, opts) => hashCons(opts)
+        .update(msg)
+        .digest();
     const tmp = hashCons(undefined);
     hashC.outputLen = tmp.outputLen;
     hashC.blockLen = tmp.blockLen;
+    hashC.canXOF = tmp.canXOF;
     hashC.create = (opts) => hashCons(opts);
     Object.assign(hashC, info);
     return Object.freeze(hashC);
 }
-/** Creates OID opts for NIST hashes, with prefix 06 09 60 86 48 01 65 03 04 02. */
+/**
+ * Creates OID metadata for NIST hashes with prefix `06 09 60 86 48 01 65 03 04 02`.
+ * @param suffix - final OID byte for the selected hash.
+ *   The helper accepts any byte even though only the documented NIST hash
+ *   suffixes are meaningful downstream.
+ * @returns Object containing the DER-encoded OID.
+ * @example
+ * Build OID metadata for a NIST hash.
+ * ```ts
+ * oidNist(0x01);
+ * ```
+ */
 const oidNist = (suffix) => ({
+    // Current NIST hashAlgs suffixes used here fit in one DER subidentifier octet.
+    // Larger suffix values would need base-128 OID encoding and a different length byte.
     oid: Uint8Array.from([0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, suffix]),
 });
 
@@ -226,9 +393,11 @@ const oidNist = (suffix) => ({
  * SHA3 (keccak) hash function, based on a new "Sponge function" design.
  * Different from older hashes, the internal state is bigger than output size.
  *
- * Check out [FIPS-202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf),
- * [Website](https://keccak.team/keccak.html),
- * [the differences between SHA-3 and Keccak](https://crypto.stackexchange.com/questions/15727/what-are-the-key-differences-between-the-draft-sha-3-standard-and-the-keccak-sub).
+ * Check out
+ * {@link https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf | FIPS-202},
+ * {@link https://keccak.team/keccak.html | Website}, and
+ * {@link https://crypto.stackexchange.com/q/15727 | the differences between
+ * SHA-3 and Keccak}.
  *
  * Check out `sha3-addons` module for cSHAKE, k12, and others.
  * @module
@@ -241,6 +410,8 @@ const _1n = BigInt(1);
 const _2n = BigInt(2);
 const _7n = BigInt(7);
 const _256n = BigInt(256);
+// FIPS 202 Algorithm 5 rc(): when the outgoing bit is 1, the 8-bit LFSR xors
+// taps 0, 4, 5, and 6, which compresses to the feedback mask `0x71`.
 const _0x71n = BigInt(0x71);
 const SHA3_PI = [];
 const SHA3_ROTL = [];
@@ -261,13 +432,31 @@ for (let round = 0, R = _1n, x = 1, y = 0; round < 24; round++) {
     _SHA3_IOTA.push(t);
 }
 const IOTAS = split(_SHA3_IOTA, true);
+// `split(..., true)` keeps the local little-endian lane-word layout used by
+// `state32`, so these `H` / `L` tables follow the file's first-word /
+// second-word lane slots rather than `_u64.ts`'s usual high/low naming.
 const SHA3_IOTA_H = IOTAS[0];
 const SHA3_IOTA_L = IOTAS[1];
 // Left rotation (without 0, 32, 64)
 const rotlH = (h, l, s) => (s > 32 ? rotlBH(h, l, s) : rotlSH(h, l, s));
 const rotlL = (h, l, s) => (s > 32 ? rotlBL(h, l, s) : rotlSL(h, l, s));
-/** `keccakf1600` internal function, additionally allows to adjust round count. */
+/**
+ * `keccakf1600` internal permutation, additionally allows adjusting the round count.
+ * @param s - 5x5 Keccak state encoded as 25 lanes split into 50 uint32 words
+ *   in this file's local little-endian lane-word order
+ * @param rounds - number of rounds to execute
+ * @throws If `rounds` is outside the supported `1..24` range. {@link Error}
+ * @example
+ * Permute a Keccak state with the default 24 rounds.
+ * ```ts
+ * keccakP(new Uint32Array(50));
+ * ```
+ */
 function keccakP(s, rounds = 24) {
+    anumber(rounds, 'rounds');
+    // This implementation precomputes only the standard Keccak-f[1600] 24-round Iota table.
+    if (rounds < 1 || rounds > 24)
+        throw new Error('"rounds" expected integer 1..24');
     const B = new Uint32Array(5 * 2);
     // NOTE: all indices are x2 since we store state as u32 instead of u64 (bigints to slow in js)
     for (let round = 24 - rounds; round < 24; round++) {
@@ -300,11 +489,21 @@ function keccakP(s, rounds = 24) {
             s[PI + 1] = Tl;
         }
         // Chi (χ)
+        // Same as:
+        // for (let x = 0; x < 10; x++) B[x] = s[y + x];
+        // for (let x = 0; x < 10; x++) s[y + x] ^= ~B[(x + 2) % 10] & B[(x + 4) % 10];
         for (let y = 0; y < 50; y += 10) {
-            for (let x = 0; x < 10; x++)
-                B[x] = s[y + x];
-            for (let x = 0; x < 10; x++)
-                s[y + x] ^= ~B[(x + 2) % 10] & B[(x + 4) % 10];
+            const b0 = s[y], b1 = s[y + 1], b2 = s[y + 2], b3 = s[y + 3];
+            s[y] ^= ~s[y + 2] & s[y + 4];
+            s[y + 1] ^= ~s[y + 3] & s[y + 5];
+            s[y + 2] ^= ~s[y + 4] & s[y + 6];
+            s[y + 3] ^= ~s[y + 5] & s[y + 7];
+            s[y + 4] ^= ~s[y + 6] & s[y + 8];
+            s[y + 5] ^= ~s[y + 7] & s[y + 9];
+            s[y + 6] ^= ~s[y + 8] & b0;
+            s[y + 7] ^= ~s[y + 9] & b1;
+            s[y + 8] ^= ~b0 & b2;
+            s[y + 9] ^= ~b1 & b3;
         }
         // Iota (ι)
         s[0] ^= SHA3_IOTA_H[round];
@@ -312,7 +511,23 @@ function keccakP(s, rounds = 24) {
     }
     clean(B);
 }
-/** Keccak sponge function. */
+/**
+ * Keccak sponge function.
+ * @param blockLen - absorb/squeeze rate in bytes
+ * @param suffix - domain separation suffix byte
+ * @param outputLen - default digest length in bytes. This base sponge only
+ *   requires a non-negative integer; wrappers that need positive output
+ *   lengths must enforce that themselves.
+ * @param enableXOF - whether XOF output is allowed
+ * @param rounds - number of Keccak-f rounds
+ * @example
+ * Build a sponge state, absorb bytes, then finalize a digest.
+ * ```ts
+ * const hash = new Keccak(136, 0x06, 32);
+ * hash.update(new Uint8Array([1, 2, 3]));
+ * hash.digest();
+ * ```
+ */
 class Keccak {
     state;
     pos = 0;
@@ -323,6 +538,7 @@ class Keccak {
     blockLen;
     suffix;
     outputLen;
+    canXOF;
     enableXOF = false;
     rounds;
     // NOTE: we accept arguments in bytes instead of bits here.
@@ -331,6 +547,7 @@ class Keccak {
         this.suffix = suffix;
         this.outputLen = outputLen;
         this.enableXOF = enableXOF;
+        this.canXOF = enableXOF;
         this.rounds = rounds;
         // Can be passed from user as dkLen
         anumber(outputLen, 'outputLen');
@@ -370,8 +587,13 @@ class Keccak {
             return;
         this.finished = true;
         const { state, suffix, pos, blockLen } = this;
-        // Do the padding
+        // FIPS 202 appends the SHA3/SHAKE domain-separation suffix before pad10*1.
+        // These byte values already include the first padding bit, while the
+        // final `0x80` below supplies the closing `1` bit in the last rate byte.
         state[pos] ^= suffix;
+        // If that combined suffix lands in the last rate byte and already sets
+        // bit 7, absorb it first so the final pad10*1 bit can be xored into a
+        // fresh block.
         if ((suffix & 0x80) !== 0 && pos === blockLen - 1)
             this.keccak();
         state[blockLen - 1] ^= 0x80;
@@ -394,7 +616,9 @@ class Keccak {
         return out;
     }
     xofInto(out) {
-        // Sha3/Keccak usage with XOF is probably mistake, only SHAKE instances can do XOF
+        // Plain SHA3/Keccak usage with XOF is probably a mistake, but this base
+        // class is also reused by SHAKE/cSHAKE/KMAC/TupleHash/ParallelHash/
+        // TurboSHAKE/KangarooTwelve wrappers that intentionally enable XOF.
         if (!this.enableXOF)
             throw new Error('XOF is not possible for this instance');
         return this.writeInto(out);
@@ -407,12 +631,14 @@ class Keccak {
         aoutput(out, this);
         if (this.finished)
             throw new Error('digest() was already called');
-        this.writeInto(out);
+        // `aoutput(...)` allows oversized buffers; digestInto() must fill only the advertised digest.
+        this.writeInto(out.subarray(0, this.outputLen));
         this.destroy();
-        return out;
     }
     digest() {
-        return this.digestInto(new Uint8Array(this.outputLen));
+        const out = new Uint8Array(this.outputLen);
+        this.digestInto(out);
+        return out;
     }
     destroy() {
         this.destroyed = true;
@@ -421,6 +647,9 @@ class Keccak {
     _cloneInto(to) {
         const { blockLen, suffix, outputLen, rounds, enableXOF } = this;
         to ||= new Keccak(blockLen, suffix, outputLen, enableXOF, rounds);
+        // Reused destinations can come from a different rate/capacity variant, so clone must rewrite
+        // the sponge geometry as well as the state words.
+        to.blockLen = blockLen;
         to.state32.set(this.state32);
         to.pos = this.pos;
         to.posOut = this.posOut;
@@ -430,16 +659,39 @@ class Keccak {
         to.suffix = suffix;
         to.outputLen = outputLen;
         to.enableXOF = enableXOF;
+        // Clones must preserve the public capability bit too; `_KMAC` reuses this path and deep clone
+        // tests compare instance fields directly, so leaving `canXOF` behind makes the clone lie.
+        to.canXOF = this.canXOF;
         to.destroyed = this.destroyed;
         return to;
     }
 }
 const genShake = (suffix, blockLen, outputLen, info = {}) => createHasher((opts = {}) => new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true), info);
-/** SHAKE128 XOF with 128-bit security. */
+/**
+ * SHAKE128 XOF with 128-bit security and a 16-byte default output.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output-length override. See {@link ShakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHAKE128.
+ * ```ts
+ * shake128(new Uint8Array([97, 98, 99]), { dkLen: 32 });
+ * ```
+ */
 const shake128 = 
 /* @__PURE__ */
 genShake(0x1f, 168, 16, /* @__PURE__ */ oidNist(0x0b));
-/** SHAKE256 XOF with 256-bit security. */
+/**
+ * SHAKE256 XOF with 256-bit security and a 32-byte default output.
+ * @param msg - message bytes to hash
+ * @param opts - Optional output-length override. See {@link ShakeOpts}.
+ * @returns Digest bytes.
+ * @example
+ * Hash a message with SHAKE256.
+ * ```ts
+ * shake256(new Uint8Array([97, 98, 99]), { dkLen: 64 });
+ * ```
+ */
 const shake256 = 
 /* @__PURE__ */
 genShake(0x1f, 136, 32, /* @__PURE__ */ oidNist(0x0c));
