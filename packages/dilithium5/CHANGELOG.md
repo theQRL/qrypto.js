@@ -1,3 +1,9 @@
+## @theqrl/dilithium5 [1.2.1](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.2.0...@theqrl/dilithium5@1.2.1) (2026-05-20)
+
+### Bug Fixes
+
+* dependency update ([b5e6ebd](https://github.com/theQRL/qrypto.js/commit/b5e6ebd101ce9581aaaad329a28ddd5dde4c8d8e))
+
 ## @theqrl/dilithium5 [1.2.0](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.1.5...@theqrl/dilithium5@1.2.0) (2026-05-19)
 
 ### Features
