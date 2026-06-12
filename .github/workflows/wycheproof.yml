@@ -14,6 +14,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Pinned to an explicit upstream commit so vector changes (or upstream
+# compromise) cannot silently alter what "verification passed" means.
+# Bump procedure: CONTRIBUTING.md "Updating pinned verification upstreams".
+env:
+  WYCHEPROOF_PIN: 6d7cccd0fcb1917368579adeeac10fe802f1b521 # 2026-06-06
+
 jobs:
   mldsa87-wycheproof:
     name: ML-DSA-87 Wycheproof Verification
@@ -28,18 +34,18 @@ jobs:
         with:
           node-version: 22.x
 
-      - name: Clone C2SP/wycheproof (sparse)
+      - name: Clone C2SP/wycheproof (sparse, pinned)
         run: |
           # Sparse checkout of testvectors_v1/ only; the repo is large
-          # and we only need the ML-DSA JSON files. Tracking master gives
-          # us upstream additions automatically; pin to a specific commit
-          # here if a future vector starts producing legitimate failures.
-          git clone --depth 1 --no-checkout --filter=blob:none \
+          # and we only need the ML-DSA JSON files. Blobless clone +
+          # sparse checkout fetches only the blobs under the selected
+          # paths at the pinned commit.
+          git clone --no-checkout --filter=blob:none \
             https://github.com/C2SP/wycheproof.git /tmp/wycheproof
           cd /tmp/wycheproof
           git sparse-checkout init --cone
           git sparse-checkout set testvectors_v1
-          git checkout
+          git checkout "$WYCHEPROOF_PIN"
           echo "Wycheproof commit: $(git rev-parse --short HEAD)"
           echo "Wycheproof date:   $(git log -1 --format=%ci)"
           ls -la testvectors_v1/mldsa_87_*.json

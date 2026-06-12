@@ -136,6 +136,10 @@ export function packSig(sigP, c, z, h) {
     sig[sigOffset + i] = 0;
   }
 
+  // Invariant tripwires: h produced by polyVecKMakeHint is always binary
+  // with at most OMEGA set coefficients (the sign loop re-samples
+  // otherwise). A violation here means an internal regression upstream —
+  // fail loudly rather than emit a malformed signature.
   let k = 0;
   for (let i = 0; i < K; ++i) {
     for (let j = 0; j < N; ++j) {

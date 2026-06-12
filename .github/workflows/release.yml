@@ -37,6 +37,7 @@ jobs:
 
       - run: npm ci
       - run: npm run lint
+      - run: npm run check-shared
       - run: npm test
       - run: npm run build
       - name: Verify dist/ is up to date
@@ -244,6 +245,34 @@ jobs:
           while IFS=$'\t' read -r _package_path package_name package_version _release_tag tarball_name; do
             echo "Publishing ${package_name}@${package_version}"
             npm publish "dist/tarballs/${tarball_name}" --access public
+          done < dist/released-packages.tsv
+
+      # Tags and GitHub releases were already created by multi-semantic-release
+      # in the prepare job; if npm publishing silently failed we would otherwise
+      # ship a tag/release with no npm artifact (this exact failure orphaned
+      # wallet.js v6.2.0). Verify the registry actually serves every released
+      # version before attaching release assets. Recovery runbook: RELEASE.md
+      # "Recovering an orphaned release".
+      - name: Verify packages are live on npm
+        run: |
+          set -euo pipefail
+          while IFS=$'\t' read -r _package_path package_name package_version _release_tag _tarball_name; do
+            echo "Verifying ${package_name}@${package_version} on the npm registry"
+            ok=""
+            for attempt in 1 2 3 4 5 6 7 8 9 10; do
+              served="$(npm view "${package_name}@${package_version}" version 2>/dev/null || true)"
+              if [ "${served}" = "${package_version}" ]; then
+                echo "  confirmed on attempt ${attempt}"
+                ok=1
+                break
+              fi
+              echo "  not yet visible (attempt ${attempt}/10); retrying in 15s"
+              sleep 15
+            done
+            if [ -z "${ok}" ]; then
+              echo "::error::${package_name}@${package_version} was published but is not served by the registry after 10 attempts. Tag and GitHub release exist without an npm artifact — follow RELEASE.md 'Recovering an orphaned release'."
+              exit 1
+            fi
           done < dist/released-packages.tsv
 
       - name: Generate SBOM SPDX

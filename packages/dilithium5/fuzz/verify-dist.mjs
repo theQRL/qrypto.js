@@ -10,7 +10,7 @@ import {
   CryptoPublicKeyBytes,
   CryptoSecretKeyBytes,
   CryptoBytes,
-  CTILDEBytes,
+  SeedBytes,
   L,
   PolyZPackedBytes,
 } from '../src/const.js';
@@ -21,15 +21,16 @@ import { SaveBudget } from '../../../scripts/fuzz/engine/save-budget.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const budget = new SaveBudget();
 const CORPUS_DIR = join(__dirname, 'corpus', 'verify-dist', 'interesting');
-const HINT_REGION_OFFSET = CTILDEBytes + L * PolyZPackedBytes;
+// Dilithium5 (Round 3): the challenge c is SeedBytes (32) long.
+const HINT_REGION_OFFSET = SeedBytes + L * PolyZPackedBytes;
 
-const distMjs = await import('../dist/mjs/mldsa87.js');
+const distMjs = await import('../dist/mjs/dilithium5.js');
 const verifyMjs = distMjs.cryptoSignVerify;
 
 let verifyCjs = null;
 try {
   const require = createRequire(import.meta.url);
-  const distCjs = require('../dist/cjs/mldsa87.js');
+  const distCjs = require('../dist/cjs/dilithium5.js');
   verifyCjs = distCjs.cryptoSignVerify;
 } catch (e) {
   process.stderr.write(`[warn] CJS dist import failed, continuing with src vs ESM only: ${e.message}\n`);
@@ -63,18 +64,15 @@ function generateBaseTuple(seedVal) {
   const msgLen = prng.nextRange(1, 256);
   const msg = prng.nextBytes(msgLen);
 
-  const ctxLen = prng.nextRange(0, 32);
-  const ctx = ctxLen > 0 ? prng.nextBytes(ctxLen) : new Uint8Array(0);
-
   const sig = new Uint8Array(CryptoBytes);
-  cryptoSignSignature(sig, msg, sk, false, ctx);
+  cryptoSignSignature(sig, msg, sk, false);
 
-  return { pk, sk, sig, msg, ctx };
+  return { pk, sk, sig, msg };
 }
 
-function callVerify(fn, sig, msg, pk, ctx) {
+function callVerify(fn, sig, msg, pk) {
   try {
-    return { result: fn(sig, msg, pk, ctx), error: null };
+    return { result: fn(sig, msg, pk), error: null };
   } catch (e) {
     return { result: 'threw', error: e.message || String(e) };
   }
@@ -94,7 +92,6 @@ function saveCase(tag, data) {
     sig: toHex(data.sig),
     msg: toHex(data.msg),
     pk: toHex(data.pk),
-    ctx: toHex(data.ctx),
     srcResult: String(data.srcResult),
     mjsResult: String(data.mjsResult),
     cjsResult: data.cjsResult != null ? String(data.cjsResult) : null,
@@ -121,7 +118,7 @@ function main() {
   const opts = parseArgs();
   const rng = new PRNG(opts.seed);
 
-  process.stderr.write(`[*] verify-dist fuzzer starting\n`);
+  process.stderr.write(`[*] verify-dist fuzzer starting (dilithium5)\n`);
   process.stderr.write(`[*] seed=${opts.seed} iterations=${opts.iterations}\n`);
   process.stderr.write(`[*] CJS available: ${verifyCjs !== null}\n`);
 
@@ -138,14 +135,14 @@ function main() {
 
   for (let i = 0; i < corpus.length; i++) {
     const t = corpus[i];
-    const srcOk = verifySrc(t.sig, t.msg, t.pk, t.ctx);
-    const mjsOk = verifyMjs(t.sig, t.msg, t.pk, t.ctx);
+    const srcOk = verifySrc(t.sig, t.msg, t.pk);
+    const mjsOk = verifyMjs(t.sig, t.msg, t.pk);
     if (!srcOk || !mjsOk) {
       process.stderr.write(`[!] Base tuple ${i} does not verify (src=${srcOk} mjs=${mjsOk})\n`);
       process.exit(2);
     }
     if (verifyCjs) {
-      const cjsOk = verifyCjs(t.sig, t.msg, t.pk, t.ctx);
+      const cjsOk = verifyCjs(t.sig, t.msg, t.pk);
       if (!cjsOk) {
         process.stderr.write(`[!] Base tuple ${i} does not verify via CJS\n`);
         process.exit(2);
@@ -169,7 +166,7 @@ function main() {
   for (let iter = 0; iter < opts.iterations; iter++) {
     try {
       const roll = rng.nextFloat();
-      let mutSig, mutMsg, mutPk, mutCtx;
+      let mutSig, mutMsg, mutPk;
       let mutatedField;
       let mutationFamily;
       let baseIdx;
@@ -185,32 +182,25 @@ function main() {
         mutSig = cloneBytes(corpus[baseIdx].sig);
         mutPk = cloneBytes(corpus[otherIdx].pk);
         mutMsg = cloneBytes(corpus[otherIdx].msg);
-        mutCtx = cloneBytes(corpus[otherIdx].ctx);
       } else {
         baseIdx = rng.nextUint32() % corpus.length;
         const base = corpus[baseIdx];
         mutSig = cloneBytes(base.sig);
         mutPk = cloneBytes(base.pk);
         mutMsg = cloneBytes(base.msg);
-        mutCtx = cloneBytes(base.ctx);
 
-        if (roll < 0.50) {
+        if (roll < 0.55) {
           mutationFamily = 'sig-mutate';
           mutatedField = 'sig';
           mutSig = mutate(mutSig, rng, { hintOffset: HINT_REGION_OFFSET });
-        } else if (roll < 0.70) {
+        } else if (roll < 0.775) {
           mutationFamily = 'pk-mutate';
           mutatedField = 'pk';
           mutPk = mutate(mutPk, rng);
-        } else if (roll < 0.90) {
+        } else {
           mutationFamily = 'msg-mutate';
           mutatedField = 'msg';
           mutMsg = mutate(mutMsg, rng);
-        } else {
-          mutationFamily = 'ctx-mutate';
-          mutatedField = 'ctx';
-          const newLen = rng.nextRange(0, 256);
-          mutCtx = rng.nextBytes(newLen);
         }
       }
 
@@ -219,15 +209,13 @@ function main() {
         mutSig.length !== base.sig.length ||
         mutPk.length !== base.pk.length ||
         mutMsg.length !== base.msg.length ||
-        mutCtx.length !== base.ctx.length ||
         !arraysEqual(mutSig, base.sig) ||
         !arraysEqual(mutPk, base.pk) ||
-        !arraysEqual(mutMsg, base.msg) ||
-        !arraysEqual(mutCtx, base.ctx);
+        !arraysEqual(mutMsg, base.msg);
 
-      const src = callVerify(verifySrc, mutSig, mutMsg, mutPk, mutCtx);
-      const mjs = callVerify(verifyMjs, mutSig, mutMsg, mutPk, mutCtx);
-      const cjs = verifyCjs ? callVerify(verifyCjs, mutSig, mutMsg, mutPk, mutCtx) : null;
+      const src = callVerify(verifySrc, mutSig, mutMsg, mutPk);
+      const mjs = callVerify(verifyMjs, mutSig, mutMsg, mutPk);
+      const cjs = verifyCjs ? callVerify(verifyCjs, mutSig, mutMsg, mutPk) : null;
 
       const srcR = src.result;
       const mjsR = mjs.result;
@@ -240,7 +228,7 @@ function main() {
       const caseMeta = {
         seed: opts.seed, iteration: iter, mutationFamily, mutatedField,
         baseTupleIndex: baseIdx, bytesChanged,
-        sig: mutSig, msg: mutMsg, pk: mutPk, ctx: mutCtx,
+        sig: mutSig, msg: mutMsg, pk: mutPk,
         srcResult: srcR, mjsResult: mjsR, cjsResult: cjsR,
         srcError: src.error, mjsError: mjs.error, cjsError: cjs?.error ?? null,
       };

@@ -231,6 +231,8 @@ export function polyUniformGamma1(a, seed, nonce) {
 }
 
 export function polyChallenge(cP, seed) {
+  // Invariant tripwire: internal callers always pass a CTILDEBytes-long
+  // challenge hash; anything else indicates a regression in sign/verify.
   if (seed.length !== CTILDEBytes) throw new Error('invalid ctilde length');
 
   let b;

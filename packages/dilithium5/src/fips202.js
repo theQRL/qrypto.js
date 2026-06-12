@@ -13,7 +13,6 @@ import { Shake128Rate, Shake256Rate } from './const.js';
 export class KeccakState {
   constructor() {
     this.hasher = null;
-    this.finalized = false;
   }
 }
 
@@ -21,17 +20,18 @@ export class KeccakState {
 
 export function shake128Init(state) {
   state.hasher = nobleShake128.create({});
-  state.finalized = false;
 }
 
 export function shake128Absorb(state, input) {
   state.hasher.update(input);
 }
 
-export function shake128Finalize(state) {
-  // Mark as finalized - actual finalization happens on first xofInto call
-  state.finalized = true;
-}
+/**
+ * No-op retained for API parity with the C reference's absorb/finalize/squeeze
+ * flow: @noble/hashes finalizes the sponge automatically on the first
+ * xofInto() call, so there is no separate finalize step to perform.
+ */
+export function shake128Finalize() {}
 
 export function shake128SqueezeBlocks(out, outputOffset, nBlocks, state) {
   const len = nBlocks * Shake128Rate;
@@ -43,17 +43,18 @@ export function shake128SqueezeBlocks(out, outputOffset, nBlocks, state) {
 
 export function shake256Init(state) {
   state.hasher = nobleShake256.create({});
-  state.finalized = false;
 }
 
 export function shake256Absorb(state, input) {
   state.hasher.update(input);
 }
 
-export function shake256Finalize(state) {
-  // Mark as finalized - actual finalization happens on first xofInto call
-  state.finalized = true;
-}
+/**
+ * No-op retained for API parity with the C reference's absorb/finalize/squeeze
+ * flow: @noble/hashes finalizes the sponge automatically on the first
+ * xofInto() call, so there is no separate finalize step to perform.
+ */
+export function shake256Finalize() {}
 
 export function shake256SqueezeBlocks(out, outputOffset, nBlocks, state) {
   const len = nBlocks * Shake256Rate;

@@ -7,7 +7,7 @@ import {
   CryptoPublicKeyBytes,
   CryptoSecretKeyBytes,
   CryptoBytes,
-  CTILDEBytes,
+  SeedBytes,
   L,
   PolyZPackedBytes,
 } from '../src/const.js';
@@ -15,7 +15,8 @@ import { PRNG } from '../../../scripts/fuzz/engine/prng.mjs';
 import { mutate } from '../../../scripts/fuzz/engine/mutate-bytes.mjs';
 import { SaveBudget, classifyError } from '../../../scripts/fuzz/engine/save-budget.mjs';
 
-const HINT_REGION_OFFSET = CTILDEBytes + L * PolyZPackedBytes;
+// Dilithium5 (Round 3): the challenge c is SeedBytes (32) long, not CTILDEBytes.
+const HINT_REGION_OFFSET = SeedBytes + L * PolyZPackedBytes;
 
 const budget = new SaveBudget();
 
@@ -48,13 +49,10 @@ function generateBaseTuple(seedVal) {
   const msgLen = prng.nextRange(1, 256);
   const msg = prng.nextBytes(msgLen);
 
-  const ctxLen = prng.nextRange(0, 32);
-  const ctx = ctxLen > 0 ? prng.nextBytes(ctxLen) : new Uint8Array(0);
-
   const sig = new Uint8Array(CryptoBytes);
-  cryptoSignSignature(sig, msg, sk, false, ctx);
+  cryptoSignSignature(sig, msg, sk, false);
 
-  return { pk, sk, sig, msg, ctx };
+  return { pk, sk, sig, msg };
 }
 
 function cloneBytes(buf) {
@@ -66,7 +64,7 @@ function main() {
   const rng = new PRNG(opts.seed);
   const corpusDir = new URL('./corpus/verify/interesting/', import.meta.url).pathname;
 
-  process.stderr.write(`[*] verify-src fuzzer starting\n`);
+  process.stderr.write(`[*] verify-src fuzzer starting (dilithium5)\n`);
   process.stderr.write(`[*] seed=${opts.seed} iterations=${opts.iterations} timeout=${opts.timeoutMs}ms\n`);
   process.stderr.write(`[*] CryptoBytes=${CryptoBytes} CryptoPublicKeyBytes=${CryptoPublicKeyBytes}\n`);
   process.stderr.write(`[*] HINT_REGION_OFFSET=${HINT_REGION_OFFSET}\n`);
@@ -84,7 +82,7 @@ function main() {
 
   for (let i = 0; i < corpus.length; i++) {
     const t = corpus[i];
-    const ok = cryptoSignVerify(t.sig, t.msg, t.pk, t.ctx);
+    const ok = cryptoSignVerify(t.sig, t.msg, t.pk);
     if (!ok) {
       process.stderr.write(`[!] Base tuple ${i} does not verify — corpus is broken\n`);
       process.exit(1);
@@ -107,7 +105,6 @@ function main() {
       sig: toHex(data.sig),
       msg: toHex(data.msg),
       pk: toHex(data.pk),
-      ctx: toHex(data.ctx),
       result: data.result,
       error: data.error || null,
     };
@@ -122,13 +119,13 @@ function main() {
   for (let iter = 0; iter < opts.iterations; iter++) {
     try {
       const roll = rng.nextFloat();
-      let mutSig, mutMsg, mutPk, mutCtx;
+      let mutSig, mutMsg, mutPk;
       let mutatedField;
       let mutationFamily;
       let baseIdx;
 
       if (roll < 0.10) {
-        // Cross-splice: sig from one tuple, pk/msg/ctx from another
+        // Cross-splice: sig from one tuple, pk/msg from another
         mutationFamily = 'cross-splice';
         mutatedField = 'cross';
         baseIdx = rng.nextUint32() % corpus.length;
@@ -139,36 +136,28 @@ function main() {
         mutSig = cloneBytes(corpus[baseIdx].sig);
         mutPk = cloneBytes(corpus[otherIdx].pk);
         mutMsg = cloneBytes(corpus[otherIdx].msg);
-        mutCtx = cloneBytes(corpus[otherIdx].ctx);
       } else {
         baseIdx = rng.nextUint32() % corpus.length;
         const base = corpus[baseIdx];
         mutSig = cloneBytes(base.sig);
         mutPk = cloneBytes(base.pk);
         mutMsg = cloneBytes(base.msg);
-        mutCtx = cloneBytes(base.ctx);
 
-        if (roll < 0.50) {
-          // Mutate sig (40%)
+        if (roll < 0.55) {
+          // Mutate sig (45%)
           mutationFamily = 'sig-mutate';
           mutatedField = 'sig';
           mutSig = mutate(mutSig, rng, { hintOffset: HINT_REGION_OFFSET });
-        } else if (roll < 0.70) {
-          // Mutate pk (20%)
+        } else if (roll < 0.775) {
+          // Mutate pk (22.5%)
           mutationFamily = 'pk-mutate';
           mutatedField = 'pk';
           mutPk = mutate(mutPk, rng);
-        } else if (roll < 0.90) {
-          // Mutate msg (20%)
+        } else {
+          // Mutate msg (22.5%)
           mutationFamily = 'msg-mutate';
           mutatedField = 'msg';
           mutMsg = mutate(mutMsg, rng);
-        } else {
-          // Mutate ctx (10%)
-          mutationFamily = 'ctx-mutate';
-          mutatedField = 'ctx';
-          const newLen = rng.nextRange(0, 256);
-          mutCtx = rng.nextBytes(newLen);
         }
       }
 
@@ -178,7 +167,7 @@ function main() {
       const t0 = performance.now();
 
       try {
-        result = cryptoSignVerify(mutSig, mutMsg, mutPk, mutCtx);
+        result = cryptoSignVerify(mutSig, mutMsg, mutPk);
       } catch (e) {
         result = 'threw';
         error = e.message || String(e);
@@ -194,11 +183,9 @@ function main() {
         mutSig.length !== base.sig.length ||
         mutPk.length !== base.pk.length ||
         mutMsg.length !== base.msg.length ||
-        mutCtx.length !== base.ctx.length ||
         !mutSig.every((b, i) => b === base.sig[i]) ||
         !mutPk.every((b, i) => b === base.pk[i]) ||
-        !mutMsg.every((b, i) => b === base.msg[i]) ||
-        !mutCtx.every((b, i) => b === base.ctx[i]);
+        !mutMsg.every((b, i) => b === base.msg[i]);
 
       if (result === true && bytesChanged) {
         falseAcceptCount++;
@@ -216,7 +203,6 @@ function main() {
             sig: mutSig,
             msg: mutMsg,
             pk: mutPk,
-            ctx: mutCtx,
             result: 'FALSE_ACCEPT',
             error: null,
           });
@@ -236,7 +222,6 @@ function main() {
             sig: mutSig,
             msg: mutMsg,
             pk: mutPk,
-            ctx: mutCtx,
             result: 'THREW',
             error,
           });
@@ -253,7 +238,6 @@ function main() {
             sig: mutSig,
             msg: mutMsg,
             pk: mutPk,
-            ctx: mutCtx,
             result: 'TIMEOUT',
             error: `elapsed ${elapsed.toFixed(1)}ms > ${opts.timeoutMs}ms`,
           });
@@ -266,7 +250,7 @@ function main() {
         const ct = corpus[checkIdx];
         let sanity;
         try {
-          sanity = cryptoSignVerify(ct.sig, ct.msg, ct.pk, ct.ctx);
+          sanity = cryptoSignVerify(ct.sig, ct.msg, ct.pk);
         } catch (e) {
           process.stderr.write(`[!] Sanity check THREW for base tuple ${checkIdx}: ${e.message}\n`);
           sanity = false;

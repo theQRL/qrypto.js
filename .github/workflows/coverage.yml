@@ -29,6 +29,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run report-coverage
+      # Push uploads gate hard (fail_ci_if_error: true); PR uploads are
+      # best-effort so a Codecov hiccup can't block a PR — the coverage
+      # status checks themselves still come from codecov.yml targets.
       - name: Upload dilithium5 coverage to Codecov
         if: github.repository == 'theQRL/qrypto.js' && github.event_name == 'push'
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
@@ -45,3 +48,19 @@ jobs:
           files: ./packages/mldsa87/coverage.lcov
           flags: mldsa87
           fail_ci_if_error: true
+      - name: Upload dilithium5 coverage to Codecov (PR)
+        if: github.repository == 'theQRL/qrypto.js' && github.event_name == 'pull_request'
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/dilithium5/coverage.lcov
+          flags: dilithium5
+          fail_ci_if_error: false
+      - name: Upload mldsa87 coverage to Codecov (PR)
+        if: github.repository == 'theQRL/qrypto.js' && github.event_name == 'pull_request'
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/mldsa87/coverage.lcov
+          flags: mldsa87
+          fail_ci_if_error: false

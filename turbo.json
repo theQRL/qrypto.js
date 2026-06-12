@@ -1,12 +1,23 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "build": {},
-    "test": {},
+    "build": {
+      "inputs": ["src/**", "rollup.config.js", "fixup"],
+      "outputs": ["dist/**"]
+    },
+    "test": {
+      "dependsOn": ["build"]
+    },
     "lint": {},
     "lint-check": {},
-    "coverage": {},
-    "report-coverage": {},
-    "test:browser": {}
+    "coverage": {
+      "dependsOn": ["build"]
+    },
+    "report-coverage": {
+      "dependsOn": ["build"]
+    },
+    "test:browser": {
+      "dependsOn": ["build"]
+    }
   }
 }

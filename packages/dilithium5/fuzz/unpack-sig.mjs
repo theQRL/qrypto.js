@@ -8,12 +8,16 @@ import { cryptoSignKeypair, cryptoSignSignature, cryptoSignVerify } from '../src
 import { PolyVecK, PolyVecL } from '../src/polyvec.js';
 import {
   K, L, N, OMEGA, SeedBytes,
-  CTILDEBytes, PolyZPackedBytes, PolyVecHPackedBytes,
+  PolyZPackedBytes, PolyVecHPackedBytes,
   CryptoPublicKeyBytes, CryptoSecretKeyBytes, CryptoBytes,
 } from '../src/const.js';
 import { PRNG } from '../../../scripts/fuzz/engine/prng.mjs';
 import { mutate } from '../../../scripts/fuzz/engine/mutate-bytes.mjs';
 import { SaveBudget, classifyError } from '../../../scripts/fuzz/engine/save-budget.mjs';
+
+// Dilithium5 (Round 3): the challenge c in the signature is SeedBytes (32)
+// long — there is no separate CTILDEBytes constant in this parameter set.
+const CHALLENGE_BYTES = SeedBytes;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,7 +38,7 @@ const SEED = cliArg('--seed', Date.now());
 const ITERATIONS = cliArg('--iterations', 100_000);
 const PER_ITER_TIMEOUT_MS = cliArg('--timeout-ms', 5000);
 
-const hintOffset = CTILDEBytes + L * PolyZPackedBytes;
+const hintOffset = CHALLENGE_BYTES + L * PolyZPackedBytes;
 const SIG_LEN = CryptoBytes;
 
 const SAVE_DIR = path.join(__dirname, 'corpus', 'parser', 'interesting');
@@ -85,10 +89,9 @@ function generateCorpus(count, masterSeed) {
     const msg = corpusPrng.nextBytes(msgLen);
 
     const sig = new Uint8Array(CryptoBytes);
-    const ctx = new Uint8Array(0);
-    cryptoSignSignature(sig, msg, sk, false, ctx);
+    cryptoSignSignature(sig, msg, sk, false);
 
-    corpus.push({ pk, sk, msg, ctx, sig: new Uint8Array(sig), tupleIdx: i });
+    corpus.push({ pk, sk, msg, sig: new Uint8Array(sig), tupleIdx: i });
   }
   return corpus;
 }
@@ -105,7 +108,7 @@ function mutateChallengeRegion(buf, prng) {
   const out = new Uint8Array(buf);
   const flips = prng.nextRange(1, 8);
   for (let i = 0; i < flips; i++) {
-    const pos = prng.nextUint32() % CTILDEBytes;
+    const pos = prng.nextUint32() % CHALLENGE_BYTES;
     out[pos] ^= 1 << (prng.nextUint32() % 8);
   }
   return out;
@@ -115,7 +118,7 @@ function mutateZRegion(buf, prng) {
   const out = new Uint8Array(buf);
   const flips = prng.nextRange(1, 12);
   for (let i = 0; i < flips; i++) {
-    const pos = CTILDEBytes + (prng.nextUint32() % (hintOffset - CTILDEBytes));
+    const pos = CHALLENGE_BYTES + (prng.nextUint32() % (hintOffset - CHALLENGE_BYTES));
     out[pos] ^= 1 << (prng.nextUint32() % 8);
   }
   return out;
@@ -218,9 +221,9 @@ function applyMutation(buf, prng) {
   return randomFullMutate(buf, prng);
 }
 
-console.log(`[unpack-sig fuzzer] mldsa87`);
+console.log(`[unpack-sig fuzzer] dilithium5`);
 console.log(`  seed=${SEED}  iterations=${ITERATIONS}`);
-console.log(`  SIG_LEN=${SIG_LEN}  hintOffset=${hintOffset}  CTILDEBytes=${CTILDEBytes}`);
+console.log(`  SIG_LEN=${SIG_LEN}  hintOffset=${hintOffset}  CHALLENGE_BYTES=${CHALLENGE_BYTES}`);
 console.log(`  K=${K}  L=${L}  OMEGA=${OMEGA}`);
 console.log(`  save_dir=${SAVE_DIR}`);
 console.log();
@@ -248,7 +251,7 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
   const entry = corpus[prng.nextUint32() % corpus.length];
   const mutated = applyMutation(entry.sig, prng);
 
-  const c = new Uint8Array(CTILDEBytes);
+  const c = new Uint8Array(CHALLENGE_BYTES);
   const z = new PolyVecL();
   const h = new PolyVecK();
 
@@ -320,7 +323,7 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
     const isIdentity = mutated.length === entry.sig.length && arraysEqual(mutated, entry.sig);
     if (!isIdentity) {
       try {
-        const accepted = cryptoSignVerify(mutated, entry.msg, entry.pk, entry.ctx);
+        const accepted = cryptoSignVerify(mutated, entry.msg, entry.pk);
         if (accepted) {
           stats.falseAcceptViaParser++;
           const diffCount = mutated.length === entry.sig.length
@@ -351,7 +354,7 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
   }
 
   if (iter % 2000 === 0) {
-    const c2 = new Uint8Array(CTILDEBytes);
+    const c2 = new Uint8Array(CHALLENGE_BYTES);
     const z2 = new PolyVecL();
     const h2 = new PolyVecK();
 

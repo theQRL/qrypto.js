@@ -48,7 +48,7 @@ import {
 } from './const.js';
 import { Poly, polyChallenge, polyNTT } from './poly.js';
 import { packPk, packSig, packSk, unpackPk, unpackSig, unpackSk } from './packing.js';
-import { zeroize } from './utils.js';
+import { zeroize, zeroizePolyVec } from './utils.js';
 
 /**
  * Convert hex string to Uint8Array with strict validation.
@@ -62,6 +62,8 @@ import { zeroize } from './utils.js';
  * @private
  */
 function hexToBytes(hex) {
+  // Unreachable via the public API: messageToBytes routes only strings here.
+  // Kept as defense-in-depth for any future direct internal caller.
   /* c8 ignore start */
   if (typeof hex !== 'string') {
     throw new Error('message must be a hex string');
@@ -111,13 +113,18 @@ function messageToBytes(message) {
  *   Pass null or undefined for random key generation.
  * @param {Uint8Array} pk - Output buffer for public key (must be CryptoPublicKeyBytes = 2592 bytes)
  * @param {Uint8Array} sk - Output buffer for secret key (must be CryptoSecretKeyBytes = 4896 bytes)
- * @returns {Uint8Array} The seed used for key generation (useful when passedSeed is null)
+ * @returns {Uint8Array} The seed used for key generation (useful when passedSeed is null).
+ *   **The returned seed is secret-key-equivalent**: anyone holding it can
+ *   regenerate the full keypair. Store it with the same care as `sk` and
+ *   `zeroize()` it as soon as it is no longer needed.
  * @throws {Error} If pk/sk buffers are null or wrong size, or if seed is wrong size
  *
  * @example
  * const pk = new Uint8Array(CryptoPublicKeyBytes);
  * const sk = new Uint8Array(CryptoSecretKeyBytes);
  * const seed = cryptoSignKeypair(null, pk, sk);
+ * // ... persist or use seed (it can regenerate sk!) ...
+ * zeroize(seed);
  */
 export function cryptoSignKeypair(passedSeed, pk, sk) {
   try {
@@ -191,10 +198,10 @@ export function cryptoSignKeypair(passedSeed, pk, sk) {
     zeroize(seedBuf);
     zeroize(rhoPrime);
     zeroize(key);
-    for (let i = 0; i < L; i++) s1.vec[i].coeffs.fill(0);
-    for (let i = 0; i < K; i++) s2.vec[i].coeffs.fill(0);
-    if (s1hat) for (let i = 0; i < L; i++) s1hat.vec[i].coeffs.fill(0);
-    for (let i = 0; i < K; i++) t0.vec[i].coeffs.fill(0);
+    zeroizePolyVec(s1);
+    zeroizePolyVec(s2);
+    if (s1hat) zeroizePolyVec(s1hat);
+    zeroizePolyVec(t0);
   }
 }
 
@@ -259,7 +266,10 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
     const mu = shake256.create({}).update(tr).update(mBytes).xof(CRHBytes);
 
     if (randomizedSigning) {
-      rhoPrime = new Uint8Array(randomBytes(CRHBytes));
+      // randomBytes already returns a fresh Uint8Array; assign it directly so
+      // no unwiped intermediate copy is left behind (rhoPrime is zeroized in
+      // the finally block).
+      rhoPrime = randomBytes(CRHBytes);
     } else {
       rhoPrime = shake256.create({}).update(key).update(mu).xof(CRHBytes);
     }
@@ -286,7 +296,7 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
       const cHash = shake256
         .create({})
         .update(mu)
-        .update(sig.slice(0, K * PolyW1PackedBytes))
+        .update(sig.subarray(0, K * PolyW1PackedBytes))
         .xof(SeedBytes);
       sig.set(cHash);
 
@@ -313,6 +323,9 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
       polyVecKPointWisePolyMontgomery(h, cp, t0);
       polyVecKInvNTTToMont(h);
       polyVecKReduce(h);
+      // Statistically rare rejection (depends on key/challenge interaction);
+      // no deterministic trigger is known, so it is exercised by long fuzz
+      // campaigns rather than unit vectors.
       /* c8 ignore start */
       if (polyVecKChkNorm(h, GAMMA2) !== 0) {
         continue;
@@ -321,6 +334,7 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
 
       polyVecKAdd(w0, w0, h);
       const n = polyVecKMakeHint(h, w0, w1);
+      // Statistically rare rejection — same rationale as the ct0 check above.
       /* c8 ignore start */
       if (n > OMEGA) {
         continue;
@@ -333,10 +347,10 @@ export function cryptoSignSignature(sig, m, sk, randomizedSigning) {
   } finally {
     zeroize(key);
     zeroize(rhoPrime);
-    for (let i = 0; i < L; i++) s1.vec[i].coeffs.fill(0);
-    for (let i = 0; i < K; i++) s2.vec[i].coeffs.fill(0);
-    for (let i = 0; i < K; i++) t0.vec[i].coeffs.fill(0);
-    for (let i = 0; i < L; i++) y.vec[i].coeffs.fill(0);
+    zeroizePolyVec(s1);
+    zeroizePolyVec(s2);
+    zeroizePolyVec(t0);
+    zeroizePolyVec(y);
   }
 }
 
@@ -385,13 +399,14 @@ export function cryptoSignSignatureDeterministic(sig, m, sk) {
 export function cryptoSign(msg, sk, randomizedSigning) {
   const msgBytes = messageToBytes(msg);
 
+  // Place the message after the signature area. (The C reference uses a
+  // backwards copy because its sm/m buffers may alias; here they never do.)
   const sm = new Uint8Array(CryptoBytes + msgBytes.length);
-  const mLen = msgBytes.length;
-  for (let i = 0; i < mLen; ++i) {
-    sm[CryptoBytes + mLen - 1 - i] = msgBytes[mLen - 1 - i];
-  }
+  sm.set(msgBytes, CryptoBytes);
   const result = cryptoSignSignature(sm, msgBytes, sk, randomizedSigning);
 
+  // Unreachable: cryptoSignSignature returns 0 or throws — defensive
+  // tripwire in case a future change introduces a non-zero failure return.
   /* c8 ignore start */
   if (result !== 0) {
     throw new Error('failed to sign');

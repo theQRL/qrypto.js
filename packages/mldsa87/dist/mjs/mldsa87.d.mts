@@ -46,7 +46,9 @@ export const zetas: readonly number[];
  * @param seed - Optional 32-byte seed for deterministic key generation (null for random)
  * @param pk - Output buffer for public key (must be CryptoPublicKeyBytes length)
  * @param sk - Output buffer for secret key (must be CryptoSecretKeyBytes length)
- * @returns The seed used for key generation
+ * @returns The seed used for key generation. **Secret-key-equivalent**: anyone
+ *   holding it can regenerate the full keypair — store it with the same care
+ *   as `sk` and `zeroize()` it when no longer needed.
  * @throws Error if pk/sk buffers are wrong size or null
  */
 export function cryptoSignKeypair(
@@ -200,43 +202,67 @@ export function zeroize(buffer: Uint8Array): void;
  */
 export function isZero(buffer: Uint8Array): boolean;
 
+/**
+ * Zero the coefficient arrays of a polynomial vector (best-effort, see
+ * SECURITY.md). Centralizes the secret-wiping pattern used by signing paths.
+ */
+export function zeroizePolyVec(polyVec: PolyVecK | PolyVecL): void;
+
 // Internal classes (exported but primarily for internal use)
 
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export class Poly {
   coeffs: Int32Array;
   constructor();
   copy(poly: Poly): void;
 }
 
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export class PolyVecK {
   vec: Poly[];
   constructor();
 }
 
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export class PolyVecL {
   vec: Poly[];
   constructor();
   copy(polyVecL: PolyVecL): void;
 }
 
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export class KeccakState {
   constructor();
 }
 
 // Internal functions (exported but primarily for internal use)
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyNTT(a: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyInvNTTToMont(a: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyChallenge(c: Poly, seed: Uint8Array): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function ntt(a: Int32Array): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function invNTTToMont(a: Int32Array): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function montgomeryReduce(a: bigint): bigint;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function reduce32(a: number): number;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function cAddQ(a: number): number;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function decompose(a0: Int32Array, i: number, a: number): number;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function power2round(a0: Int32Array, i: number, a: number): number;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function makeHint(a0: number, a1: number): number;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function useHint(a: number, hint: number): number;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function packPk(pk: Uint8Array, rho: Uint8Array, t1: PolyVecK): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function packSk(
   sk: Uint8Array,
   rho: Uint8Array,
@@ -246,13 +272,16 @@ export function packSk(
   s1: PolyVecL,
   s2: PolyVecK
 ): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function packSig(
   sig: Uint8Array,
   c: Uint8Array,
   z: PolyVecL,
   h: PolyVecK
 ): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function unpackPk(rho: Uint8Array, t1: PolyVecK, pk: Uint8Array): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function unpackSk(
   rho: Uint8Array,
   tr: Uint8Array,
@@ -262,6 +291,7 @@ export function unpackSk(
   s2: PolyVecK,
   sk: Uint8Array
 ): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function unpackSig(
   c: Uint8Array,
   z: PolyVecL,
@@ -270,18 +300,26 @@ export function unpackSig(
 ): number;
 
 // FIPS 202 SHAKE primitives (low-level XOF interface, primarily internal)
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function shake128Init(state: KeccakState): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function shake128Absorb(state: KeccakState, input: Uint8Array): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function shake128Finalize(state: KeccakState): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function shake128SqueezeBlocks(
   out: Uint8Array,
   outputOffset: number,
   nBlocks: number,
   state: KeccakState
 ): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function shake256Init(state: KeccakState): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function shake256Absorb(state: KeccakState, input: Uint8Array): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function shake256Finalize(state: KeccakState): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function shake256SqueezeBlocks(
   out: Uint8Array,
   outputOffset: number,
@@ -290,11 +328,13 @@ export function shake256SqueezeBlocks(
 ): void;
 
 // ML-DSA-specific stream initializers
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function mldsaShake128StreamInit(
   state: KeccakState,
   seed: Uint8Array,
   nonce: number
 ): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function mldsaShake256StreamInit(
   state: KeccakState,
   seed: Uint8Array,
@@ -302,17 +342,29 @@ export function mldsaShake256StreamInit(
 ): void;
 
 // Polynomial operations (internal)
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyReduce(a: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyCAddQ(a: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyAdd(c: Poly, a: Poly, b: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polySub(c: Poly, a: Poly, b: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyShiftL(a: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyPointWiseMontgomery(c: Poly, a: Poly, b: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyPower2round(a1: Poly, a0: Poly, a: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyDecompose(a1: Poly, a0: Poly, a: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyMakeHint(h: Poly, a0: Poly, a1: Poly): number;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyUseHint(b: Poly, a: Poly, h: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyChkNorm(a: Poly, b: number): number;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function rejUniform(
   a: Int32Array,
   aOffset: number,
@@ -320,7 +372,9 @@ export function rejUniform(
   buf: Uint8Array,
   bufLen: number
 ): number;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyUniform(a: Poly, seed: Uint8Array, nonce: number): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function rejEta(
   a: Int32Array,
   aOffset: number,
@@ -328,58 +382,95 @@ export function rejEta(
   buf: Uint8Array,
   bufLen: number
 ): number;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyUniformEta(a: Poly, seed: Uint8Array, nonce: number): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyZUnpack(r: Poly, a: Uint8Array, aOffset: number): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyUniformGamma1(a: Poly, seed: Uint8Array, nonce: number): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyEtaPack(r: Uint8Array, rOffset: number, a: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyEtaUnpack(r: Poly, a: Uint8Array, aOffset: number): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyT1Pack(r: Uint8Array, rOffset: number, a: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyT1Unpack(r: Poly, a: Uint8Array, aOffset: number): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyT0Pack(r: Uint8Array, rOffset: number, a: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyT0Unpack(r: Poly, a: Uint8Array, aOffset: number): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyZPack(r: Uint8Array, rOffset: number, a: Poly): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyW1Pack(r: Uint8Array, rOffset: number, a: Poly): void;
 
 // Polynomial vector operations (internal)
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecMatrixExpand(mat: PolyVecL[], rho: Uint8Array): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecMatrixPointWiseMontgomery(
   t: PolyVecK,
   mat: PolyVecL[],
   v: PolyVecL
 ): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecLUniformEta(v: PolyVecL, seed: Uint8Array, nonce: number): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecLUniformGamma1(v: PolyVecL, seed: Uint8Array, nonce: number): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecLReduce(v: PolyVecL): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecLAdd(w: PolyVecL, u: PolyVecL, v: PolyVecL): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecLNTT(v: PolyVecL): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecLInvNTTToMont(v: PolyVecL): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecLPointWisePolyMontgomery(
   r: PolyVecL,
   a: Poly,
   v: PolyVecL
 ): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecLPointWiseAccMontgomery(
   w: Poly,
   u: PolyVecL,
   v: PolyVecL
 ): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecLChkNorm(v: PolyVecL, bound: number): number;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKUniformEta(v: PolyVecK, seed: Uint8Array, nonce: number): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKReduce(v: PolyVecK): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKCAddQ(v: PolyVecK): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKAdd(w: PolyVecK, u: PolyVecK, v: PolyVecK): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKSub(w: PolyVecK, u: PolyVecK, v: PolyVecK): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKShiftL(v: PolyVecK): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKNTT(v: PolyVecK): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKInvNTTToMont(v: PolyVecK): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKPointWisePolyMontgomery(
   r: PolyVecK,
   a: Poly,
   v: PolyVecK
 ): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKChkNorm(v: PolyVecK, bound: number): number;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKPower2round(v1: PolyVecK, v0: PolyVecK, v: PolyVecK): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKDecompose(v1: PolyVecK, v0: PolyVecK, v: PolyVecK): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKMakeHint(h: PolyVecK, v0: PolyVecK, v1: PolyVecK): number;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKUseHint(w: PolyVecK, u: PolyVecK, h: PolyVecK): void;
+/** @deprecated Internal API — not part of the stable documented surface; will move behind a subpath or be removed at the next major version. See CONTRIBUTING.md "Public API surface policy". */
 export function polyVecKPackW1(r: Uint8Array, w1: PolyVecK): void;

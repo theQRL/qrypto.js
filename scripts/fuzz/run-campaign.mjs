@@ -3,23 +3,40 @@
 import { fork } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mkdirSync, writeFileSync, createWriteStream } from 'node:fs';
+import { mkdirSync, writeFileSync, createWriteStream, existsSync, readdirSync, statSync, rmSync } from 'node:fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
 
 const HARNESSES = [
-  { name: 'verify-src',  script: 'packages/mldsa87/fuzz/verify-src.mjs' },
-  { name: 'open-src',    script: 'packages/mldsa87/fuzz/open-src.mjs' },
-  { name: 'unpack-sig',  script: 'packages/mldsa87/fuzz/unpack-sig.mjs' },
-  { name: 'verify-dist', script: 'packages/mldsa87/fuzz/verify-dist.mjs' },
+  { name: 'verify-src',     script: 'packages/mldsa87/fuzz/verify-src.mjs' },
+  { name: 'open-src',       script: 'packages/mldsa87/fuzz/open-src.mjs' },
+  { name: 'unpack-sig',     script: 'packages/mldsa87/fuzz/unpack-sig.mjs' },
+  { name: 'verify-dist',    script: 'packages/mldsa87/fuzz/verify-dist.mjs' },
+  { name: 'd5-verify-src',  script: 'packages/dilithium5/fuzz/verify-src.mjs' },
+  { name: 'd5-open-src',    script: 'packages/dilithium5/fuzz/open-src.mjs' },
+  { name: 'd5-unpack-sig',  script: 'packages/dilithium5/fuzz/unpack-sig.mjs' },
+  { name: 'd5-verify-dist', script: 'packages/dilithium5/fuzz/verify-dist.mjs' },
 ];
 
 const PROFILES = {
-  quick:   10_000,
-  nightly: 100_000,
-  deep:    1_000_000,
+  quick:  10_000, // per-push CI gate
+  weekly: 100_000, // scheduled Sunday run (fuzz-scheduled.yml)
+  deep:   1_000_000, // audit-level review only — run on demand, never scheduled
 };
+
+const CORPUS_DIRS = [
+  join(ROOT, 'packages', 'mldsa87', 'fuzz', 'corpus'),
+  join(ROOT, 'packages', 'dilithium5', 'fuzz', 'corpus'),
+];
+
+// Refuse to start when the accumulated corpus is suspiciously large — a past
+// campaign once left 400k+ files / 15 GB of expected-throw cases behind.
+// Harness-side save budgets now bound per-run growth; this guard catches
+// pre-existing accumulation. Override with --allow-large-corpus, or purge
+// with --clean-corpus.
+const CORPUS_MAX_FILES = 5_000;
+const CORPUS_MAX_BYTES = 512 * 1024 * 1024;
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -28,14 +45,71 @@ function parseArgs() {
     iterations: null,
     timeoutMs: null,
     profile: null,
+    cleanCorpus: false,
+    allowLargeCorpus: false,
   };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--seed' && i + 1 < args.length) opts.seed = Number(args[++i]);
     else if (args[i] === '--iterations' && i + 1 < args.length) opts.iterations = Number(args[++i]);
     else if (args[i] === '--timeout-ms' && i + 1 < args.length) opts.timeoutMs = Number(args[++i]);
     else if (args[i] === '--profile' && i + 1 < args.length) opts.profile = args[++i];
+    else if (args[i] === '--clean-corpus') opts.cleanCorpus = true;
+    else if (args[i] === '--allow-large-corpus') opts.allowLargeCorpus = true;
   }
   return opts;
+}
+
+function measureDir(dir) {
+  let files = 0;
+  let bytes = 0;
+  if (!existsSync(dir)) return { files, bytes };
+  const stack = [dir];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const full = join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(full);
+      } else {
+        files++;
+        try {
+          bytes += statSync(full).size;
+        } catch {
+          /* removed concurrently */
+        }
+      }
+    }
+  }
+  return { files, bytes };
+}
+
+function guardCorpusSize(opts) {
+  if (opts.cleanCorpus) {
+    for (const dir of CORPUS_DIRS) {
+      if (existsSync(dir)) {
+        rmSync(dir, { recursive: true, force: true });
+        console.log(`[corpus] cleaned ${dir}`);
+      }
+    }
+    return;
+  }
+  let files = 0;
+  let bytes = 0;
+  for (const dir of CORPUS_DIRS) {
+    const m = measureDir(dir);
+    files += m.files;
+    bytes += m.bytes;
+  }
+  if (files === 0) return;
+  const mb = (bytes / (1024 * 1024)).toFixed(1);
+  console.log(`[corpus] existing corpus: ${files} files, ${mb} MB`);
+  if ((files > CORPUS_MAX_FILES || bytes > CORPUS_MAX_BYTES) && !opts.allowLargeCorpus) {
+    console.error(
+      `[corpus] corpus exceeds limits (${CORPUS_MAX_FILES} files / ${CORPUS_MAX_BYTES / (1024 * 1024)} MB).\n` +
+        `[corpus] Re-run with --clean-corpus to purge it, or --allow-large-corpus to proceed anyway.`,
+    );
+    process.exit(3);
+  }
 }
 
 function resolveIterations(opts) {
@@ -58,6 +132,7 @@ function statusLabel(code) {
 }
 
 const opts = parseArgs();
+guardCorpusSize(opts);
 const iterations = resolveIterations(opts);
 
 const campaignTs = new Date().toISOString().replace(/[:.]/g, '-');

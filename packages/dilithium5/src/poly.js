@@ -231,6 +231,8 @@ export function polyUniformGamma1(a, seed, nonce) {
 }
 
 export function polyChallenge(cP, seed) {
+  // Invariant tripwire: internal callers always pass a SeedBytes-long
+  // challenge hash; anything else indicates a regression in sign/verify.
   if (seed.length !== SeedBytes) throw new Error('invalid seed length');
 
   let b;

@@ -4,22 +4,27 @@ ignore:
   - "**/browser-tests/**"
   - "**/*.d.ts"
 
+# Targets are 100% on purpose: everything is tested. Branches that are
+# unreachable (or practically unreachable) are excluded at the source with
+# `/* c8 ignore */` markers, each carrying an adjacent rationale comment —
+# see CONTRIBUTING.md "Coverage policy". The exclusions flow into the lcov
+# uploads, so codecov measures the same 100% the local c8 run does.
 coverage:
   status:
     project:
       dilithium5:
-        target: auto
+        target: 100%
         threshold: 0%
         flags:
           - dilithium5
       mldsa87:
-        target: auto
+        target: 100%
         threshold: 0%
         flags:
           - mldsa87
     patch:
       default:
-        target: 0%
+        target: 100%
 
 flags:
   dilithium5:

@@ -1,0 +1,80 @@
+name: Scheduled Fuzz
+
+# The per-push CI fuzz job runs the 10k-iteration quick profile only.
+# This workflow runs the 100k-iteration weekly profile every Sunday.
+# The 1M-iteration deep profile is deliberately NOT scheduled — it is
+# reserved for audit-level code review and can be launched on demand via
+# workflow_dispatch (or locally: scripts/fuzz/run-campaign.mjs --profile deep).
+on:
+  schedule:
+    - cron: '41 4 * * 0' # weekly profile, Sundays 04:41 UTC
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Fuzz profile (quick | weekly | deep)'
+        required: false
+        default: 'weekly'
+        type: choice
+        options:
+          - quick
+          - weekly
+          - deep
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  fuzz:
+    name: Fuzz campaign
+    runs-on: ubuntu-latest
+    # Deep (manual) is 1M iterations across all harnesses; leave generous
+    # headroom under the 360-minute job ceiling so artifacts still upload.
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22.x'
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Select profile
+        id: select
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PROFILE_INPUT: ${{ inputs.profile }}
+        run: |
+          set -euo pipefail
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            profile="${PROFILE_INPUT:-weekly}"
+          else
+            profile="weekly"
+          fi
+          echo "profile=${profile}" >> "$GITHUB_OUTPUT"
+          echo "Selected profile: ${profile}"
+
+      - name: Run fuzz campaign
+        env:
+          PROFILE: ${{ steps.select.outputs.profile }}
+          # run_id makes the campaign reproducible: the engine derives all
+          # mutations deterministically from the master seed.
+          MASTER_SEED: ${{ github.run_id }}
+        run: node scripts/fuzz/run-campaign.mjs --profile "$PROFILE" --seed "$MASTER_SEED"
+
+      - name: Upload campaign results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-results-${{ github.run_id }}
+          path: fuzz-results/
+          retention-days: 30
+          if-no-files-found: warn
