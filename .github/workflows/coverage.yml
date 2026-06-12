@@ -34,7 +34,7 @@ jobs:
       # status checks themselves still come from codecov.yml targets.
       - name: Upload dilithium5 coverage to Codecov
         if: github.repository == 'theQRL/qrypto.js' && github.event_name == 'push'
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./packages/dilithium5/coverage.lcov
@@ -42,7 +42,7 @@ jobs:
           fail_ci_if_error: true
       - name: Upload mldsa87 coverage to Codecov
         if: github.repository == 'theQRL/qrypto.js' && github.event_name == 'push'
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./packages/mldsa87/coverage.lcov
@@ -50,7 +50,7 @@ jobs:
           fail_ci_if_error: true
       - name: Upload dilithium5 coverage to Codecov (PR)
         if: github.repository == 'theQRL/qrypto.js' && github.event_name == 'pull_request'
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./packages/dilithium5/coverage.lcov
@@ -58,7 +58,7 @@ jobs:
           fail_ci_if_error: false
       - name: Upload mldsa87 coverage to Codecov (PR)
         if: github.repository == 'theQRL/qrypto.js' && github.event_name == 'pull_request'
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./packages/mldsa87/coverage.lcov
