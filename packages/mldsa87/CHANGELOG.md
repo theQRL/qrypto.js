@@ -1,3 +1,9 @@
+## @theqrl/mldsa87 [2.1.2](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.1.1...@theqrl/mldsa87@2.1.2) (2026-06-12)
+
+### Bug Fixes
+
+* harden CI verification, fuzzing, and release pipeline ([7986641](https://github.com/theQRL/qrypto.js/commit/79866414ea152302eaca4533756f2c5b3742cb1c))
+
 ## @theqrl/mldsa87 [2.1.1](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.1.0...@theqrl/mldsa87@2.1.1) (2026-05-20)
 
 ### Bug Fixes
