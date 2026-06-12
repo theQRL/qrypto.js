@@ -119,6 +119,15 @@ with a `/* c8 ignore */` marker and an **adjacent comment explaining why
 it cannot be exercised**. The exclusions flow into the lcov upload, so
 Codecov and the local `npm run coverage` measure the same 100%.
 
+The point of holding the number at exactly 100% is **drift visibility**:
+against a flat-100% baseline, any regression is unmissable and points
+directly at the new untested branch — which is why unreachable lines are
+excluded (with rationale) rather than letting the number sit below the
+ceiling. This repo is past the 100% milestone and the gate is locked in:
+**lowering it is a maintainer decision**, made as an explicit, reviewed
+change to `codecov.yml` with its reasoning in the PR description — never
+a silently failing status or a target edit buried in an unrelated diff.
+
 Accepted rationale categories (see existing sites in `sign.js` /
 `poly.js` for the house style):
 
