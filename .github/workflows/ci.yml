@@ -29,13 +29,15 @@ jobs:
           node-version: '22.x'
       - run: npm ci
       - run: npm run lint
+      - name: Shared-file sync (dilithium5 ↔ mldsa87)
+        run: npm run check-shared
 
   test:
     name: Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20.x, 22.x]
+        node-version: [20.x, 22.x, 24.x]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:

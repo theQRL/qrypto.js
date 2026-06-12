@@ -22,6 +22,9 @@ export function randomBytes(size) {
       cryptoObj.getRandomValues(out.subarray(i, Math.min(size, i + MAX_BYTES)));
     }
     if (size >= 16) {
+      // Invariant tripwire: a healthy CSPRNG never returns 16 leading zero
+      // bytes (p = 2^-128). All-zero output means the platform RNG is
+      // catastrophically broken — refuse to hand it to key generation.
       let acc = 0;
       for (let i = 0; i < 16; i++) acc |= out[i];
       if (acc === 0) throw new Error('getRandomValues returned all zeros');

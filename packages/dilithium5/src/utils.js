@@ -37,6 +37,22 @@ export function zeroize(buffer) {
 }
 
 /**
+ * Attempts to zero the coefficient arrays of a polynomial vector
+ * (PolyVecL/PolyVecK). Centralizes the secret-wiping pattern used by the
+ * signing paths so every sensitive PolyVec is cleared the same way.
+ *
+ * Same BEST-EFFORT caveats as zeroize() — see SECURITY.md.
+ *
+ * @param {{vec: {coeffs: Int32Array}[]}} polyVec - The polynomial vector to zero
+ * @returns {void}
+ */
+export function zeroizePolyVec(polyVec) {
+  for (let i = 0; i < polyVec.vec.length; i++) {
+    polyVec.vec[i].coeffs.fill(0);
+  }
+}
+
+/**
  * Checks if a buffer is all zeros.
  * Uses constant-time comparison to avoid timing leaks.
  *

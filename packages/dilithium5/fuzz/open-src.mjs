@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Fuzz harness for cryptoSignOpen() — mldsa87
+ * Fuzz harness for cryptoSignOpen() — dilithium5
  *
  * Generates mutated signed-message / public-key pairs and feeds them to
  * cryptoSignOpen(), looking for forgery accepts or unexpected crashes.
  *
  * Usage:
- *   node packages/mldsa87/fuzz/open-src.mjs [--seed N] [--iterations N] [--timeout-ms N]
+ *   node packages/dilithium5/fuzz/open-src.mjs [--seed N] [--iterations N] [--timeout-ms N]
  */
 
 import { cryptoSignKeypair, cryptoSign, cryptoSignOpen } from '../src/sign.js';
@@ -97,7 +97,7 @@ function arraysEqual(a, b) {
 const CORPUS_SIZE = 10;
 const corpus = [];
 
-console.log(`[open-src] seed=${SEED} iterations=${ITERATIONS} per-iter-timeout=${PER_ITER_TIMEOUT_MS}ms`);
+console.log(`[open-src] dilithium5 seed=${SEED} iterations=${ITERATIONS} per-iter-timeout=${PER_ITER_TIMEOUT_MS}ms`);
 console.log(`[open-src] CryptoBytes=${CryptoBytes} CryptoPublicKeyBytes=${CryptoPublicKeyBytes}`);
 console.log('[open-src] generating base corpus …');
 
@@ -109,16 +109,15 @@ for (let i = 0; i < CORPUS_SIZE; i++) {
 
   const msgLen = prng.nextRange(1, 128);
   const msg = prng.nextBytes(msgLen);
-  const ctx = new Uint8Array(0);
-  const sm = cryptoSign(msg, sk, false, ctx);
+  const sm = cryptoSign(msg, sk, false);
 
-  const opened = cryptoSignOpen(sm, pk, ctx);
+  const opened = cryptoSignOpen(sm, pk);
   if (!opened || !arraysEqual(opened, msg)) {
     console.error(`[open-src] FATAL: corpus sanity failed for tuple ${i}`);
     process.exit(1);
   }
 
-  corpus.push({ pk, sk, sm, msg, ctx });
+  corpus.push({ pk, sk, sm, msg });
 }
 
 console.log(`[open-src] corpus ready (${corpus.length} tuples)`);
@@ -225,7 +224,7 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
   let threwMsg = '';
   const t0 = performance.now();
   try {
-    result = cryptoSignOpen(mutSm, usePk, tuple.ctx);
+    result = cryptoSignOpen(mutSm, usePk);
   } catch (e) {
     threw = true;
     threwMsg = e?.message ?? String(e);
@@ -264,7 +263,7 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
 
   if (threw) {
     // cryptoSignOpen is total over malformed sm/pk (returns undefined) —
-    // any throw with the valid ctx used here is an unexpected finding.
+    // any throw here is an unexpected finding.
     if (budget.shouldSave('THROW', classifyError(threwMsg))) {
       const name = saveCase('throw', iter, { ...caseMeta, error: threwMsg });
       stats.interestingSaved++;
@@ -306,7 +305,7 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
     const check = prng.pick(corpus);
     stats.sanityChecks++;
     try {
-      const opened = cryptoSignOpen(check.sm, check.pk, check.ctx);
+      const opened = cryptoSignOpen(check.sm, check.pk);
       if (!opened || !arraysEqual(opened, check.msg)) {
         stats.sanityFails++;
         console.error(`[open-src] SANITY FAIL @${iter}: valid tuple did not open`);

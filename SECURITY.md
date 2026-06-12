@@ -108,16 +108,19 @@ All cryptographic functions validate input lengths and types to prevent:
 The `zeroize()` function is provided for clearing sensitive buffers:
 
 ```javascript
-import { zeroize } from '@aspect-build/qrypto-common';
+import { zeroize, cryptoSignKeypair, cryptoSign } from '@theqrl/mldsa87';
 
 const sk = new Uint8Array(CryptoSecretKeyBytes);
-cryptoSignKeypair(seed, pk, sk);
+const seed = cryptoSignKeypair(null, pk, sk);
 
 // Use the secret key...
-const signature = cryptoSign(message, sk);
+const signature = cryptoSign(message, sk, true, ctx);
 
-// Clear when done (best effort)
+// Clear when done (best effort) — including the returned seed:
+// it is SECRET-KEY-EQUIVALENT (anyone holding it can regenerate the
+// full keypair), so treat it with exactly the same care as sk.
 zeroize(sk);
+zeroize(seed);
 ```
 
 **Important**: Due to JavaScript limitations, this is a best-effort operation. There is no guarantee that:
@@ -130,9 +133,10 @@ zeroize(sk);
 ### For Application Developers
 
 1. **Minimize secret lifetime** - Generate keys only when needed, zero them as soon as possible
-2. **Avoid serialization** - Don't convert secrets to strings, JSON, or other formats
-3. **Don't log secrets** - Never log, print, or transmit secret key material
-4. **Use secure storage** - For persistent keys, consider:
+2. **Treat key-generation seeds as secret keys** - `cryptoSignKeypair()` returns the seed it used; that seed deterministically regenerates the entire keypair. Store it with the same care as `sk` and `zeroize()` it when no longer needed
+3. **Avoid serialization** - Don't convert secrets to strings, JSON, or other formats
+4. **Don't log secrets** - Never log, print, or transmit secret key material
+5. **Use secure storage** - For persistent keys, consider:
    - Hardware Security Modules (HSMs)
    - Operating system keychains
    - Encrypted storage with proper key management
@@ -186,9 +190,44 @@ Both are thin wrappers around the boolean-form API that signal caller intent at 
 If you discover a security vulnerability in qrypto.js:
 
 1. **Do not** open a public GitHub issue
-2. Contact the QRL security team privately
+2. Report it privately via [GitHub Private Vulnerability Reporting](https://github.com/theQRL/qrypto.js/security/advisories/new) (preferred), or email [security@theqrl.org](mailto:security@theqrl.org)
 3. Provide detailed reproduction steps
 4. Allow reasonable time for a fix before public disclosure
+
+---
+
+## Bundled Dependencies in the CJS Artifact
+
+Each published package ships two builds:
+
+- **ESM** (`dist/mjs/*.js`) resolves `@noble/hashes` from `node_modules`
+  as a normal dependency.
+- **CJS** (`dist/cjs/*.js`) **embeds a compiled copy** of `@noble/hashes`
+  in the bundle. This is forced by `@noble/hashes` being ESM-only — a CJS
+  `require()` cannot load it un-bundled.
+
+Implications for auditors and dependency scanners:
+
+- Tools that scan your application's `node_modules` or lockfile see the
+  `@noble/hashes` version used by the **ESM** build. The CJS bundle contains
+  the dependency code that was current when this package version was built;
+  it is not visible to `npm audit` in consuming applications.
+- CJS consumers receive `@noble/hashes` security fixes only via a new
+  `@theqrl/mldsa87` / `@theqrl/dilithium5` release, not via transitive
+  updates.
+- The chain extends one hop further: `@theqrl/wallet.js`'s CJS build embeds
+  this package in turn. A `@noble/hashes` fix therefore reaches wallet.js
+  CJS consumers only after **both** a qrypto.js release **and** a wallet.js
+  release.
+
+**Dependency-patch playbook (maintainers):** when `@noble/hashes` publishes
+a security fix, treat it as release-blocking: bump the dependency in both
+packages, run `npm run build` to regenerate `dist/`, and land it as a `fix:`
+commit so semantic-release publishes promptly. CI's `dist-check` job enforces
+that a dependency bump cannot merge without the rebuilt bundles — merging the
+bump is sufficient to guarantee the patched CJS artifacts ship with the
+resulting release. Then notify wallet.js maintainers to repeat the same
+playbook downstream.
 
 ---
 

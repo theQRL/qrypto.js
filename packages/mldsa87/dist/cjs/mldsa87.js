@@ -709,7 +709,6 @@ genShake(0x1f, 136, 32, /* @__PURE__ */ oidNist(0x0c));
 class KeccakState {
   constructor() {
     this.hasher = null;
-    this.finalized = false;
   }
 }
 
@@ -717,17 +716,18 @@ class KeccakState {
 
 function shake128Init(state) {
   state.hasher = shake128.create({});
-  state.finalized = false;
 }
 
 function shake128Absorb(state, input) {
   state.hasher.update(input);
 }
 
-function shake128Finalize(state) {
-  // Mark as finalized - actual finalization happens on first xofInto call
-  state.finalized = true;
-}
+/**
+ * No-op retained for API parity with the C reference's absorb/finalize/squeeze
+ * flow: @noble/hashes finalizes the sponge automatically on the first
+ * xofInto() call, so there is no separate finalize step to perform.
+ */
+function shake128Finalize() {}
 
 function shake128SqueezeBlocks(out, outputOffset, nBlocks, state) {
   const len = nBlocks * Shake128Rate;
@@ -739,17 +739,18 @@ function shake128SqueezeBlocks(out, outputOffset, nBlocks, state) {
 
 function shake256Init(state) {
   state.hasher = shake256.create({});
-  state.finalized = false;
 }
 
 function shake256Absorb(state, input) {
   state.hasher.update(input);
 }
 
-function shake256Finalize(state) {
-  // Mark as finalized - actual finalization happens on first xofInto call
-  state.finalized = true;
-}
+/**
+ * No-op retained for API parity with the C reference's absorb/finalize/squeeze
+ * flow: @noble/hashes finalizes the sponge automatically on the first
+ * xofInto() call, so there is no separate finalize step to perform.
+ */
+function shake256Finalize() {}
 
 function shake256SqueezeBlocks(out, outputOffset, nBlocks, state) {
   const len = nBlocks * Shake256Rate;
@@ -768,7 +769,6 @@ function mldsaShake128StreamInit(state, seed, nonce) {
   shake128Init(state);
   shake128Absorb(state, seed);
   shake128Absorb(state, t);
-  shake128Finalize(state);
 }
 
 function mldsaShake256StreamInit(state, seed, nonce) {
@@ -782,7 +782,6 @@ function mldsaShake256StreamInit(state, seed, nonce) {
   shake256Init(state);
   shake256Absorb(state, seed);
   shake256Absorb(state, t);
-  shake256Finalize(state);
 }
 
 function montgomeryReduce(a) {
@@ -1081,6 +1080,8 @@ function polyUniformGamma1(a, seed, nonce) {
 }
 
 function polyChallenge(cP, seed) {
+  // Invariant tripwire: internal callers always pass a CTILDEBytes-long
+  // challenge hash; anything else indicates a regression in sign/verify.
   if (seed.length !== CTILDEBytes) throw new Error('invalid ctilde length');
 
   let b;
@@ -1091,7 +1092,6 @@ function polyChallenge(cP, seed) {
   const state = new KeccakState();
   shake256Init(state);
   shake256Absorb(state, seed);
-  shake256Finalize(state);
   shake256SqueezeBlocks(buf, 0, 1, state);
 
   let signs = 0n;
@@ -1398,6 +1398,9 @@ function polyVecLChkNorm(v, bound) {
 
 function polyVecKUniformEta(v, seed, nonceP) {
   let nonce = nonceP;
+  if (seed.length !== CRHBytes) {
+    throw new Error(`invalid seed length ${seed.length} | Expected length ${CRHBytes}`);
+  }
   for (let i = 0; i < K; ++i) {
     polyUniformEta(v.vec[i], seed, nonce++);
   }
@@ -1604,6 +1607,10 @@ function packSig(sigP, ctilde, z, h) {
     sig[sigOffset + i] = 0;
   }
 
+  // Invariant tripwires: h produced by polyVecKMakeHint is always binary
+  // with at most OMEGA set coefficients (the sign loop re-samples
+  // otherwise). A violation here means an internal regression upstream —
+  // fail loudly rather than emit a malformed signature.
   let k = 0;
   for (let i = 0; i < K; ++i) {
     for (let j = 0; j < N; ++j) {
@@ -1692,6 +1699,9 @@ function randomBytes(size) {
       cryptoObj.getRandomValues(out.subarray(i, Math.min(size, i + MAX_BYTES)));
     }
     {
+      // Invariant tripwire: a healthy CSPRNG never returns 16 leading zero
+      // bytes (p = 2^-128). All-zero output means the platform RNG is
+      // catastrophically broken — refuse to hand it to key generation.
       let acc = 0;
       for (let i = 0; i < 16; i++) acc |= out[i];
       if (acc === 0) throw new Error('getRandomValues returned all zeros');
@@ -1741,6 +1751,22 @@ function zeroize(buffer) {
 }
 
 /**
+ * Attempts to zero the coefficient arrays of a polynomial vector
+ * (PolyVecL/PolyVecK). Centralizes the secret-wiping pattern used by the
+ * signing paths so every sensitive PolyVec is cleared the same way.
+ *
+ * Same BEST-EFFORT caveats as zeroize() — see SECURITY.md.
+ *
+ * @param {{vec: {coeffs: Int32Array}[]}} polyVec - The polynomial vector to zero
+ * @returns {void}
+ */
+function zeroizePolyVec(polyVec) {
+  for (let i = 0; i < polyVec.vec.length; i++) {
+    polyVec.vec[i].coeffs.fill(0);
+  }
+}
+
+/**
  * Checks if a buffer is all zeros.
  * Uses constant-time comparison to avoid timing leaks.
  *
@@ -1771,6 +1797,8 @@ function isZero(buffer) {
  * @private
  */
 function hexToBytes(hex) {
+  // Unreachable via the public API: messageToBytes routes only strings here.
+  // Kept as defense-in-depth for any future direct internal caller.
   /* c8 ignore start */
   if (typeof hex !== 'string') {
     throw new Error('message must be a hex string');
@@ -1823,13 +1851,18 @@ function messageToBytes(message) {
  *   Pass null or undefined for random key generation.
  * @param {Uint8Array} pk - Output buffer for public key (must be CryptoPublicKeyBytes = 2592 bytes)
  * @param {Uint8Array} sk - Output buffer for secret key (must be CryptoSecretKeyBytes = 4896 bytes)
- * @returns {Uint8Array} The seed used for key generation (useful when passedSeed is null)
+ * @returns {Uint8Array} The seed used for key generation (useful when passedSeed is null).
+ *   **The returned seed is secret-key-equivalent**: anyone holding it can
+ *   regenerate the full keypair. Store it with the same care as `sk` and
+ *   `zeroize()` it as soon as it is no longer needed.
  * @throws {Error} If pk/sk buffers are null or wrong size, or if seed is wrong size
  *
  * @example
  * const pk = new Uint8Array(CryptoPublicKeyBytes);
  * const sk = new Uint8Array(CryptoSecretKeyBytes);
  * const seed = cryptoSignKeypair(null, pk, sk);
+ * // ... persist or use seed (it can regenerate sk!) ...
+ * zeroize(seed);
  */
 function cryptoSignKeypair(passedSeed, pk, sk) {
   try {
@@ -1904,10 +1937,10 @@ function cryptoSignKeypair(passedSeed, pk, sk) {
     zeroize(seedBuf);
     zeroize(rhoPrime);
     zeroize(key);
-    for (let i = 0; i < L; i++) s1.vec[i].coeffs.fill(0);
-    for (let i = 0; i < K; i++) s2.vec[i].coeffs.fill(0);
-    if (s1hat) for (let i = 0; i < L; i++) s1hat.vec[i].coeffs.fill(0);
-    for (let i = 0; i < K; i++) t0.vec[i].coeffs.fill(0);
+    zeroizePolyVec(s1);
+    zeroizePolyVec(s2);
+    if (s1hat) zeroizePolyVec(s1hat);
+    zeroizePolyVec(t0);
   }
 }
 
@@ -2036,7 +2069,7 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx) {
       const ctilde = shake256
         .create({})
         .update(mu)
-        .update(sig.slice(0, K * PolyW1PackedBytes))
+        .update(sig.subarray(0, K * PolyW1PackedBytes))
         .xof(CTILDEBytes);
 
       polyChallenge(cp, ctilde);
@@ -2062,6 +2095,9 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx) {
       polyVecKPointWisePolyMontgomery(h, cp, t0);
       polyVecKInvNTTToMont(h);
       polyVecKReduce(h);
+      // Statistically rare rejection (depends on key/challenge interaction);
+      // no deterministic trigger is known, so it is exercised by long fuzz
+      // campaigns rather than unit vectors.
       /* c8 ignore start */
       if (polyVecKChkNorm(h, GAMMA2) !== 0) {
         continue;
@@ -2070,6 +2106,7 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx) {
 
       polyVecKAdd(w0, w0, h);
       const n = polyVecKMakeHint(h, w0, w1);
+      // Statistically rare rejection — same rationale as the ct0 check above.
       /* c8 ignore start */
       if (n > OMEGA) {
         continue;
@@ -2082,10 +2119,10 @@ function cryptoSignSignature(sig, m, sk, randomizedSigning, ctx) {
   } finally {
     zeroize(key);
     zeroize(rhoPrime);
-    for (let i = 0; i < L; i++) s1.vec[i].coeffs.fill(0);
-    for (let i = 0; i < K; i++) s2.vec[i].coeffs.fill(0);
-    for (let i = 0; i < K; i++) t0.vec[i].coeffs.fill(0);
-    for (let i = 0; i < L; i++) y.vec[i].coeffs.fill(0);
+    zeroizePolyVec(s1);
+    zeroizePolyVec(s2);
+    zeroizePolyVec(t0);
+    zeroizePolyVec(y);
   }
 }
 
@@ -2139,13 +2176,14 @@ function cryptoSign(msg, sk, randomizedSigning, ctx) {
   }
   const msgBytes = messageToBytes(msg);
 
+  // Place the message after the signature area. (The C reference uses a
+  // backwards copy because its sm/m buffers may alias; here they never do.)
   const sm = new Uint8Array(CryptoBytes + msgBytes.length);
-  const mLen = msgBytes.length;
-  for (let i = 0; i < mLen; ++i) {
-    sm[CryptoBytes + mLen - 1 - i] = msgBytes[mLen - 1 - i];
-  }
+  sm.set(msgBytes, CryptoBytes);
   const result = cryptoSignSignature(sm, msgBytes, sk, randomizedSigning, ctx);
 
+  // Unreachable: cryptoSignSignature returns 0 or throws — defensive
+  // tripwire in case a future change introduces a non-zero failure return.
   /* c8 ignore start */
   if (result !== 0) {
     throw new Error('failed to sign');
@@ -2489,4 +2527,5 @@ exports.unpackSig = unpackSig;
 exports.unpackSk = unpackSk;
 exports.useHint = useHint;
 exports.zeroize = zeroize;
+exports.zeroizePolyVec = zeroizePolyVec;
 exports.zetas = zetas;

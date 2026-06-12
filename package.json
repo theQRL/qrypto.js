@@ -31,7 +31,6 @@
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/exec": "7.1.0",
     "@semantic-release/git": "10.0.1",
-    "@semantic-release/npm": "13.1.5",
     "conventional-changelog-conventionalcommits": "9.3.1",
     "eslint": "10.3.0",
     "eslint-config-prettier": "10.1.8",
@@ -43,18 +42,13 @@
     "playwright": "1.60.0",
     "serialize-javascript": "7.0.5",
     "tar": "7.5.15",
-    "turbo": "2.9.12"
+    "turbo": "2.9.18"
   },
   "overrides": {
     "serialize-javascript": "7.0.5",
     "minimatch": "10.2.5",
     "tar": "7.5.15",
     "diff": "8.0.3",
-    "**": {
-      "serialize-javascript": "7.0.5",
-      "minimatch": "10.2.5",
-      "tar": "7.5.14",
-      "diff": "8.0.3"
-    }
+    "npm": "11.17.0"
   }
 }

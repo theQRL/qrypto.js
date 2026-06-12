@@ -124,6 +124,9 @@ export function polyVecLChkNorm(v, bound) {
 
 export function polyVecKUniformEta(v, seed, nonceP) {
   let nonce = nonceP;
+  if (seed.length !== CRHBytes) {
+    throw new Error(`invalid seed length ${seed.length} | Expected length ${CRHBytes}`);
+  }
   for (let i = 0; i < K; ++i) {
     polyUniformEta(v.vec[i], seed, nonce++);
   }

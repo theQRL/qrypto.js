@@ -14,6 +14,22 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# All upstream repositories are pinned to explicit commit SHAs so that a
+# change (or compromise) upstream cannot silently alter what "verification
+# passed" means, and so PR results are reproducible. Bump procedure:
+# CONTRIBUTING.md "Updating pinned verification upstreams".
+#
+# GO_QRLLIB_DILITHIUM5_PIN is permanently historical: upstream go-qrllib
+# removed crypto/dilithium in v0.9.0 (1ae1760, PR #109, 2026-06-10).
+# b2ee4790 = v0.8.0, the last release containing it; this leg verifies
+# interop with the frozen legacy implementation. The mldsa87 go-qrllib leg
+# tracks a current pin and should be bumped routinely.
+env:
+  GO_QRLLIB_DILITHIUM5_PIN: b2ee4790ef041104d2a48ae87cf68c0de621c89e # v0.8.0 (2026-06-08), last release with crypto/dilithium
+  GO_QRLLIB_MLDSA87_PIN: 6f9978367906233874b406bd5d55b0e8b8d01d9c # v0.9.0 (2026-06-10)
+  PQCRYSTALS_DILITHIUM5_PIN: ac743d588c6532aed027ccb1e7a24bfe6e35a120 # Round 3 (pre-FIPS) reference
+  PQCRYSTALS_MLDSA87_PIN: d35ba3fe5449bee3e6d43e1f296c3ca818bd36be # 2026-06-03, FIPS 204 reference
+
 jobs:
   dilithium5-cross-verify:
     name: Dilithium5 Cross-Verification (qrypto.js ↔ go-qrllib)
@@ -37,11 +53,11 @@ jobs:
       - name: Install qrypto.js dependencies
         run: npm ci
 
-      - name: Clone go-qrllib
+      - name: Clone go-qrllib (pinned)
         run: |
-          git clone --depth 1 https://github.com/theQRL/go-qrllib.git /tmp/go-qrllib
-          cd /tmp/go-qrllib
-          echo "go-qrllib commit: $(git rev-parse --short HEAD)"
+          git clone https://github.com/theQRL/go-qrllib.git /tmp/go-qrllib
+          git -C /tmp/go-qrllib checkout "$GO_QRLLIB_DILITHIUM5_PIN"
+          echo "go-qrllib commit: $(git -C /tmp/go-qrllib rev-parse --short HEAD)"
 
       - name: Generate qrypto.js Dilithium5 signature
         run: node .github/cross-verify/dilithium5_sign.js
@@ -85,11 +101,11 @@ jobs:
       - name: Install qrypto.js dependencies
         run: npm ci
 
-      - name: Clone go-qrllib
+      - name: Clone go-qrllib (pinned)
         run: |
-          git clone --depth 1 https://github.com/theQRL/go-qrllib.git /tmp/go-qrllib
-          cd /tmp/go-qrllib
-          echo "go-qrllib commit: $(git rev-parse --short HEAD)"
+          git clone https://github.com/theQRL/go-qrllib.git /tmp/go-qrllib
+          git -C /tmp/go-qrllib checkout "$GO_QRLLIB_MLDSA87_PIN"
+          echo "go-qrllib commit: $(git -C /tmp/go-qrllib rev-parse --short HEAD)"
 
       - name: Generate qrypto.js ML-DSA-87 signature
         run: node .github/cross-verify/mldsa87_sign.js
@@ -128,12 +144,11 @@ jobs:
       - name: Install qrypto.js dependencies
         run: npm ci
 
-      - name: Clone pq-crystals Dilithium (Round 3)
+      - name: Clone pq-crystals Dilithium (pinned, Round 3)
         run: |
           git clone https://github.com/pq-crystals/dilithium.git /tmp/dilithium-ref
-          cd /tmp/dilithium-ref
-          git checkout ac743d5  # Round 3 (pre-FIPS)
-          echo "Reference commit: $(git rev-parse --short HEAD)"
+          git -C /tmp/dilithium-ref checkout "$PQCRYSTALS_DILITHIUM5_PIN"
+          echo "Reference commit: $(git -C /tmp/dilithium-ref rev-parse --short HEAD)"
 
       - name: Generate qrypto.js Dilithium5 signature
         run: node .github/cross-verify/dilithium5_sign.js
@@ -186,11 +201,11 @@ jobs:
       - name: Install qrypto.js dependencies
         run: npm ci
 
-      - name: Clone pq-crystals Dilithium (FIPS 204 / ML-DSA)
+      - name: Clone pq-crystals Dilithium (pinned, FIPS 204 / ML-DSA)
         run: |
-          git clone --depth 1 https://github.com/pq-crystals/dilithium.git /tmp/mldsa-ref
-          cd /tmp/mldsa-ref
-          echo "Reference commit: $(git rev-parse --short HEAD)"
+          git clone https://github.com/pq-crystals/dilithium.git /tmp/mldsa-ref
+          git -C /tmp/mldsa-ref checkout "$PQCRYSTALS_MLDSA87_PIN"
+          echo "Reference commit: $(git -C /tmp/mldsa-ref rev-parse --short HEAD)"
 
       - name: Generate qrypto.js ML-DSA-87 signature
         run: node .github/cross-verify/mldsa87_sign.js

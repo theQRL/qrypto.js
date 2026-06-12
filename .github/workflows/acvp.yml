@@ -14,6 +14,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Pinned to an explicit upstream commit so vector changes (or upstream
+# compromise) cannot silently alter what "verification passed" means.
+# Bump procedure: CONTRIBUTING.md "Updating pinned verification upstreams".
+env:
+  ACVP_SERVER_PIN: 15c0f3deeefbfa8cb6cd32a99e1ca3b738c66bf0 # 2026-04-16
+
 jobs:
   mldsa87-acvp:
     name: ML-DSA-87 ACVP Verification
@@ -28,20 +34,20 @@ jobs:
         with:
           node-version: 22.x
 
-      - name: Clone NIST ACVP-Server (sparse)
+      - name: Clone NIST ACVP-Server (sparse, pinned)
         run: |
           # Sparse checkout of just the ML-DSA keyGen + sigGen vector
-          # directories — the repo is large. Tracking master gives us
-          # upstream additions automatically; pin to a specific commit
-          # here if a future vector starts producing legitimate failures.
-          git clone --depth 1 --no-checkout --filter=blob:none \
+          # directories — the repo is large. Blobless clone + sparse
+          # checkout fetches only the blobs under the selected paths at
+          # the pinned commit.
+          git clone --no-checkout --filter=blob:none \
             https://github.com/usnistgov/ACVP-Server.git /tmp/acvp-server
           cd /tmp/acvp-server
           git sparse-checkout init --cone
           git sparse-checkout set \
             gen-val/json-files/ML-DSA-keyGen-FIPS204 \
             gen-val/json-files/ML-DSA-sigGen-FIPS204
-          git checkout
+          git checkout "$ACVP_SERVER_PIN"
           echo "ACVP-Server commit: $(git rev-parse --short HEAD)"
           echo "ACVP-Server date:   $(git log -1 --format=%ci)"
           ls -la gen-val/json-files/ML-DSA-keyGen-FIPS204/prompt.json

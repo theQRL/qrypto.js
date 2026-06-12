@@ -122,6 +122,11 @@ Generate a keypair from a seed.
 
 **Throws:** `Error` if buffers are wrong size or `null`
 
+> [!WARNING]
+> The returned seed is **secret-key-equivalent** — anyone holding it can
+> regenerate the full keypair. Store it with the same care as `sk` and
+> `zeroize()` it as soon as it is no longer needed.
+
 ### Combined Sign/Verify
 
 ```javascript
@@ -214,9 +219,16 @@ if (!isZero(buffer)) {
 cryptoSignKeypair(seed, pk, sk);
 ```
 
-**Dilithium5:** go-qrllib pre-hashes seeds with SHAKE256 before key generation. To generate matching keys:
+**Dilithium5 (historical):** upstream go-qrllib **removed its
+`crypto/dilithium` package in v0.9.0** (commit `1ae1760`, 2026-06-10);
+**go-qrllib v0.8.0** (commit `b2ee4790`) is the last release containing
+it. `@theqrl/dilithium5` is now the maintained implementation of this
+scheme in the QRL ecosystem, and CI continues to cross-verify against the
+pinned go-qrllib v0.8.0. For interop with go-qrllib ≤ v0.8.0 (or other
+tools derived from it): go-qrllib pre-hashed seeds with SHAKE256 before
+key generation, so to generate matching keys:
 ```javascript
-// In go-qrllib: hashedSeed = SHAKE256(rawSeed)[:32]
+// In legacy go-qrllib: hashedSeed = SHAKE256(rawSeed)[:32]
 // Use hashedSeed (not rawSeed) with qrypto.js
 cryptoSignKeypair(hashedSeed, pk, sk);
 ```
@@ -224,10 +236,12 @@ cryptoSignKeypair(hashedSeed, pk, sk);
 ### With pq-crystals Reference
 
 Both implementations are verified against the pq-crystals C reference:
-- ML-DSA-87: `pq-crystals/dilithium@latest` (FIPS 204)
+- ML-DSA-87: `pq-crystals/dilithium` (FIPS 204, pinned commit)
 - Dilithium5: `pq-crystals/dilithium@ac743d5` (Round 3)
 
-Cross-verification tests run in CI for every commit.
+Cross-verification tests run in CI for every commit, against
+commit-pinned copies of go-qrllib and the C reference (see
+`.github/workflows/cross-verify.yml` for the exact pins).
 
 ## Browser Usage
 
@@ -241,7 +255,7 @@ This library is browser-compatible. It uses native `Uint8Array` throughout (no N
     cryptoSignOpen,
     CryptoPublicKeyBytes,
     CryptoSecretKeyBytes,
-  } from 'https://cdn.jsdelivr.net/npm/@theqrl/mldsa87@2.0.0/dist/mjs/mldsa87.js';
+  } from 'https://cdn.jsdelivr.net/npm/@theqrl/mldsa87@2/dist/mjs/mldsa87.js';
 
   const pk = new Uint8Array(CryptoPublicKeyBytes);
   const sk = new Uint8Array(CryptoSecretKeyBytes);
@@ -270,7 +284,7 @@ See [SECURITY.md](./SECURITY.md) for important security information, including:
 # Install dependencies
 npm install
 
-# Run all tests (153 tests across both packages)
+# Run all tests (450+ tests across both packages)
 npm test
 
 # Run browser tests (Playwright)

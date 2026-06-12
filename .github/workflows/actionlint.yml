@@ -47,12 +47,14 @@ jobs:
         run: pipx install zizmor
 
       - name: Run zizmor
-        uses: zizmorcore/zizmor-action@b1d7e1fb5de872772f31590499237e7cce841e8e # v0.5.3
-        # about, including stylistic findings like missing job concurrency
+        # Pedantic persona: zizmor reports everything it knows about,
+        # including stylistic findings like missing job concurrency
         # limits, undocumented permissions, and template-injection
         # candidates. We hold the entire workflow surface to that bar —
         # any new finding at any severity fails the build. Configuration
-        with:
+        # exceptions live in .github/zizmor.yml (currently only the SLSA
         # reusable workflow ref-pin).
+        uses: zizmorcore/zizmor-action@b1d7e1fb5de872772f31590499237e7cce841e8e # v0.5.3
+        with:
           persona: pedantic
           config: .github/zizmor.yml
