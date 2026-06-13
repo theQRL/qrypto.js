@@ -166,7 +166,7 @@ If your threat model requires strong memory protection:
 - Security level: Category 5 (equivalent to AES-256)
 - Key sizes: PK=2592, SK=4896, Sig=4627 bytes
 - Includes context parameter for domain separation
-- Cross-verified against pq-crystals reference (latest)
+- Cross-verified against pq-crystals reference (`d35ba3f`, pinned)
 - Verified against NIST ACVP keyGen + sigGen vectors (`.github/workflows/acvp.yml`)
 - Verified against C2SP/wycheproof verify vectors (`.github/workflows/wycheproof.yml`)
 

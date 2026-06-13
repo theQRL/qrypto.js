@@ -26,10 +26,11 @@ const pk = new Uint8Array(CryptoPublicKeyBytes);  // 2592 bytes
 const sk = new Uint8Array(CryptoSecretKeyBytes);  // 4896 bytes
 cryptoSignKeypair(null, pk, sk);  // null = random seed
 
-// Sign a message (hedged by default — recommended per TOB-QRLLIB-6).
-// Pass `false` only when deterministic signatures are themselves a
-// protocol requirement (e.g. KAT vector reproduction); for that case
-// use `cryptoSignDeterministic`.
+// Sign a message. The randomized flag is required — there is no default;
+// hedged (`true`) is the recommended mode. Pass `false` only when
+// deterministic signatures are themselves a protocol requirement
+// (e.g. KAT vector reproduction); for that case use
+// `cryptoSignDeterministic`.
 const message = new TextEncoder().encode('Hello, quantum world!');
 const signedMessage = cryptoSign(message, sk, true);  // true = hedged (recommended)
 
@@ -121,7 +122,7 @@ Check if buffer is all zeros (constant-time).
 go-qrllib pre-hashes seeds with SHAKE256 before key generation. To generate matching keys:
 
 ```javascript
-import { shake256 } from '@noble/hashes/sha3';
+import { shake256 } from '@noble/hashes/sha3.js';
 
 // go-qrllib: hashedSeed = SHAKE256(rawSeed)[:32]
 const hashedSeed = shake256(rawSeed, { dkLen: 32 });
