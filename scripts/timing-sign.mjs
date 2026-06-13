@@ -273,7 +273,10 @@ function finalizeCrossKey(entries, cfg, metadata) {
   const perKeyMedianNs = [];
   const perKey = entries.map((entry) => {
     const stats = summarizeNs(entry.samplesNs);
-    const medianNs = percentileSorted([...entry.samplesNs].sort((a, b) => a - b), 0.5);
+    const medianNs = percentileSorted(
+      [...entry.samplesNs].sort((a, b) => a - b),
+      0.5
+    );
     perKeyMedianNs.push(medianNs);
     return {
       keyIndex: entry.keyIndex,
@@ -401,7 +404,7 @@ function measureCrossKeyDeterministicRoundRobin(mod, cfg, targetName) {
     if (round < 3) orderPreview.push(order);
     for (const idx of order) {
       entries[idx].samplesNs.push(
-        durationNs(() => signOnce(mod, entries[idx].sig, message, entries[idx].sk, false, targetName)),
+        durationNs(() => signOnce(mod, entries[idx].sig, message, entries[idx].sk, false, targetName))
       );
     }
   }
@@ -421,23 +424,23 @@ function printTargetSummary(name, result) {
   if (result.sameKey) {
     console.log(
       `same-key fixed deterministic p50=${result.sameKey.fixedDeterministic.p50Us}us ` +
-      `p95=${result.sameKey.fixedDeterministic.p95Us}us`,
+        `p95=${result.sameKey.fixedDeterministic.p95Us}us`
     );
     console.log(
       `same-key varying deterministic p50=${result.sameKey.varyingMessageDeterministic.p50Us}us ` +
-      `ratio=${result.sameKey.ratios.varyingVsFixedP50}x`,
+        `ratio=${result.sameKey.ratios.varyingVsFixedP50}x`
     );
     console.log(
       `same-key fixed randomized p50=${result.sameKey.fixedRandomized.p50Us}us ` +
-      `ratio=${result.sameKey.ratios.randomizedVsFixedP50}x`,
+        `ratio=${result.sameKey.ratios.randomizedVsFixedP50}x`
     );
   } else {
     console.log('same-key scenarios skipped');
   }
   console.log(
     `cross-key (${result.crossKey.mode}) median fastest=${result.crossKey.fastestMedianUs}us ` +
-    `slowest=${result.crossKey.slowestMedianUs}us ` +
-    `ratio=${result.crossKey.slowestToFastestRatio}x`,
+      `slowest=${result.crossKey.slowestMedianUs}us ` +
+      `ratio=${result.crossKey.slowestToFastestRatio}x`
   );
 }
 

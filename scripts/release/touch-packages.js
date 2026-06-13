@@ -32,10 +32,7 @@ const publishablePackages = readdirSync(packagesDir, { withFileTypes: true })
   }))
   .filter(
     ({ manifest }) =>
-      manifest.name &&
-      manifest.version &&
-      manifest.private !== true &&
-      manifest.publishConfig?.access === 'public',
+      manifest.name && manifest.version && manifest.private !== true && manifest.publishConfig?.access === 'public'
   )
   .sort((a, b) => a.manifest.name.localeCompare(b.manifest.name));
 

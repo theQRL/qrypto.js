@@ -20,7 +20,7 @@ test('mldsa87 browser test suite', async ({ page }) => {
 
   const start = Date.now();
   let lastLog = 0;
-  let result = null;
+  let result;
 
   while (true) {
     result = await page.evaluate(() => window.__mochaDone);
@@ -33,7 +33,7 @@ test('mldsa87 browser test suite', async ({ page }) => {
         console.log(
           `[mldsa87] ${progress.passed} passed, ${progress.failed} failed, ` +
             `${progress.pending} pending, ${progress.started} started. ` +
-            `Current: ${progress.current || 'unknown'}`,
+            `Current: ${progress.current || 'unknown'}`
         );
       } else {
         console.log('[mldsa87] waiting for mocha to start...');

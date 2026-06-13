@@ -40,8 +40,7 @@ export const publishablePackages = () =>
 
 export const releaseTag = (pkg) => `${pkg.name}@${pkg.version}`;
 
-export const tarballName = (pkg) =>
-  `${pkg.name.replace(/^@/, '').replace('/', '-')}-${pkg.version}.tgz`;
+export const tarballName = (pkg) => `${pkg.name.replace(/^@/, '').replace('/', '-')}-${pkg.version}.tgz`;
 
 const ensureParentDirectory = (filePath) => mkdirSync(dirname(filePath), { recursive: true });
 

@@ -52,7 +52,7 @@ export const zetas: readonly number[];
  * @throws Error if pk/sk buffers are wrong size or null
  */
 export function cryptoSignKeypair(
-  seed: Uint8Array | null,
+  seed: Uint8Array | null | undefined,
   pk: Uint8Array,
   sk: Uint8Array
 ): Uint8Array;
@@ -205,6 +205,12 @@ export function isZero(buffer: Uint8Array): boolean;
 /**
  * Zero the coefficient arrays of a polynomial vector (best-effort, see
  * SECURITY.md). Centralizes the secret-wiping pattern used by signing paths.
+ *
+ * @deprecated Internal API — its parameter types (`PolyVecK`/`PolyVecL`) are
+ * themselves internal and cannot be constructed through the documented
+ * surface, so this is a stable function over deprecated types. Not part of
+ * the stable documented API; will move behind a subpath or be removed at the
+ * next major version. See CONTRIBUTING.md "Public API surface policy".
  */
 export function zeroizePolyVec(polyVec: PolyVecK | PolyVecL): void;
 
