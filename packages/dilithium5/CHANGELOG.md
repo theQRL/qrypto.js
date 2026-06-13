@@ -1,3 +1,9 @@
+## @theqrl/dilithium5 [1.2.3](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.2.2...@theqrl/dilithium5@1.2.3) (2026-06-13)
+
+### Bug Fixes
+
+* seed-type widening ([88f6b1e](https://github.com/theQRL/qrypto.js/commit/88f6b1e749a3b95475f908a26d8fe7a1e80e2245))
+
 ## @theqrl/dilithium5 [1.2.2](https://github.com/theQRL/qrypto.js/compare/@theqrl/dilithium5@1.2.1...@theqrl/dilithium5@1.2.2) (2026-06-12)
 
 ### Bug Fixes
