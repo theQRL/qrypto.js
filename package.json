@@ -11,8 +11,9 @@
     "test": "FORCE_COLOR=0 turbo test",
     "test:browser": "playwright install chromium && turbo run test:browser",
     "check-shared": "node scripts/check-shared-files.js",
-    "lint": "turbo lint-check",
-    "lint:fix": "turbo lint",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc -p test/types/tsconfig.json",
     "coverage": "turbo coverage",
     "report-coverage": "turbo report-coverage",
     "release": "multi-semantic-release --ignore-private-packages",
@@ -42,7 +43,8 @@
     "playwright": "1.60.0",
     "serialize-javascript": "7.0.5",
     "tar": "7.5.15",
-    "turbo": "2.9.18"
+    "turbo": "2.9.18",
+    "typescript": "6.0.3"
   },
   "overrides": {
     "serialize-javascript": "7.0.5",

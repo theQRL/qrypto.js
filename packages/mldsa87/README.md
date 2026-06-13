@@ -26,10 +26,11 @@ const pk = new Uint8Array(CryptoPublicKeyBytes);  // 2592 bytes
 const sk = new Uint8Array(CryptoSecretKeyBytes);  // 4896 bytes
 cryptoSignKeypair(null, pk, sk);  // null = random seed
 
-// Sign a message (hedged by default per FIPS 204 §3.4 — recommended).
-// Pass `false` only when deterministic signatures are themselves a
-// protocol requirement (e.g. RANDAO-style verifiable beacon
-// contributions); for that case use `cryptoSignDeterministic`.
+// Sign a message. The randomized flag is required — there is no default;
+// hedged (`true`) is the FIPS 204 §3.4 recommended mode. Pass `false`
+// only when deterministic signatures are themselves a protocol
+// requirement (e.g. RANDAO-style verifiable beacon contributions); for
+// that case use `cryptoSignDeterministic`.
 const message = new TextEncoder().encode('Hello, quantum world!');
 const ctx = new Uint8Array([0x5a, 0x4f, 0x4e, 0x44]);  // "ZOND"
 const signedMessage = cryptoSign(message, sk, true, ctx);  // true = hedged (recommended)

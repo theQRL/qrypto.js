@@ -50,12 +50,22 @@ Both implementations use the same seed expansion with `[K, L]` domain separator,
 |------|-------------|
 | `dilithium5_sign.js` | Generate qrypto.js Dilithium5 signature |
 | `dilithium5_verify.js` | Verify go-qrllib Dilithium5 signature with qrypto.js |
-| `dilithium5_verify.go` | Verify qrypto.js Dilithium5 signature with go-qrllib |
+| `dilithium5-go/dilithium5_verify.go` | Verify qrypto.js Dilithium5 signature with go-qrllib |
 | `dilithium5_sign_goqrllib.go` | Generate go-qrllib Dilithium5 signature |
 | `mldsa87_sign.js` | Generate qrypto.js ML-DSA-87 signature |
 | `mldsa87_verify.js` | Verify go-qrllib ML-DSA-87 signature with qrypto.js |
-| `mldsa87_verify.go` | Verify qrypto.js ML-DSA-87 signature with go-qrllib |
+| `mldsa87-go/mldsa87_verify.go` | Verify qrypto.js ML-DSA-87 signature with go-qrllib |
 | `mldsa87_sign_goqrllib.go` | Generate go-qrllib ML-DSA-87 signature |
+
+The two Go verifiers live in **separate Go modules** because they must pin
+*different* go-qrllib versions: `mldsa87-go/go.mod` tracks the current
+go-qrllib release (bump routinely, together with `GO_QRLLIB_MLDSA87_PIN`
+in cross-verify.yml), while `dilithium5-go/go.mod` is **frozen** at the
+last pre-removal snapshot (`crypto/dilithium` was removed upstream in
+v0.9.0). A `go run` resolves go-qrllib through the *module directory it
+runs from* — these go.mod requirements are verification pins exactly like
+the workflow's clone SHAs, and they are listed in CONTRIBUTING.md's pin
+table.
 
 ### pq-crystals Cross-Verification
 
@@ -89,7 +99,7 @@ npm ci
 
 # Test qrypto.js → go-qrllib
 node .github/cross-verify/dilithium5_sign.js
-go run .github/cross-verify/dilithium5_verify.go
+(cd .github/cross-verify/dilithium5-go && go run dilithium5_verify.go)
 
 # Test go-qrllib → qrypto.js
 cd /tmp/go-qrllib
@@ -103,7 +113,7 @@ node .github/cross-verify/dilithium5_verify.js
 ```bash
 # Test qrypto.js → go-qrllib
 node .github/cross-verify/mldsa87_sign.js
-go run .github/cross-verify/mldsa87_verify.go
+(cd .github/cross-verify/mldsa87-go && go run mldsa87_verify.go)
 
 # Test go-qrllib → qrypto.js
 cd /tmp/go-qrllib

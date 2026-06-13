@@ -5,7 +5,12 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { cryptoSignKeypair, cryptoSignSignature, cryptoSignVerify as verifySrc } from '../src/sign.js';
+import {
+  cryptoSignKeypair,
+  cryptoSignSignature,
+  cryptoSignVerify as verifySrc,
+  cryptoSignOpen as openSrc,
+} from '../src/sign.js';
 import {
   CryptoPublicKeyBytes,
   CryptoSecretKeyBytes,
@@ -17,30 +22,36 @@ import {
 import { PRNG } from '../../../scripts/fuzz/engine/prng.mjs';
 import { mutate } from '../../../scripts/fuzz/engine/mutate-bytes.mjs';
 import { SaveBudget } from '../../../scripts/fuzz/engine/save-budget.mjs';
+import { Verdict } from '../../../scripts/fuzz/engine/verdict.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const budget = new SaveBudget();
+const verdict = new Verdict();
 const CORPUS_DIR = join(__dirname, 'corpus', 'verify-dist', 'interesting');
 const HINT_REGION_OFFSET = CTILDEBytes + L * PolyZPackedBytes;
 
 const distMjs = await import('../dist/mjs/mldsa87.js');
 const verifyMjs = distMjs.cryptoSignVerify;
+const openMjs = distMjs.cryptoSignOpen;
 
 let verifyCjs = null;
+let openCjs = null;
 try {
   const require = createRequire(import.meta.url);
   const distCjs = require('../dist/cjs/mldsa87.js');
   verifyCjs = distCjs.cryptoSignVerify;
+  openCjs = distCjs.cryptoSignOpen;
 } catch (e) {
   process.stderr.write(`[warn] CJS dist import failed, continuing with src vs ESM only: ${e.message}\n`);
 }
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const opts = { seed: Date.now(), iterations: 100_000 };
+  const opts = { seed: Date.now(), iterations: 100_000, timeoutMs: 5000 };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--seed' && i + 1 < args.length) opts.seed = Number(args[++i]);
     else if (args[i] === '--iterations' && i + 1 < args.length) opts.iterations = Number(args[++i]);
+    else if (args[i] === '--timeout-ms' && i + 1 < args.length) opts.timeoutMs = Number(args[++i]);
   }
   return opts;
 }
@@ -77,6 +88,20 @@ function callVerify(fn, sig, msg, pk, ctx) {
     return { result: fn(sig, msg, pk, ctx), error: null };
   } catch (e) {
     return { result: 'threw', error: e.message || String(e) };
+  }
+}
+
+// Serialize a cryptoSignOpen outcome to a comparable string. Distinguishes
+// rejection, success bytes, junk returns, and throws so any src↔dist
+// difference in any of those shapes surfaces as a divergence.
+function callOpenSerialized(fn, sm, pk, ctx) {
+  try {
+    const r = fn(sm, pk, ctx);
+    if (r === undefined) return 'undefined';
+    if (r instanceof Uint8Array) return `bytes:${toHex(r)}`;
+    return `junk:${typeof r}`;
+  } catch (e) {
+    return `threw:${e.message || String(e)}`;
   }
 }
 
@@ -174,7 +199,7 @@ function main() {
       let mutationFamily;
       let baseIdx;
 
-      if (roll < 0.10) {
+      if (roll < 0.1) {
         mutationFamily = 'cross-splice';
         mutatedField = 'cross';
         baseIdx = rng.nextUint32() % corpus.length;
@@ -194,15 +219,15 @@ function main() {
         mutMsg = cloneBytes(base.msg);
         mutCtx = cloneBytes(base.ctx);
 
-        if (roll < 0.50) {
+        if (roll < 0.5) {
           mutationFamily = 'sig-mutate';
           mutatedField = 'sig';
           mutSig = mutate(mutSig, rng, { hintOffset: HINT_REGION_OFFSET });
-        } else if (roll < 0.70) {
+        } else if (roll < 0.7) {
           mutationFamily = 'pk-mutate';
           mutatedField = 'pk';
           mutPk = mutate(mutPk, rng);
-        } else if (roll < 0.90) {
+        } else if (roll < 0.9) {
           mutationFamily = 'msg-mutate';
           mutatedField = 'msg';
           mutMsg = mutate(mutMsg, rng);
@@ -225,9 +250,11 @@ function main() {
         !arraysEqual(mutMsg, base.msg) ||
         !arraysEqual(mutCtx, base.ctx);
 
+      const t0 = performance.now();
       const src = callVerify(verifySrc, mutSig, mutMsg, mutPk, mutCtx);
       const mjs = callVerify(verifyMjs, mutSig, mutMsg, mutPk, mutCtx);
       const cjs = verifyCjs ? callVerify(verifyCjs, mutSig, mutMsg, mutPk, mutCtx) : null;
+      const iterElapsed = performance.now() - t0;
 
       const srcR = src.result;
       const mjsR = mjs.result;
@@ -238,35 +265,88 @@ function main() {
       if (cjsR !== null && (cjsR !== srcR || cjsR !== mjsR)) diverged = true;
 
       const caseMeta = {
-        seed: opts.seed, iteration: iter, mutationFamily, mutatedField,
-        baseTupleIndex: baseIdx, bytesChanged,
-        sig: mutSig, msg: mutMsg, pk: mutPk, ctx: mutCtx,
-        srcResult: srcR, mjsResult: mjsR, cjsResult: cjsR,
-        srcError: src.error, mjsError: mjs.error, cjsError: cjs?.error ?? null,
+        seed: opts.seed,
+        iteration: iter,
+        mutationFamily,
+        mutatedField,
+        baseTupleIndex: baseIdx,
+        bytesChanged,
+        sig: mutSig,
+        msg: mutMsg,
+        pk: mutPk,
+        ctx: mutCtx,
+        srcResult: srcR,
+        mjsResult: mjsR,
+        cjsResult: cjsR,
+        srcError: src.error,
+        mjsError: mjs.error,
+        cjsError: cjs?.error ?? null,
       };
 
       if (diverged) {
         divergenceCount++;
+        verdict.record('DIVERGENCE');
         process.stderr.write(
           `\n[!!!] DIVERGENCE at iter=${iter} family=${mutationFamily} field=${mutatedField}\n` +
-          `  src=${srcR} mjs=${mjsR} cjs=${cjsR}\n`,
+            `  src=${srcR} mjs=${mjsR} cjs=${cjsR}\n`
         );
         if (budget.shouldSave('DIVERGENCE')) saveCase('DIVERGENCE', caseMeta);
       }
 
+      if (srcR === 'threw' || mjsR === 'threw' || cjsR === 'threw') {
+        // A throw shared by src and dist produces no divergence, but it is
+        // still a verify-totality violation — make it count on its own.
+        verdict.record('THREW');
+        if (budget.shouldSave('THREW')) saveCase('THREW', caseMeta);
+      }
+
       if (bytesChanged && (srcR === true || mjsR === true || cjsR === true)) {
         falseAcceptCount++;
+        verdict.record('FALSE_ACCEPT');
         process.stderr.write(
           `\n[!!!] FALSE ACCEPT at iter=${iter} family=${mutationFamily} field=${mutatedField}\n` +
-          `  src=${srcR} mjs=${mjsR} cjs=${cjsR} bytesChanged=${bytesChanged}\n`,
+            `  src=${srcR} mjs=${mjsR} cjs=${cjsR} bytesChanged=${bytesChanged}\n`
         );
         if (budget.shouldSave('FALSE_ACCEPT')) saveCase('FALSE_ACCEPT', caseMeta);
+      }
+
+      if (iterElapsed > opts.timeoutMs) {
+        verdict.record('TIMEOUT');
+        if (budget.shouldSave('TIMEOUT')) saveCase('TIMEOUT', caseMeta);
+      }
+
+      // Dist-side cryptoSignOpen parity (every 4th iteration): verify is
+      // the only src↔dist-diffed entrypoint otherwise; open exercises
+      // unpackSig and the signed-message parsing on the dist side too.
+      if ((iter & 3) === 0) {
+        const sm = new Uint8Array(mutSig.length + mutMsg.length);
+        sm.set(mutSig, 0);
+        sm.set(mutMsg, mutSig.length);
+        const srcOpen = callOpenSerialized(openSrc, sm, mutPk, mutCtx);
+        const mjsOpen = callOpenSerialized(openMjs, sm, mutPk, mutCtx);
+        const cjsOpen = openCjs ? callOpenSerialized(openCjs, sm, mutPk, mutCtx) : null;
+        if (srcOpen !== mjsOpen || (cjsOpen !== null && cjsOpen !== srcOpen)) {
+          divergenceCount++;
+          verdict.record('DIVERGENCE');
+          process.stderr.write(
+            `\n[!!!] OPEN DIVERGENCE at iter=${iter} family=${mutationFamily}\n` +
+              `  src=${srcOpen.slice(0, 64)} mjs=${mjsOpen.slice(0, 64)} cjs=${cjsOpen === null ? 'n/a' : cjsOpen.slice(0, 64)}\n`
+          );
+          if (budget.shouldSave('OPEN_DIVERGENCE')) {
+            saveCase('OPEN_DIVERGENCE', {
+              ...caseMeta,
+              srcResult: srcOpen.slice(0, 200),
+              mjsResult: mjsOpen.slice(0, 200),
+              cjsResult: cjsOpen === null ? null : cjsOpen.slice(0, 200),
+            });
+          }
+        }
       }
 
       if (iter > 0 && iter % 1000 === 0) {
         const elapsedSec = ((Date.now() - startTime) / 1000).toFixed(1);
         process.stderr.write(
-          `[*] iter=${iter}/${opts.iterations} divergences=${divergenceCount} falseAccepts=${falseAcceptCount} elapsed=${elapsedSec}s\n`,
+          `[*] iter=${iter}/${opts.iterations} divergences=${divergenceCount} falseAccepts=${falseAcceptCount} elapsed=${elapsedSec}s\n`
         );
       }
     } catch (e) {
@@ -285,9 +365,11 @@ function main() {
   process.stderr.write(`[*] Suppressed by save budget: ${budget.suppressedCount()}\n`);
   for (const line of budget.summaryLines()) process.stderr.write(`[*]   ${line}\n`);
 
-  if (divergenceCount > 0) process.exit(2);
-  if (falseAcceptCount > 0) process.exit(1);
-  process.exit(0);
+  process.stderr.write(`[*] Verdict:\n`);
+  for (const line of verdict.summaryLines()) process.stderr.write(`[*]   ${line}\n`);
+
+  // Single exit path: the shared severity map decides, never bespoke logic.
+  process.exit(verdict.exitCode());
 }
 
 try {

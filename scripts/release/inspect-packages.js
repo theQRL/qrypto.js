@@ -13,12 +13,9 @@ import { fileURLToPath } from 'node:url';
 import { publishablePackages } from './packages.js';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
-const npmCache =
-  process.env.npm_config_cache ||
-  mkdtempSync(resolve(tmpdir(), 'qrypto-pack-npm-cache-'));
+const npmCache = process.env.npm_config_cache || mkdtempSync(resolve(tmpdir(), 'qrypto-pack-npm-cache-'));
 
-const normalizePackagePath = (packagePath) =>
-  packagePath.replace(/^\.\//, '').replace(/\\/g, '/');
+const normalizePackagePath = (packagePath) => packagePath.replace(/^\.\//, '').replace(/\\/g, '/');
 
 const collectExportTargets = (value) => {
   if (typeof value === 'string') return [value];
@@ -39,10 +36,7 @@ const declaredEntrypoints = (manifest) => {
   return entries
     .filter(
       ([, target]) =>
-        target.startsWith('./') ||
-        target.startsWith('src/') ||
-        target.startsWith('lib/') ||
-        target.startsWith('dist/'),
+        target.startsWith('./') || target.startsWith('src/') || target.startsWith('lib/') || target.startsWith('dist/')
     )
     .map(([key, target]) => [key, normalizePackagePath(target)]);
 };
@@ -99,7 +93,7 @@ for (const pkg of publishablePackages()) {
 
   if (!provenanceRepositoryUrls.has(manifest.repository?.url)) {
     errors.push(
-      `${pkg.name}: repository.url must point at https://github.com/theQRL/qrypto.js for npm provenance verification`,
+      `${pkg.name}: repository.url must point at https://github.com/theQRL/qrypto.js for npm provenance verification`
     );
   }
 

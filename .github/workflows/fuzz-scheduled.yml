@@ -31,6 +31,9 @@ jobs:
   fuzz:
     name: Fuzz campaign
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # checkout repository
+      issues: write # open/update the pinned failure issue on scheduled-run failure
     # Deep (manual) is 1M iterations across all harnesses; leave generous
     # headroom under the 360-minute job ceiling so artifacts still upload.
     timeout-minutes: 350
@@ -78,3 +81,29 @@ jobs:
           path: fuzz-results/
           retention-days: 30
           if-no-files-found: warn
+
+      # Scheduled-run failures only email the last workflow committer and the
+      # artifact evidence expires in 30 days — a Sunday-morning crash could
+      # otherwise sit unread until it is unrecoverable. Surface it as an issue.
+      - name: Open or update failure issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PROFILE: ${{ steps.select.outputs.profile }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          title="Scheduled fuzz campaign failed"
+          body="A \`${PROFILE}\` fuzz campaign failed (trigger: \`${EVENT_NAME}\`).
+
+          Run: ${RUN_URL}
+          Campaign artifacts (30-day retention): see the run's \`fuzz-results-*\` artifact — \`summary.json\` records the master seed, per-harness exit codes, and verdicts; any finding is replayable from the recorded seed.
+
+          Exit-code contract: 0 clean / 1 interesting / >=2 critical (see CONTRIBUTING.md \"Fuzzing\")."
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+          fi

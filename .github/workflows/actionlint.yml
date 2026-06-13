@@ -5,10 +5,14 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/**'
+      # The gate's own exception list: a new suppression must re-run the gate
+      # that evaluates it, or it can merge unexamined.
+      - '.github/zizmor.yml'
   pull_request:
     branches: [main]
     paths:
       - '.github/workflows/**'
+      - '.github/zizmor.yml'
   workflow_dispatch:
 
 permissions:
@@ -30,6 +34,11 @@ jobs:
 
       - name: Run actionlint
         uses: raven-actions/actionlint@205b530c5d9fa8f44ae9ed59f341a0db994aa6f8 # v2.1.2
+        with:
+          # The action defaults to `version: latest`, which lets the gate's
+          # behavior change overnight with no repo diff. Pin the engine like
+          # any other verification input; bump deliberately.
+          version: 1.7.10
 
   zizmor:
     name: zizmor (Actions security analysis)
@@ -42,9 +51,6 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-
-      - name: Install zizmor
-        run: pipx install zizmor
 
       - name: Run zizmor
         # Pedantic persona: zizmor reports everything it knows about,

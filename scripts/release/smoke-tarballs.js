@@ -11,10 +11,7 @@ import { basename, dirname, resolve } from 'node:path';
 const args = process.argv.slice(2);
 if (args[0] === '--') args.shift();
 
-const [
-  releasedPackagesPath = 'dist/released-packages.tsv',
-  tarballDirectory = 'dist/tarballs',
-] = args;
+const [releasedPackagesPath = 'dist/released-packages.tsv', tarballDirectory = 'dist/tarballs'] = args;
 
 const releasedPackages = readFileSync(releasedPackagesPath, 'utf8')
   .trim()
@@ -31,9 +28,7 @@ if (releasedPackages.length === 0) {
 }
 
 const tarballs = releasedPackages.map((pkg) => resolve(tarballDirectory, pkg.tarballName));
-const npmCache =
-  process.env.npm_config_cache ||
-  mkdtempSync(resolve(tmpdir(), 'qrypto-release-npm-cache-'));
+const npmCache = process.env.npm_config_cache || mkdtempSync(resolve(tmpdir(), 'qrypto-release-npm-cache-'));
 
 const run = (command, runArgs, cwd) => {
   execFileSync(command, runArgs, {
@@ -60,8 +55,8 @@ const makeProject = (type) => {
         type,
       },
       null,
-      2,
-    )}\n`,
+      2
+    )}\n`
   );
   run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', ...tarballs], directory);
   return directory;
@@ -70,31 +65,39 @@ const makeProject = (type) => {
 const cjsProject = makeProject('commonjs');
 writeFileSync(
   resolve(cjsProject, 'smoke.cjs'),
-  `const packages = ${JSON.stringify(releasedPackages.map((pkg) => pkg.name), null, 2)};
+  `const packages = ${JSON.stringify(
+    releasedPackages.map((pkg) => pkg.name),
+    null,
+    2
+  )};
 for (const name of packages) {
 \tconst mod = require(name);
 \tif (mod == null) throw new Error(\`No CommonJS export for \${name}\`);
 \tconsole.log(\`required \${name}\`);
 }
-`,
+`
 );
 run('node', ['smoke.cjs'], cjsProject);
 
 const esmProject = makeProject('module');
 writeFileSync(
   resolve(esmProject, 'smoke.mjs'),
-  `const packages = ${JSON.stringify(releasedPackages.map((pkg) => pkg.name), null, 2)};
+  `const packages = ${JSON.stringify(
+    releasedPackages.map((pkg) => pkg.name),
+    null,
+    2
+  )};
 for (const name of packages) {
 \tconst mod = await import(name);
 \tif (mod == null) throw new Error(\`No ESM export for \${name}\`);
 \tconsole.log(\`imported \${name}\`);
 }
-`,
+`
 );
 run('node', ['smoke.mjs'], esmProject);
 
 console.log(
   `Smoke-tested ${releasedPackages.length} package tarball${releasedPackages.length === 1 ? '' : 's'} from ${basename(
-    dirname(tarballs[0]),
-  )}`,
+    dirname(tarballs[0])
+  )}`
 );

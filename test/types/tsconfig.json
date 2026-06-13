@@ -1,0 +1,30 @@
+{
+  // Consumer-compile gate for the published typings (`npm run typecheck`,
+  // a CI gate). The consumers below import every documented symbol from the
+  // package names, so `nodenext` resolves through each package's real
+  // `exports` map to the SHIPPED dist declaration files (`.d.mts` for the
+  // import condition) — the exact `.d.ts` a downstream `npm install` gets.
+  // A syntax slip or signature drift in those hand-written typings becomes a
+  // compile error here instead of breaking every TS consumer's build.
+  //
+  // `strict` is on: the consumers exercise the `cryptoSignOpenWithReason`
+  // discriminated-union narrowing, which only type-checks meaningfully under
+  // strict null/narrowing.
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "target": "ES2020",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "esModuleInterop": true,
+    "skipLibCheck": false,
+    "lib": ["ES2020", "DOM"],
+    "types": []
+  },
+  "include": [
+    "mldsa87-consumer.mts",
+    "dilithium5-consumer.mts",
+    "mldsa87-consumer-cjs.cts",
+    "dilithium5-consumer-cjs.cts"
+  ]
+}

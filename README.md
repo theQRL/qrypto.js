@@ -166,7 +166,7 @@ cryptoSignVerify(sig, message, pk) → boolean              // Dilithium5
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `sig` | `Uint8Array` | Output buffer for signature / signature to verify (>= `CryptoBytes`) |
+| `sig` | `Uint8Array` | Output buffer for signature (>= `CryptoBytes`); for verify, exactly `CryptoBytes` — any other length returns `false` |
 | `message` | `Uint8Array` or `string` | Message bytes; if `string`, it must be hex only (optional `0x`, even length). Plain-text strings are not accepted. |
 | `sk` | `Uint8Array` | Secret key (4896 bytes) |
 | `pk` | `Uint8Array` | Public key (2592 bytes) |
@@ -178,6 +178,44 @@ cryptoSignVerify(sig, message, pk) → boolean              // Dilithium5
 - `cryptoSignVerify`: `true` if valid, `false` otherwise
 
 **Note:** If you need to sign human-readable text, convert it to bytes first (e.g., `new TextEncoder().encode('Hello')`). String inputs are interpreted as hex only.
+
+### Deterministic Signing (opt-in)
+
+The `randomized` parameter has no default — hedged (`true`) is recommended (FIPS 204 §3.4). When byte-identical signatures are themselves the requirement (RANDAO-style beacon contributions, KAT/ACVP vector reproduction), use the named deterministic wrappers so the choice is explicit at the call site:
+
+```javascript
+// Attached, deterministic
+cryptoSignDeterministic(message, sk, context) → Uint8Array    // ML-DSA-87
+cryptoSignDeterministic(message, sk) → Uint8Array              // Dilithium5
+
+// Detached, deterministic
+cryptoSignSignatureDeterministic(sig, message, sk, context) → number    // ML-DSA-87
+cryptoSignSignatureDeterministic(sig, message, sk) → number              // Dilithium5
+```
+
+These are exactly `cryptoSign` / `cryptoSignSignature` with `randomized = false`; verification is identical for both modes.
+
+### Open With Failure Reason
+
+`cryptoSignOpenWithReason` is a behavioural twin of `cryptoSignOpen` that distinguishes API-shape problems from genuine verification failures, for logging or routing. `cryptoSignOpen` stays total (returns `undefined` for every failure); **never branch security logic on the reason.**
+
+```javascript
+cryptoSignOpenWithReason(signedMessage, pk, context)    // ML-DSA-87
+cryptoSignOpenWithReason(signedMessage, pk)             // Dilithium5
+// → { ok: true,  message: Uint8Array }
+// → { ok: false, reason: 'invalid-ctx-type' | 'invalid-ctx-length'
+//                       | 'invalid-sm-type' | 'invalid-sm-length'
+//                       | 'invalid-pk' | 'verification-failed' }
+```
+
+```javascript
+const result = cryptoSignOpenWithReason(signedMessage, pk, context);
+if (result.ok) {
+  use(result.message);
+} else {
+  log(result.reason); // diagnostics only — not a security signal
+}
+```
 
 ### Security Utilities
 
@@ -299,7 +337,7 @@ npm run build
 
 ## Requirements
 
-- **Node.js**: 20.19+, 22.x, or 24.x (requires `globalThis.crypto.getRandomValues`, available since Node.js 15)
+- **Node.js**: 20.19+, 22.x, or 24.x (requires `globalThis.crypto.getRandomValues`, available throughout the supported range)
 - **Browsers**: Any modern browser with [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) support (`crypto.getRandomValues()`) and ES2020 (BigInt). This includes Chrome 67+, Firefox 68+, Safari 14+, and Edge 79+.
 - **Not supported**: Internet Explorer, Node.js < 20, or environments without Web Crypto API
 

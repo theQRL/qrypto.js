@@ -8,8 +8,6 @@
     "test": {
       "dependsOn": ["build"]
     },
-    "lint": {},
-    "lint-check": {},
     "coverage": {
       "dependsOn": ["build"]
     },

@@ -27,7 +27,9 @@ jobs:
         with:
           node-version: '22.x'
       - run: npm ci
-      - run: npm test
+      # report-coverage runs the full suite under c8 (and fails on any test
+      # failure), so a separate `npm test` here would only run everything
+      # twice. The standalone test matrix lives in ci.yml.
       - run: npm run report-coverage
       # Push uploads gate hard (fail_ci_if_error: true); PR uploads are
       # best-effort so a Codecov hiccup can't block a PR — the coverage

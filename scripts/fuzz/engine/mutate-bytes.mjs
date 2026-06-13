@@ -32,7 +32,7 @@ function truncateOrExtend(buf, prng, minLen, maxLen) {
   out.set(buf.subarray(0, Math.min(buf.length, newLen)));
   if (newLen > buf.length) {
     for (let i = buf.length; i < newLen; i++) {
-      out[i] = prng.nextUint32() & 0xFF;
+      out[i] = prng.nextUint32() & 0xff;
     }
   }
   return out;
@@ -43,7 +43,7 @@ function regionFill(buf, prng) {
   const regionLen = prng.nextRange(1, Math.max(2, out.length >>> 2));
   const start = prng.nextUint32() % Math.max(1, out.length - regionLen);
   const kind = prng.nextUint32() % 3;
-  const fillByte = kind === 0 ? 0x00 : kind === 1 ? 0xFF : (prng.nextUint32() & 0xFF);
+  const fillByte = kind === 0 ? 0x00 : kind === 1 ? 0xff : prng.nextUint32() & 0xff;
   for (let i = start; i < start + regionLen && i < out.length; i++) {
     out[i] = fillByte;
   }
@@ -68,7 +68,7 @@ function hintRegion(buf, prng, hintOffset, hintLen) {
   const offset = hintOffset ?? prng.nextUint32() % out.length;
   const len = hintLen ?? prng.nextRange(1, Math.max(2, 16));
   for (let i = offset; i < offset + len && i < out.length; i++) {
-    out[i] = prng.nextUint32() & 0xFF;
+    out[i] = prng.nextUint32() & 0xff;
   }
   return out;
 }
@@ -90,7 +90,7 @@ function randomCorrupt(buf, prng) {
   const regionLen = prng.nextRange(1, Math.max(2, out.length >>> 2));
   const start = prng.nextUint32() % Math.max(1, out.length - regionLen);
   for (let i = start; i < start + regionLen && i < out.length; i++) {
-    out[i] = prng.nextUint32() & 0xFF;
+    out[i] = prng.nextUint32() & 0xff;
   }
   return out;
 }
@@ -101,8 +101,8 @@ const FAMILIES = [
   { weight: 15, name: 'regionFill' },
   { weight: 10, name: 'regionCopy' },
   { weight: 10, name: 'hintRegion' },
-  { weight: 5,  name: 'donorSplice' },
-  { weight: 5,  name: 'randomCorrupt' },
+  { weight: 5, name: 'donorSplice' },
+  { weight: 5, name: 'randomCorrupt' },
 ];
 
 const TOTAL_WEIGHT = FAMILIES.reduce((s, f) => s + f.weight, 0);
