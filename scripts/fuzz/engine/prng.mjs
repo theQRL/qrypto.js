@@ -1,12 +1,7 @@
 export class PRNG {
   constructor(seed) {
     seed = seed | 0;
-    this.s = new Int32Array([
-      seed,
-      seed ^ 0x6D2B79F5,
-      seed ^ 0xBEEF,
-      seed ^ 0xDEAD,
-    ]);
+    this.s = new Int32Array([seed, seed ^ 0x6d2b79f5, seed ^ 0xbeef, seed ^ 0xdead]);
   }
 
   nextUint32() {
@@ -34,10 +29,10 @@ export class PRNG {
     const out = new Uint8Array(n);
     for (let i = 0; i < n; i += 4) {
       const v = this.nextUint32();
-      out[i] = v & 0xFF;
-      if (i + 1 < n) out[i + 1] = (v >>> 8) & 0xFF;
-      if (i + 2 < n) out[i + 2] = (v >>> 16) & 0xFF;
-      if (i + 3 < n) out[i + 3] = (v >>> 24) & 0xFF;
+      out[i] = v & 0xff;
+      if (i + 1 < n) out[i + 1] = (v >>> 8) & 0xff;
+      if (i + 2 < n) out[i + 2] = (v >>> 16) & 0xff;
+      if (i + 3 < n) out[i + 3] = (v >>> 24) & 0xff;
     }
     return out;
   }

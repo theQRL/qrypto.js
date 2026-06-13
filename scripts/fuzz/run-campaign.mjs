@@ -3,26 +3,43 @@
 import { fork } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mkdirSync, writeFileSync, createWriteStream, existsSync, readdirSync, statSync, rmSync } from 'node:fs';
+import {
+  mkdirSync,
+  writeFileSync,
+  createWriteStream,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  rmSync,
+} from 'node:fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
 
+// Exit-code contract (documented in CONTRIBUTING.md "Fuzzing"):
+//   0 = clean, 1 = interesting findings, >= 2 = critical findings
+//   (per-harness severities come from scripts/fuzz/engine/verdict.mjs).
+// Runner-level refusals live OUTSIDE that namespace so they can never be
+// confused with findings:
+const EXIT_USAGE = 64; // EX_USAGE: contradictory flags
+const EXIT_CORPUS_GUARD = 78; // EX_CONFIG: refused to start over a bloated corpus
+
 const HARNESSES = [
-  { name: 'verify-src',     script: 'packages/mldsa87/fuzz/verify-src.mjs' },
-  { name: 'open-src',       script: 'packages/mldsa87/fuzz/open-src.mjs' },
-  { name: 'unpack-sig',     script: 'packages/mldsa87/fuzz/unpack-sig.mjs' },
-  { name: 'verify-dist',    script: 'packages/mldsa87/fuzz/verify-dist.mjs' },
-  { name: 'd5-verify-src',  script: 'packages/dilithium5/fuzz/verify-src.mjs' },
-  { name: 'd5-open-src',    script: 'packages/dilithium5/fuzz/open-src.mjs' },
-  { name: 'd5-unpack-sig',  script: 'packages/dilithium5/fuzz/unpack-sig.mjs' },
+  { name: 'verify-src', script: 'packages/mldsa87/fuzz/verify-src.mjs' },
+  { name: 'open-src', script: 'packages/mldsa87/fuzz/open-src.mjs' },
+  { name: 'unpack-sig', script: 'packages/mldsa87/fuzz/unpack-sig.mjs' },
+  { name: 'verify-dist', script: 'packages/mldsa87/fuzz/verify-dist.mjs' },
+  { name: 'd5-verify-src', script: 'packages/dilithium5/fuzz/verify-src.mjs' },
+  { name: 'd5-open-src', script: 'packages/dilithium5/fuzz/open-src.mjs' },
+  { name: 'd5-unpack-sig', script: 'packages/dilithium5/fuzz/unpack-sig.mjs' },
   { name: 'd5-verify-dist', script: 'packages/dilithium5/fuzz/verify-dist.mjs' },
 ];
 
 const PROFILES = {
-  quick:  10_000, // per-push CI gate
+  quick: 10_000, // per-push CI gate
   weekly: 100_000, // scheduled Sunday run (fuzz-scheduled.yml)
-  deep:   1_000_000, // audit-level review only — run on demand, never scheduled
+  deep: 1_000_000, // audit-level review only — run on demand, never scheduled
 };
 
 const CORPUS_DIRS = [
@@ -47,12 +64,22 @@ function parseArgs() {
     profile: null,
     cleanCorpus: false,
     allowLargeCorpus: false,
+    // Per-child inactivity watchdog, minutes (fractions allowed; 0 disables).
+    // Harnesses print progress every <=2000 iterations, so a healthy child is
+    // never silent for long; a synchronously hung one is silent forever —
+    // which post-hoc performance.now() checks inside the child can never see.
+    watchdogIdleMin: 10,
+    // Test infrastructure (fault-injection meta-test): JSON file replacing
+    // the harness list with fixture harnesses.
+    harnessesFile: null,
   };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--seed' && i + 1 < args.length) opts.seed = Number(args[++i]);
     else if (args[i] === '--iterations' && i + 1 < args.length) opts.iterations = Number(args[++i]);
     else if (args[i] === '--timeout-ms' && i + 1 < args.length) opts.timeoutMs = Number(args[++i]);
     else if (args[i] === '--profile' && i + 1 < args.length) opts.profile = args[++i];
+    else if (args[i] === '--watchdog-idle-min' && i + 1 < args.length) opts.watchdogIdleMin = Number(args[++i]);
+    else if (args[i] === '--harnesses-file' && i + 1 < args.length) opts.harnessesFile = args[++i];
     else if (args[i] === '--clean-corpus') opts.cleanCorpus = true;
     else if (args[i] === '--allow-large-corpus') opts.allowLargeCorpus = true;
   }
@@ -106,9 +133,11 @@ function guardCorpusSize(opts) {
   if ((files > CORPUS_MAX_FILES || bytes > CORPUS_MAX_BYTES) && !opts.allowLargeCorpus) {
     console.error(
       `[corpus] corpus exceeds limits (${CORPUS_MAX_FILES} files / ${CORPUS_MAX_BYTES / (1024 * 1024)} MB).\n` +
-        `[corpus] Re-run with --clean-corpus to purge it, or --allow-large-corpus to proceed anyway.`,
+        `[corpus] Re-run with --clean-corpus to purge it, or --allow-large-corpus to proceed anyway.`
     );
-    process.exit(3);
+    // EX_CONFIG — deliberately outside the 0/1/>=2 finding namespace so a
+    // refusal to start can never be read as "found a forgery".
+    process.exit(EXIT_CORPUS_GUARD);
   }
 }
 
@@ -118,6 +147,12 @@ function resolveIterations(opts) {
   return 100_000;
 }
 
+function resolveHarnesses(opts) {
+  if (!opts.harnessesFile) return HARNESSES;
+  const parsed = JSON.parse(readFileSync(opts.harnessesFile, 'utf8'));
+  return parsed.map((h) => ({ name: h.name, script: h.script, extraArgs: h.extraArgs ?? [] }));
+}
+
 function formatDuration(ms) {
   const totalSec = Math.floor(ms / 1000);
   const m = Math.floor(totalSec / 60);
@@ -125,15 +160,33 @@ function formatDuration(ms) {
   return `${m}m${String(s).padStart(2, '0')}s`;
 }
 
-function statusLabel(code) {
-  if (code >= 2) return 'CRITICAL';
-  if (code === 1) return 'INTERESTING';
+function statusLabel(entry) {
+  if (entry.watchdogKilled) return 'WATCHDOG-KILL';
+  if (entry.signal) return 'SIGNAL-DEATH';
+  if (entry.spawnError) return 'SPAWN-ERROR';
+  if (entry.effectiveExit >= 2) return 'CRITICAL';
+  if (entry.effectiveExit === 1) return 'INTERESTING';
   return 'CLEAN';
 }
 
 const opts = parseArgs();
+
+// --profile names an iteration budget; --iterations overrides it silently and
+// past campaigns recorded misleading "profile: weekly, iterations: 200"
+// summaries. Refuse the ambiguity.
+if (opts.profile != null && opts.iterations != null) {
+  console.error('[args] --profile and --iterations are mutually exclusive; pass one.');
+  process.exit(EXIT_USAGE);
+}
+if (opts.profile != null && PROFILES[opts.profile] == null) {
+  console.error(`[args] unknown profile "${opts.profile}" (expected: ${Object.keys(PROFILES).join(' | ')})`);
+  process.exit(EXIT_USAGE);
+}
+
 guardCorpusSize(opts);
 const iterations = resolveIterations(opts);
+const harnesses = resolveHarnesses(opts);
+const WATCHDOG_IDLE_MS = opts.watchdogIdleMin > 0 ? opts.watchdogIdleMin * 60_000 : 0;
 
 const campaignTs = new Date().toISOString().replace(/[:.]/g, '-');
 const LOGS_DIR = join(ROOT, 'fuzz-results', `campaign-${campaignTs}`);
@@ -145,18 +198,20 @@ console.log('╚═════════════════════�
 console.log(`  master seed:  ${opts.seed}`);
 console.log(`  iterations:   ${iterations}${opts.profile ? ` (profile: ${opts.profile})` : ''}`);
 console.log(`  timeout-ms:   ${opts.timeoutMs ?? 'default'}`);
-console.log(`  harnesses:    ${HARNESSES.length}`);
+console.log(`  watchdog:     ${WATCHDOG_IDLE_MS > 0 ? `${opts.watchdogIdleMin} min idle` : 'disabled'}`);
+console.log(`  harnesses:    ${harnesses.length}`);
 console.log(`  logs dir:     ${LOGS_DIR}`);
 console.log();
 
 const results = [];
 
-const children = HARNESSES.map((harness, idx) => {
+const children = harnesses.map((harness, idx) => {
   const scriptPath = join(ROOT, harness.script);
   const childSeed = opts.seed + idx;
 
   const childArgs = ['--seed', String(childSeed), '--iterations', String(iterations)];
   if (opts.timeoutMs != null) childArgs.push('--timeout-ms', String(opts.timeoutMs));
+  if (harness.extraArgs?.length) childArgs.push(...harness.extraArgs);
 
   const startMs = Date.now();
   console.log(`[launch] ${harness.name} (pid pending) seed=${childSeed}`);
@@ -180,6 +235,10 @@ const children = HARNESSES.map((harness, idx) => {
     startMs,
     endMs: null,
     exitCode: null,
+    signal: null,
+    effectiveExit: null,
+    watchdogKilled: false,
+    spawnError: null,
     stderrTail: '',
     stdoutTail: '',
   };
@@ -188,7 +247,25 @@ const children = HARNESSES.map((harness, idx) => {
   let stderrBuf = '';
   let stdoutBuf = '';
 
+  // Per-child inactivity watchdog: a synchronously hung harness produces no
+  // further output and no exit — the only place that can detect and break a
+  // hang is here in the runner. Kill + mark critical.
+  let watchdogTimer = null;
+  const armWatchdog = () => {
+    if (WATCHDOG_IDLE_MS <= 0) return;
+    clearTimeout(watchdogTimer);
+    watchdogTimer = setTimeout(() => {
+      entry.watchdogKilled = true;
+      const idleMin = opts.watchdogIdleMin;
+      console.error(`[watchdog] ${harness.name} silent for ${idleMin} min — killing pid ${child.pid} (probable hang)`);
+      logStream.write(`\n# watchdog: no output for ${idleMin} min — killed as probable hang\n`);
+      child.kill('SIGKILL');
+    }, WATCHDOG_IDLE_MS);
+  };
+  armWatchdog();
+
   child.stdout.on('data', (chunk) => {
+    armWatchdog();
     const text = chunk.toString();
     stdoutBuf += text;
     if (stdoutBuf.length > 8192) stdoutBuf = stdoutBuf.slice(-8192);
@@ -200,6 +277,7 @@ const children = HARNESSES.map((harness, idx) => {
   });
 
   child.stderr.on('data', (chunk) => {
+    armWatchdog();
     const text = chunk.toString();
     stderrBuf += text;
     if (stderrBuf.length > 8192) stderrBuf = stderrBuf.slice(-8192);
@@ -211,22 +289,35 @@ const children = HARNESSES.map((harness, idx) => {
   });
 
   const done = new Promise((resolve) => {
-    child.on('exit', (code) => {
+    child.on('exit', (code, signal) => {
+      clearTimeout(watchdogTimer);
       entry.endMs = Date.now();
-      entry.exitCode = code ?? -1;
+      entry.exitCode = code; // null when killed by a signal — keep it visible
+      entry.signal = signal ?? null;
+      // Signal death (OOM SIGKILL, SIGSEGV, watchdog kill) is the crash
+      // class fuzzing exists to surface — it must read as critical, never
+      // be clamped to CLEAN.
+      entry.effectiveExit = code === null ? 2 : code;
       entry.stderrTail = stderrBuf.slice(-2048);
       entry.stdoutTail = stdoutBuf.slice(-2048);
       const dur = formatDuration(entry.endMs - entry.startMs);
-      const status = statusLabel(entry.exitCode);
-      logStream.write(`\n# exit_code=${entry.exitCode}  status=${status}  duration=${dur}\n`);
+      const status = statusLabel(entry);
+      logStream.write(
+        `\n# exit_code=${entry.exitCode}  signal=${entry.signal ?? 'none'}  status=${status}  duration=${dur}\n`
+      );
       logStream.end();
-      console.log(`[done] ${harness.name} exit=${entry.exitCode} status=${status} duration=${dur}`);
+      console.log(
+        `[done] ${harness.name} exit=${entry.exitCode}${entry.signal ? ` signal=${entry.signal}` : ''} status=${status} duration=${dur}`
+      );
       resolve();
     });
 
     child.on('error', (err) => {
+      clearTimeout(watchdogTimer);
       entry.endMs = Date.now();
-      entry.exitCode = entry.exitCode ?? -1;
+      entry.spawnError = err.message;
+      // A harness that could not run verified nothing — critical, not clean.
+      entry.effectiveExit = 2;
       entry.stderrTail = err.message;
       logStream.write(`\n# error: ${err.message}\n`);
       logStream.end();
@@ -247,32 +338,22 @@ console.log('══════════════════════�
 console.log();
 
 const nameW = 16;
-const statusW = 12;
-const exitW = 6;
+const statusW = 15;
+const exitW = 12;
 const durW = 10;
 
-console.log(
-  'Harness'.padEnd(nameW) +
-  'Status'.padEnd(statusW) +
-  'Exit'.padEnd(exitW) +
-  'Duration'.padEnd(durW),
-);
+console.log('Harness'.padEnd(nameW) + 'Status'.padEnd(statusW) + 'Exit'.padEnd(exitW) + 'Duration'.padEnd(durW));
 console.log('-'.repeat(nameW + statusW + exitW + durW));
 
 for (const r of results) {
   const dur = r.endMs ? formatDuration(r.endMs - r.startMs) : 'n/a';
-  const status = statusLabel(r.exitCode);
-  console.log(
-    r.name.padEnd(nameW) +
-    status.padEnd(statusW) +
-    String(r.exitCode).padEnd(exitW) +
-    dur.padEnd(durW),
-  );
+  const exitText = r.signal ? `${r.exitCode}/${r.signal}` : String(r.exitCode);
+  console.log(r.name.padEnd(nameW) + statusLabel(r).padEnd(statusW) + exitText.padEnd(exitW) + dur.padEnd(durW));
 }
 
 console.log();
 
-const maxExit = Math.max(0, ...results.map((r) => r.exitCode ?? 0));
+const maxExit = Math.max(0, ...results.map((r) => r.effectiveExit ?? 2));
 if (maxExit >= 2) {
   console.log('*** CRITICAL findings detected ***');
 } else if (maxExit === 1) {
@@ -287,6 +368,7 @@ const summary = {
   profile: opts.profile ?? null,
   requestedIterations: iterations,
   timeoutMs: opts.timeoutMs ?? null,
+  watchdogIdleMin: opts.watchdogIdleMin,
   logsDir: LOGS_DIR,
   maxExitCode: maxExit,
   verdict: maxExit >= 2 ? 'CRITICAL' : maxExit === 1 ? 'INTERESTING' : 'CLEAN',
@@ -295,7 +377,11 @@ const summary = {
     seed: r.seed,
     pid: r.pid,
     exitCode: r.exitCode,
-    status: statusLabel(r.exitCode),
+    signal: r.signal,
+    effectiveExit: r.effectiveExit,
+    watchdogKilled: r.watchdogKilled,
+    spawnError: r.spawnError,
+    status: statusLabel(r),
     durationMs: r.endMs ? r.endMs - r.startMs : null,
     durationHuman: r.endMs ? formatDuration(r.endMs - r.startMs) : 'n/a',
     stderrTail: r.stderrTail,

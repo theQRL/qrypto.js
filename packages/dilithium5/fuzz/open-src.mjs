@@ -9,11 +9,12 @@
  *   node packages/dilithium5/fuzz/open-src.mjs [--seed N] [--iterations N] [--timeout-ms N]
  */
 
-import { cryptoSignKeypair, cryptoSign, cryptoSignOpen } from '../src/sign.js';
+import { cryptoSignKeypair, cryptoSign, cryptoSignOpen, cryptoSignOpenWithReason } from '../src/sign.js';
 import { CryptoPublicKeyBytes, CryptoSecretKeyBytes, CryptoBytes } from '../src/const.js';
 import { PRNG } from '../../../scripts/fuzz/engine/prng.mjs';
 import { mutate } from '../../../scripts/fuzz/engine/mutate-bytes.mjs';
 import { SaveBudget, classifyError } from '../../../scripts/fuzz/engine/save-budget.mjs';
+import { Verdict } from '../../../scripts/fuzz/engine/verdict.mjs';
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -25,19 +26,20 @@ const CORPUS_DIR = join(__dirname, 'corpus', 'open', 'interesting');
 
 const { values: cli } = parseArgs({
   options: {
-    seed:          { type: 'string', default: String(Date.now()) },
-    iterations:    { type: 'string', default: '100000' },
-    'timeout-ms':  { type: 'string', default: '5000' },
+    seed: { type: 'string', default: String(Date.now()) },
+    iterations: { type: 'string', default: '100000' },
+    'timeout-ms': { type: 'string', default: '5000' },
   },
   strict: false,
 });
 
-const SEED       = Number(cli.seed);
+const SEED = Number(cli.seed);
 const ITERATIONS = Number(cli.iterations);
 const PER_ITER_TIMEOUT_MS = Number(cli['timeout-ms']);
 
 const prng = new PRNG(SEED);
 const budget = new SaveBudget();
+const verdict = new Verdict();
 
 const stats = {
   iterations: 0,
@@ -51,7 +53,11 @@ const stats = {
 };
 
 function ensureDir(dir) {
-  try { mkdirSync(dir, { recursive: true }); } catch { /* exists */ }
+  try {
+    mkdirSync(dir, { recursive: true });
+  } catch {
+    /* exists */
+  }
 }
 
 function saveCase(tag, iter, data) {
@@ -153,7 +159,7 @@ function corruptBoundary(sm, rng) {
   const end = Math.min(out.length, CryptoBytes + 16);
   for (let i = start; i < end; i++) {
     if (rng.nextFloat() < 0.4) {
-      out[i] = rng.nextUint32() & 0xFF;
+      out[i] = rng.nextUint32() & 0xff;
     }
   }
   return out;
@@ -181,12 +187,12 @@ function extendTrailing(sm, rng) {
 }
 
 const STRATEGIES = [
-  { weight: 30, name: 'sig-prefix',    fn: (sm, _pk, rng) => [corruptSigPrefix(sm, rng), null] },
-  { weight: 30, name: 'msg-suffix',    fn: (sm, _pk, rng) => [corruptMsgSuffix(sm, rng), null] },
-  { weight: 15, name: 'boundary',      fn: (sm, _pk, rng) => [corruptBoundary(sm, rng), null] },
-  { weight: 10, name: 'truncate',      fn: (sm, _pk, rng) => [truncateNearBoundary(sm, rng), null] },
-  { weight: 10, name: 'corrupt-pk',    fn: (sm, pk, rng)  => [new Uint8Array(sm), mutatePk(pk, rng)] },
-  { weight: 5,  name: 'extend-trail',  fn: (sm, _pk, rng) => [extendTrailing(sm, rng), null] },
+  { weight: 30, name: 'sig-prefix', fn: (sm, _pk, rng) => [corruptSigPrefix(sm, rng), null] },
+  { weight: 30, name: 'msg-suffix', fn: (sm, _pk, rng) => [corruptMsgSuffix(sm, rng), null] },
+  { weight: 15, name: 'boundary', fn: (sm, _pk, rng) => [corruptBoundary(sm, rng), null] },
+  { weight: 10, name: 'truncate', fn: (sm, _pk, rng) => [truncateNearBoundary(sm, rng), null] },
+  { weight: 10, name: 'corrupt-pk', fn: (sm, pk, rng) => [new Uint8Array(sm), mutatePk(pk, rng)] },
+  { weight: 5, name: 'extend-trail', fn: (sm, _pk, rng) => [extendTrailing(sm, rng), null] },
 ];
 const TOTAL_WEIGHT = STRATEGIES.reduce((s, st) => s + st.weight, 0);
 
@@ -248,7 +254,40 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
     originalMsg: tuple.msg,
   };
 
+  // openWithReason agreement oracle (every 4th iteration — deterministic,
+  // no PRNG draw): the WithReason twin has its own validation ordering and
+  // must agree with cryptoSignOpen on every input; divergence means the
+  // two boundaries drifted.
+  if ((iter & 3) === 0) {
+    let wr;
+    let wrThrew = false;
+    try {
+      wr = cryptoSignOpenWithReason(mutSm, usePk);
+    } catch {
+      wrThrew = true;
+    }
+    const openAccepted = !threw && result !== undefined;
+    const wrAccepted = !wrThrew && wr?.ok === true;
+    const agree =
+      threw === wrThrew &&
+      openAccepted === wrAccepted &&
+      (!openAccepted || (result instanceof Uint8Array && arraysEqual(wr.message, result)));
+    if (!agree) {
+      verdict.record('WITHREASON_DISAGREE');
+      if (budget.shouldSave('WITHREASON_DISAGREE')) {
+        const name = saveCase('WITHREASON_DISAGREE', iter, {
+          ...caseMeta,
+          openResult: threw ? 'threw' : result === undefined ? 'undefined' : typeof result,
+          withReason: wrThrew ? 'threw' : JSON.stringify({ ok: wr?.ok, reason: wr?.ok ? null : wr?.reason }),
+        });
+        stats.interestingSaved++;
+        console.log(`[open-src] *** WITHREASON DISAGREE @${iter} [${strat.name}] -> ${name}`);
+      }
+    }
+  }
+
   if (timedOut) {
+    verdict.record('TIMEOUT');
     if (budget.shouldSave('TIMEOUT')) {
       stats.interestingSaved++;
       const name = saveCase('TIMEOUT', iter, {
@@ -263,7 +302,8 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
 
   if (threw) {
     // cryptoSignOpen is total over malformed sm/pk (returns undefined) —
-    // any throw here is an unexpected finding.
+    // any throw is an unexpected finding.
+    verdict.record('THREW');
     if (budget.shouldSave('THROW', classifyError(threwMsg))) {
       const name = saveCase('throw', iter, { ...caseMeta, error: threwMsg });
       stats.interestingSaved++;
@@ -272,11 +312,29 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
     continue;
   }
 
-  if (result !== undefined && inputMutated) {
-    if (result instanceof Uint8Array && !arraysEqual(result, tuple.msg)) {
+  if (result !== undefined && !(result instanceof Uint8Array)) {
+    // "open never returns junk": the documented contract is
+    // Uint8Array | undefined — any other truthy return is junk on the
+    // success path, mutated input or not.
+    verdict.record('JUNK_RETURN');
+    if (budget.shouldSave('JUNK_RETURN')) {
+      const name = saveCase('JUNK_RETURN', iter, {
+        ...caseMeta,
+        junkType: typeof result,
+        junkPreview: String(result).slice(0, 120),
+      });
+      stats.interestingSaved++;
+      console.log(`[open-src] *** JUNK RETURN @${iter} [${strat.name}] type=${typeof result} -> ${name}`);
+    }
+    continue;
+  }
+
+  if (result instanceof Uint8Array && inputMutated) {
+    if (!arraysEqual(result, tuple.msg)) {
       stats.criticals++;
-      if (budget.shouldSave('CRITICAL')) {
-        const name = saveCase('CRITICAL', iter, {
+      verdict.record('FORGERY');
+      if (budget.shouldSave('FORGERY')) {
+        const name = saveCase('FORGERY', iter, {
           ...caseMeta,
           openedMsg: result,
           expectedMsg: tuple.msg,
@@ -284,14 +342,17 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
         stats.interestingSaved++;
         console.log(`[open-src] *** CRITICAL FORGERY @${iter} [${strat.name}] -> ${name}`);
       }
-    } else if (result instanceof Uint8Array && arraysEqual(result, tuple.msg)) {
-      if (budget.shouldSave('accept_same_msg')) {
-        const name = saveCase('accept_same_msg', iter, {
+    } else {
+      // Accepting a MODIFIED signed-message blob that opens to the same
+      // message is signature malleability — a SUF-CMA violation.
+      verdict.record('ACCEPT_SAME_MSG');
+      if (budget.shouldSave('ACCEPT_SAME_MSG')) {
+        const name = saveCase('ACCEPT_SAME_MSG', iter, {
           ...caseMeta,
           openedMsg: result,
         });
         stats.interestingSaved++;
-        console.log(`[open-src] INTERESTING accept (same msg) @${iter} [${strat.name}] -> ${name}`);
+        console.log(`[open-src] *** MALLEABILITY accept (same msg) @${iter} [${strat.name}] -> ${name}`);
       }
     }
     continue;
@@ -308,21 +369,23 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
       const opened = cryptoSignOpen(check.sm, check.pk);
       if (!opened || !arraysEqual(opened, check.msg)) {
         stats.sanityFails++;
+        verdict.record('SANITY_FAIL');
         console.error(`[open-src] SANITY FAIL @${iter}: valid tuple did not open`);
       }
     } catch (e) {
       stats.sanityFails++;
+      verdict.record('SANITY_FAIL');
       console.error(`[open-src] SANITY THROW @${iter}: ${e?.message}`);
     }
   }
 
   if ((iter + 1) % 1000 === 0) {
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    const rate = ((iter + 1) / (Date.now() - startTime) * 1000).toFixed(0);
+    const rate = (((iter + 1) / (Date.now() - startTime)) * 1000).toFixed(0);
     console.log(
       `[open-src] ${iter + 1}/${ITERATIONS} (${elapsed}s, ${rate} it/s) ` +
-      `rejected=${stats.rejected} threw=${stats.threw} saved=${stats.interestingSaved} ` +
-      `criticals=${stats.criticals} sanity=${stats.sanityChecks}/${stats.sanityChecks - stats.sanityFails}ok`,
+        `rejected=${stats.rejected} threw=${stats.threw} saved=${stats.interestingSaved} ` +
+        `criticals=${stats.criticals} sanity=${stats.sanityChecks}/${stats.sanityChecks - stats.sanityFails}ok`
     );
   }
 }
@@ -335,7 +398,7 @@ console.log('\n===== FUZZ SUMMARY =====');
 console.log(`Seed:         ${SEED}`);
 console.log(`Iterations:   ${stats.iterations}`);
 console.log(`Elapsed:      ${elapsed}s`);
-console.log(`Rate:         ${(stats.iterations / (Date.now() - startTime) * 1000).toFixed(0)} it/s`);
+console.log(`Rate:         ${((stats.iterations / (Date.now() - startTime)) * 1000).toFixed(0)} it/s`);
 console.log(`Rejected:     ${stats.rejected}`);
 console.log(`Threw:        ${stats.threw}`);
 console.log(`Saved:        ${stats.interestingSaved}`);
@@ -347,16 +410,17 @@ for (let i = 0; i < STRATEGIES.length; i++) {
 }
 console.log(`Suppressed:   ${budget.suppressedCount()} (save budget)`);
 for (const line of budget.summaryLines()) console.log(`  ${line}`);
+console.log('Verdict:');
+for (const line of verdict.summaryLines()) console.log(`  ${line}`);
 console.log(`Corpus dir:   ${CORPUS_DIR}`);
 console.log('========================\n');
 
 if (stats.criticals > 0) {
   console.error(`[open-src] CRITICAL: ${stats.criticals} forgery case(s) found!`);
-  process.exit(2);
 }
 if (stats.sanityFails > 0) {
-  console.error(`[open-src] WARNING: ${stats.sanityFails} sanity failure(s)`);
-  process.exit(3);
+  console.error(`[open-src] CRITICAL: ${stats.sanityFails} sanity failure(s)`);
 }
 
-process.exit(0);
+// Single exit path: the shared severity map decides, never bespoke logic.
+process.exit(verdict.exitCode());

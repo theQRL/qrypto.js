@@ -7,13 +7,19 @@ import { unpackSig, packSig } from '../src/packing.js';
 import { cryptoSignKeypair, cryptoSignSignature, cryptoSignVerify } from '../src/sign.js';
 import { PolyVecK, PolyVecL } from '../src/polyvec.js';
 import {
-  K, L, N, OMEGA, SeedBytes,
-  PolyZPackedBytes, PolyVecHPackedBytes,
-  CryptoPublicKeyBytes, CryptoSecretKeyBytes, CryptoBytes,
+  K,
+  L,
+  OMEGA,
+  SeedBytes,
+  PolyZPackedBytes,
+  CryptoPublicKeyBytes,
+  CryptoSecretKeyBytes,
+  CryptoBytes,
 } from '../src/const.js';
 import { PRNG } from '../../../scripts/fuzz/engine/prng.mjs';
 import { mutate } from '../../../scripts/fuzz/engine/mutate-bytes.mjs';
 import { SaveBudget, classifyError } from '../../../scripts/fuzz/engine/save-budget.mjs';
+import { Verdict } from '../../../scripts/fuzz/engine/verdict.mjs';
 
 // Dilithium5 (Round 3): the challenge c in the signature is SeedBytes (32)
 // long — there is no separate CTILDEBytes constant in this parameter set.
@@ -27,6 +33,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const EXPECTED_UNPACK_THROW = /^sig must be a Uint8Array of \d+ bytes$/;
 
 const budget = new SaveBudget();
+const verdict = new Verdict();
 
 const args = process.argv.slice(2);
 function cliArg(name, fallback) {
@@ -55,29 +62,38 @@ function saveCase(label, iter, input, detail) {
 
   fs.writeFileSync(path.join(SAVE_DIR, `${base}.bin`), input);
 
-  fs.writeFileSync(path.join(SAVE_DIR, `${base}.json`), JSON.stringify({
-    label,
-    seed: SEED,
-    iteration: iter,
-    inputLen: input.length,
-    inputHex: toHex(input),
-    timestamp: new Date().toISOString(),
-    ...detail,
-  }, null, 2) + '\n');
+  fs.writeFileSync(
+    path.join(SAVE_DIR, `${base}.json`),
+    JSON.stringify(
+      {
+        label,
+        seed: SEED,
+        iteration: iter,
+        inputLen: input.length,
+        inputHex: toHex(input),
+        timestamp: new Date().toISOString(),
+        ...detail,
+      },
+      null,
+      2
+    ) + '\n'
+  );
 
   if (detail.originalSig) {
     fs.writeFileSync(path.join(SAVE_DIR, `${base}_orig.bin`), detail.originalSig);
   }
   if (detail.pk) {
-    fs.writeFileSync(path.join(SAVE_DIR, `${base}_pk.bin`),
-      typeof detail.pk === 'string' ? Buffer.from(detail.pk, 'hex') : detail.pk);
+    fs.writeFileSync(
+      path.join(SAVE_DIR, `${base}_pk.bin`),
+      typeof detail.pk === 'string' ? Buffer.from(detail.pk, 'hex') : detail.pk
+    );
   }
 
   return base;
 }
 
 function generateCorpus(count, masterSeed) {
-  const corpusPrng = new PRNG(masterSeed ^ 0xC0BFEED);
+  const corpusPrng = new PRNG(masterSeed ^ 0xc0bfeed);
   const corpus = [];
   for (let i = 0; i < count; i++) {
     const pk = new Uint8Array(CryptoPublicKeyBytes);
@@ -126,7 +142,6 @@ function mutateZRegion(buf, prng) {
 
 function mutateHintRegion(buf, prng) {
   const out = new Uint8Array(buf);
-  const hintLen = PolyVecHPackedBytes;
   const strategy = prng.nextUint32() % 5;
 
   switch (strategy) {
@@ -173,7 +188,7 @@ function mutateHintRegion(buf, prng) {
       const pos = hintOffset + OMEGA + row;
       if (pos < out.length) {
         const delta = prng.nextRange(1, 20);
-        out[pos] = (out[pos] + delta) & 0xFF;
+        out[pos] = (out[pos] + delta) & 0xff;
       }
       break;
     }
@@ -202,7 +217,7 @@ function truncateOrExtend(buf, prng) {
   out.set(buf.subarray(0, Math.min(buf.length, newLen)));
   if (newLen > buf.length) {
     for (let i = buf.length; i < newLen; i++) {
-      out[i] = prng.nextUint32() & 0xFF;
+      out[i] = prng.nextUint32() & 0xff;
     }
   }
   return out;
@@ -214,10 +229,10 @@ function randomFullMutate(buf, prng) {
 
 function applyMutation(buf, prng) {
   const roll = prng.nextFloat();
-  if (roll < 0.20) return mutateChallengeRegion(buf, prng);
+  if (roll < 0.2) return mutateChallengeRegion(buf, prng);
   if (roll < 0.45) return mutateZRegion(buf, prng);
-  if (roll < 0.80) return mutateHintRegion(buf, prng);
-  if (roll < 0.90) return truncateOrExtend(buf, prng);
+  if (roll < 0.8) return mutateHintRegion(buf, prng);
+  if (roll < 0.9) return truncateOrExtend(buf, prng);
   return randomFullMutate(buf, prng);
 }
 
@@ -248,7 +263,8 @@ const stats = {
 const startTime = Date.now();
 
 for (let iter = 0; iter < ITERATIONS; iter++) {
-  const entry = corpus[prng.nextUint32() % corpus.length];
+  const entryIdx = prng.nextUint32() % corpus.length;
+  const entry = corpus[entryIdx];
   const mutated = applyMutation(entry.sig, prng);
 
   const c = new Uint8Array(CHALLENGE_BYTES);
@@ -257,31 +273,46 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
 
   const t0 = performance.now();
   let rc;
+  let unpackThrew = false;
   try {
     rc = unpackSig(c, z, h, mutated);
   } catch (err) {
+    unpackThrew = true;
     if (EXPECTED_UNPACK_THROW.test(err.message)) {
       // Documented validation behavior (wrong-length input) — count only.
       stats.expectedThrew++;
-      continue;
-    }
-    stats.threw++;
-    if (budget.shouldSave('THROW', classifyError(err.message))) {
-      const name = saveCase('THROW', iter, mutated, {
-        error: err.message,
-        stack: err.stack?.split('\n').slice(0, 5).join('\n'),
-        baseTupleIndex: prng.nextUint32() % corpus.length,
-        originalSig: entry.sig,
-        originalSigHex: toHex(entry.sig),
-      });
-      stats.saved++;
-      if (stats.threw <= 5) {
-        console.log(`  [!] THROW at iter ${iter}: ${err.message} -> ${name}`);
+    } else {
+      stats.threw++;
+      verdict.record('THREW');
+      if (budget.shouldSave('THROW', classifyError(err.message))) {
+        const name = saveCase('THROW', iter, mutated, {
+          error: err.message,
+          stack: err.stack?.split('\n').slice(0, 5).join('\n'),
+          baseTupleIndex: entryIdx,
+          originalSig: entry.sig,
+          originalSigHex: toHex(entry.sig),
+        });
+        stats.saved++;
+        if (stats.threw <= 5) {
+          console.log(`  [!] THROW at iter ${iter}: ${err.message} -> ${name}`);
+        }
       }
     }
-    continue;
   }
   const iterElapsed = performance.now() - t0;
+  if (iterElapsed > PER_ITER_TIMEOUT_MS) {
+    verdict.record('TIMEOUT');
+    if (budget.shouldSave('TIMEOUT')) {
+      const name = saveCase('TIMEOUT', iter, mutated, {
+        error: `elapsed ${iterElapsed.toFixed(1)}ms > ${PER_ITER_TIMEOUT_MS}ms`,
+        baseTupleIndex: entryIdx,
+        originalSig: entry.sig,
+      });
+      stats.saved++;
+      console.log(`  [!] TIMEOUT at iter ${iter}: ${iterElapsed.toFixed(0)}ms -> ${name}`);
+    }
+  }
+  if (unpackThrew) continue;
 
   if (rc === 0) {
     stats.accept++;
@@ -290,6 +321,7 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
     try {
       packSig(repacked, c, z, h);
     } catch (err) {
+      verdict.record('REPACK_THROW');
       if (budget.shouldSave('REPACK_THROW', classifyError(err.message))) {
         const name = saveCase('REPACK_THROW', iter, mutated, {
           error: err.message,
@@ -307,6 +339,7 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
     const sameLen = mutated.length === SIG_LEN;
     if (sameLen && !arraysEqual(repackSlice, mutSlice)) {
       stats.canonDrift++;
+      verdict.record('CANON_DRIFT');
       if (budget.shouldSave('CANON_DRIFT')) {
         const name = saveCase('CANON_DRIFT', iter, mutated, {
           repackedHex: toHex(repacked),
@@ -326,9 +359,11 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
         const accepted = cryptoSignVerify(mutated, entry.msg, entry.pk);
         if (accepted) {
           stats.falseAcceptViaParser++;
-          const diffCount = mutated.length === entry.sig.length
-            ? Array.from(mutated).reduce((n, b, i) => n + (b !== entry.sig[i] ? 1 : 0), 0)
-            : -1;
+          verdict.record('FALSE_ACCEPT_VIA_PARSER');
+          const diffCount =
+            mutated.length === entry.sig.length
+              ? Array.from(mutated).reduce((n, b, i) => n + (b !== entry.sig[i] ? 1 : 0), 0)
+              : -1;
           if (budget.shouldSave('FALSE_ACCEPT_VIA_PARSER')) {
             const name = saveCase('FALSE_ACCEPT_VIA_PARSER', iter, mutated, {
               originalSig: entry.sig,
@@ -342,7 +377,9 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
               originalLen: entry.sig.length,
             });
             stats.saved++;
-            console.log(`  [!!!] CRITICAL FALSE ACCEPT VIA PARSER at iter ${iter} (${diffCount} diff bytes) -> ${name}`);
+            console.log(
+              `  [!!!] CRITICAL FALSE ACCEPT VIA PARSER at iter ${iter} (${diffCount} diff bytes) -> ${name}`
+            );
           }
         }
       } catch {
@@ -367,9 +404,11 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
 
     if (rc2 !== rc) {
       stats.nonDeterministic++;
+      verdict.record('NON_DETERMINISTIC');
       if (budget.shouldSave('NON_DETERMINISTIC')) {
         const name = saveCase('NON_DETERMINISTIC', iter, mutated, {
-          rc1: rc, rc2,
+          rc1: rc,
+          rc2,
           originalSig: entry.sig,
           originalSigHex: toHex(entry.sig),
         });
@@ -381,11 +420,11 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
 
   if (iter > 0 && iter % 10000 === 0) {
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    const ips = (iter / (Date.now() - startTime) * 1000).toFixed(0);
+    const ips = ((iter / (Date.now() - startTime)) * 1000).toFixed(0);
     console.log(
       `  [${elapsed}s] iter=${iter}  accept=${stats.accept} reject=${stats.reject} ` +
-      `threw=${stats.threw} canonDrift=${stats.canonDrift} ` +
-      `falseAccept=${stats.falseAcceptViaParser} saved=${stats.saved}  (${ips} it/s)`,
+        `threw=${stats.threw} canonDrift=${stats.canonDrift} ` +
+        `falseAccept=${stats.falseAcceptViaParser} saved=${stats.saved}  (${ips} it/s)`
     );
   }
 }
@@ -393,22 +432,31 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 console.log();
 console.log(`Done. ${ITERATIONS} iterations in ${elapsed}s`);
-console.log(`  accept=${stats.accept}  reject=${stats.reject}  threw=${stats.threw}  expectedThrew=${stats.expectedThrew}`);
+console.log(
+  `  accept=${stats.accept}  reject=${stats.reject}  threw=${stats.threw}  expectedThrew=${stats.expectedThrew}`
+);
 console.log(`  canonDrift=${stats.canonDrift}  falseAcceptViaParser=${stats.falseAcceptViaParser}`);
-console.log(`  nonDeterministic=${stats.nonDeterministic}  saved=${stats.saved}  suppressedByBudget=${budget.suppressedCount()}`);
+console.log(
+  `  nonDeterministic=${stats.nonDeterministic}  saved=${stats.saved}  suppressedByBudget=${budget.suppressedCount()}`
+);
 console.log('Save-budget accounting:');
 for (const line of budget.summaryLines()) console.log(`  ${line}`);
 
+console.log('Verdict:');
+for (const line of verdict.summaryLines()) console.log(`  ${line}`);
+
 if (stats.falseAcceptViaParser > 0) {
   console.log('\n  *** CRITICAL: False accepts via parser detected! ***');
-  process.exit(2);
+}
+if (stats.nonDeterministic > 0) {
+  console.log('\n  *** CRITICAL: Parser non-determinism detected ***');
 }
 if (stats.canonDrift > 0) {
   console.log('\n  *** WARNING: Canonicalization drift detected ***');
-  process.exit(1);
 }
 
-process.exit(0);
+// Single exit path: the shared severity map decides, never bespoke logic.
+process.exit(verdict.exitCode());
 
 function findDiffPositions(a, b) {
   const diffs = [];

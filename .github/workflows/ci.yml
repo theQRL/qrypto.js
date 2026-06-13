@@ -1,6 +1,6 @@
 name: CI
 
-# Standalone test matrix — runs lint, tests (Node 20.x + 22.x), dist-check,
+# Standalone test matrix — runs lint, tests (Node 20.x/22.x/24.x), dist-check,
 # browser tests, and fuzz on every push and pull_request to main.
 on:
   push:
@@ -31,6 +31,8 @@ jobs:
       - run: npm run lint
       - name: Shared-file sync (dilithium5 ↔ mldsa87)
         run: npm run check-shared
+      - name: Typings compile gate (consumer-compile against shipped dist .d.ts)
+        run: npm run typecheck
 
   test:
     name: Test (Node ${{ matrix.node-version }})
@@ -83,7 +85,20 @@ jobs:
           node-version: '22.x'
       - run: npm ci
       - run: npm run build
-      - run: node scripts/fuzz/run-campaign.mjs --profile quick --seed 42
+      - name: Fuzz verdict-pipeline meta-test
+        # Proves the exit-code wiring no clean campaign exercises: injects a
+        # THREW / forgery / junk-return / SIGKILL fault and asserts the
+        # campaign exit code and summary verdict. Guards against the verdict
+        # plumbing silently going fail-open.
+        run: node scripts/fuzz/test/fault-injection.test.mjs
+      - name: Run quick fuzz campaign
+        env:
+          # Seed from run_id so every push explores a fresh mutation stream
+          # instead of replaying one fixed campaign forever. Reproducibility
+          # is preserved: the seed is recorded in summary.json and every
+          # harness log header.
+          MASTER_SEED: ${{ github.run_id }}
+        run: node scripts/fuzz/run-campaign.mjs --profile quick --seed "$MASTER_SEED"
 
   browser-tests:
     name: Browser Tests (Playwright)
