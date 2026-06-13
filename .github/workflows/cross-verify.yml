@@ -24,6 +24,13 @@ concurrency:
 # b2ee4790 = v0.8.0, the last release containing it; this leg verifies
 # interop with the frozen legacy implementation. The mldsa87 go-qrllib leg
 # tracks a current pin and should be bumped routinely.
+#
+# The env pins below govern the CLONES (used by the Go→JS sign directions).
+# The JS→Go *verify* directions resolve go-qrllib through per-algorithm Go
+# modules instead: .github/cross-verify/mldsa87-go/go.mod (routinely bumped,
+# keep on the same release as GO_QRLLIB_MLDSA87_PIN) and
+# .github/cross-verify/dilithium5-go/go.mod (frozen pseudo-version). Those
+# go.mod requirements are pins too — bump/freeze them per CONTRIBUTING.md.
 env:
   GO_QRLLIB_DILITHIUM5_PIN: b2ee4790ef041104d2a48ae87cf68c0de621c89e # v0.8.0 (2026-06-08), last release with crypto/dilithium
   GO_QRLLIB_MLDSA87_PIN: 6f9978367906233874b406bd5d55b0e8b8d01d9c # v0.9.0 (2026-06-10)
@@ -62,10 +69,10 @@ jobs:
       - name: Generate qrypto.js Dilithium5 signature
         run: node .github/cross-verify/dilithium5_sign.js
 
-      - name: Verify qrypto.js signature with go-qrllib
+      - name: Verify qrypto.js signature with go-qrllib (frozen module pin)
         run: |
           echo "=== Verifying qrypto.js signature with go-qrllib ==="
-          cd .github/cross-verify && go run dilithium5_verify.go
+          cd .github/cross-verify/dilithium5-go && go run dilithium5_verify.go
           echo "✓ qrypto.js → go-qrllib: PASSED"
 
       - name: Generate go-qrllib Dilithium5 signature
@@ -110,10 +117,10 @@ jobs:
       - name: Generate qrypto.js ML-DSA-87 signature
         run: node .github/cross-verify/mldsa87_sign.js
 
-      - name: Verify qrypto.js signature with go-qrllib
+      - name: Verify qrypto.js signature with go-qrllib (current release pin)
         run: |
           echo "=== Verifying qrypto.js ML-DSA-87 signature with go-qrllib ==="
-          cd .github/cross-verify && go run mldsa87_verify.go
+          cd .github/cross-verify/mldsa87-go && go run mldsa87_verify.go
           echo "✓ qrypto.js → go-qrllib: PASSED"
 
       - name: Generate go-qrllib ML-DSA-87 signature

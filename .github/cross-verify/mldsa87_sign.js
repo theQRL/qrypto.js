@@ -8,11 +8,7 @@
  */
 
 import { writeFileSync } from 'fs';
-import {
-  CryptoPublicKeyBytes,
-  CryptoSecretKeyBytes,
-  CryptoBytes,
-} from '../../packages/mldsa87/src/const.js';
+import { CryptoPublicKeyBytes, CryptoSecretKeyBytes, CryptoBytes } from '../../packages/mldsa87/src/const.js';
 import { cryptoSignKeypair, cryptoSign } from '../../packages/mldsa87/src/sign.js';
 
 // Fixed test seed (raw seed - no pre-hashing needed for ML-DSA-87)

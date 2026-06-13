@@ -8,11 +8,7 @@
  */
 
 import { writeFileSync } from 'fs';
-import {
-  CryptoPublicKeyBytes,
-  CryptoSecretKeyBytes,
-  CryptoBytes,
-} from '../../packages/dilithium5/src/const.js';
+import { CryptoPublicKeyBytes, CryptoSecretKeyBytes, CryptoBytes } from '../../packages/dilithium5/src/const.js';
 import { cryptoSignKeypair, cryptoSign } from '../../packages/dilithium5/src/sign.js';
 
 // Fixed test seed (this is the SHAKE256 hash of all-zeros seed, matching go-qrllib's internal format)
