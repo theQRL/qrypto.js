@@ -70,6 +70,17 @@ function bytesEqual(a, b) {
   return true;
 }
 
+// True iff `str` parses as hex (matching sign.js hexToBytes) and decodes to
+// exactly `baseMsg` — labels the msg-hex family.
+function hexDecodesToSameMessage(str, baseMsg) {
+  if (typeof str !== 'string') return false;
+  if (str !== str.trim()) return false;
+  let clean = str.startsWith('0x') || str.startsWith('0X') ? str.slice(2) : str;
+  if (clean.length === 0 || clean.length % 2 !== 0) return false;
+  if (!/^[0-9a-fA-F]*$/.test(clean)) return false;
+  return clean.toLowerCase() === toHex(baseMsg);
+}
+
 function main() {
   const opts = parseArgs();
   const rng = new PRNG(opts.seed);
@@ -181,12 +192,10 @@ function main() {
           const sub = rng.nextFloat();
           const sameHex = toHex(base.msg);
           if (sub < 0.25) {
-            // Valid hex of the SAME message (optionally 0x-prefixed):
-            // semantically unchanged, must still verify.
+            // Valid hex of the SAME message (optionally 0x-prefixed).
             mutMsg = rng.nextFloat() < 0.5 ? `0x${sameHex}` : sameHex;
-            expectation = 'accept';
           } else if (sub < 0.5) {
-            // Valid hex of a mutated message: must reject.
+            // Hex of a mutated message (mutate() may no-op back to original).
             mutMsg = toHex(mutate(cloneBytes(base.msg), rng));
           } else if (sub < 0.65) {
             // Odd-length hex: strict parser must reject.
@@ -203,6 +212,8 @@ function main() {
             // Not hex at all.
             mutMsg = 'not hex input!';
           }
+          // Expectation follows what the string decodes to, not the branch.
+          expectation = hexDecodesToSameMessage(mutMsg, base.msg) ? 'accept' : 'reject';
         }
       }
 

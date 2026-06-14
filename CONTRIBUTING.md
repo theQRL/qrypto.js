@@ -77,7 +77,7 @@ The full matrix (a pin missing from this table is a bug):
 | `PQCRYSTALS_MLDSA87_PIN` | cross-verify.yml `env:` | C reference (FIPS 204) | bump routinely |
 | `PQCRYSTALS_DILITHIUM5_PIN` | cross-verify.yml `env:` | C reference (Round 3) | **frozen** |
 | go-qrllib `v0.9.0` | `.github/cross-verify/mldsa87-go/go.mod` | resolves the ML-DSA-87 JS→Go *verify* leg | bump together with `GO_QRLLIB_MLDSA87_PIN` |
-| go-qrllib `v0.1.3-0.20260108…` | `.github/cross-verify/dilithium5-go/go.mod` | resolves the Dilithium5 JS→Go *verify* leg (pre-removal snapshot) | **frozen** |
+| go-qrllib `v0.1.3-0.20260108…` | `.github/cross-verify/dilithium5-go/go.mod` | resolves the Dilithium5 JS→Go *verify* leg (pre-removal snapshot) | **frozen** (go-qrllib only — see note) |
 | `npm@11.17.0` | release.yml publish job + root `overrides.npm` | the npm CLI doing trusted publishing | bump together, exact |
 | actionlint `version: 1.7.10` | actionlint.yml | the linter engine inside the pinned action (defaults to `latest` otherwise) | bump deliberately |
 | zizmor engine | zizmor-action (SHA-pinned) | digest-pins its own engine — no extra pin needed | follows action SHA |
@@ -95,8 +95,14 @@ a failure silently.
 **Do not bump** `GO_QRLLIB_DILITHIUM5_PIN` (`b2ee4790…` = **v0.8.0**, the
 last go-qrllib release containing `crypto/dilithium` — upstream removed it
 in **v0.9.0**, commit `1ae1760`), `PQCRYSTALS_DILITHIUM5_PIN`
-(`ac743d5…`, Round 3), or the `dilithium5-go/go.mod` pseudo-version: these
-are permanently historical references for the frozen Dilithium5 scheme.
+(`ac743d5…`, Round 3), or the `dilithium5-go/go.mod` **go-qrllib**
+pseudo-version: these are permanently historical references for the frozen
+Dilithium5 scheme.
+
+The freeze covers **go-qrllib itself**, not its transitive deps:
+`dilithium5-go`'s indirect `golang.org/x/crypto` (used only for SHAKE, not
+`x/crypto/ssh`) should be security-bumped when advisories land — currently
+`v0.53.0`. `mldsa87-go` (v0.9.0) carries no `x/crypto` (Go 1.24+ stdlib SHAKE).
 
 ## Fuzzing
 
@@ -117,82 +123,43 @@ for each package). Findings are written under `packages/*/fuzz/corpus/`
 expected validation throws are counted but never persisted. The campaign
 refuses to start over a bloated corpus; `--clean-corpus` purges it.
 
-**Verdict contract.** Every finding class maps to a severity through one
-shared map (`scripts/fuzz/engine/verdict.mjs`); harnesses route findings
-through a `Verdict` and exit via `verdict.exitCode()` — never bespoke exit
-logic. Campaign exit codes:
+**Verdict contract.** Every finding class maps to a severity via one shared
+map (`scripts/fuzz/engine/verdict.mjs`); harnesses exit through
+`verdict.exitCode()`, never bespoke logic. **0** clean · **1** interesting
+(throw, timeout, canon-drift) · **≥2** critical (false-accept, forgery,
+malleability, junk return, parser non-determinism, src↔dist divergence,
+sanity failure, contract violation). Signal death (`code === null`) and
+watchdog kills (`--watchdog-idle-min`, default 10) are **≥2**, never clamped
+to clean. Runner refusals stay outside the finding namespace: corpus-guard
+**78**, bad flags **64**.
 
-- **0** clean · **1** interesting (unexpected throw, timeout, canon-drift) ·
-  **≥2** critical (false-accept, forgery, malleability, junk return, parser
-  non-determinism, src↔dist divergence, sanity-check failure, contract
-  violation).
-- A child that **dies by signal** (OOM SIGKILL / SIGSEGV, `code === null`)
-  is treated as **≥2**, never clamped to clean — that crash class is exactly
-  what fuzzing exists to surface. The runner also kills and marks ≥2 any
-  child silent past `--watchdog-idle-min` (default 10 min) — a genuine hang.
-- Runner-level refusals live **outside** the finding namespace so they can't
-  be confused with findings: corpus-guard refusal exits **78** (EX_CONFIG),
-  contradictory flags exit **64** (EX_USAGE).
-
-`node scripts/fuzz/test/fault-injection.test.mjs` (a CI gate) injects one
-fault of each class and asserts the campaign exit code and `summary.json`
-verdict — it locks the wiring above, which no clean campaign ever exercises.
-`--profile` and `--iterations` are mutually exclusive (the former names an
-iteration budget; passing both is rejected rather than silently overridden).
+`scripts/fuzz/test/fault-injection.test.mjs` (a CI gate) injects a fault of
+each class and asserts the exit code + `summary.json` verdict. `--profile`
+and `--iterations` are mutually exclusive.
 
 ## Browser & packaging test strategy
 
-Two layers, deliberately paired (house playbook §7):
+Two paired layers (playbook §7): **source-level browser execution** — the
+full vector suite runs in Chromium via Playwright (`packages/*/browser-tests/`,
+`npm run test:browser`); and **published-artifact packaging** —
+`test/dist-bundle.test.js` imports the built `dist/{mjs,cjs}` in subprocesses,
+and the release smoke job (`scripts/release/smoke-tarballs.js`) installs the
+**packed `.tgz`** (the artifact handed to `publish`, not a rebuild) into
+throwaway CJS + ESM projects. So the thing tested is the thing shipped.
 
-- **Source-level browser execution.** The full vector suite runs in Chromium
-  via Playwright (`packages/*/browser-tests/`, `npm run test:browser`),
-  importing the actual `test/*.test.js` files. This proves the source works
-  in a real browser engine, not just Node.
-- **Published-artifact packaging.** `test/dist-bundle.test.js` (in
-  `npm test`) imports the built `dist/{mjs,cjs}` artifacts in subprocesses
-  (ESM `import` + CJS `require` + round-trip), and the release pipeline's
-  smoke job (`scripts/release/smoke-tarballs.js`) installs the **packed
-  `.tgz` bytes** — the same artifact handed to `publish`, never a rebuild —
-  into throwaway CJS and ESM projects on a different Node major. So the
-  thing tested is literally the thing shipped.
+**Rev-4 bundler matrix (Parcel/webpack/Rollup in Chromium) — waived this
+cycle.** Rollup compat is already proven (it builds `dist/`), the source
+already runs in a real browser, and Parcel/webpack would add hundreds of
+transitive devDeps — against §3.5's minimal-dep, 0-audit posture — duplicated
+across both packages. Revisit (mirroring js-qrl-cryptography's
+`build-browser-tests.sh`) if a consumer hits a Parcel/webpack-only breakage,
+the runtime dep surface grows beyond `@noble/hashes`, or a Node-builtin
+polyfill becomes needed.
 
-**Rev-4 bundler matrix — waived this cycle (revisit trigger below).** The
-js-qrl-cryptography pattern compiles the vector suite under Parcel, webpack,
-and Rollup in Chromium to catch bundler-specific exports-map/resolution/
-polyfill breakage. For qrypto.js the marginal coverage does not yet justify
-the cost:
-
-- Rollup compatibility is already proven — Rollup *is* the build tool that
-  produces `dist/{mjs,cjs}`, and the dist-bundle + tarball smoke exercise
-  its output and the `exports` map directly.
-- The source already executes in a real browser engine (Chromium/Playwright
-  above); what the matrix adds over that is Parcel/webpack-specific
-  resolution, which this pure-JS package (single runtime dep,
-  `@noble/hashes`, no Node-builtin polyfill surface) is far less exposed to
-  than a TS-sourced, AES/KDF-bearing library.
-- Adopting Parcel + webpack pulls in hundreds of transitive devDependencies,
-  in direct tension with §3.5 (minimal dependency surface, `npm audit` 0
-  including dev) and would have to be duplicated across both monorepo
-  packages.
-
-**Revisit and adopt the matrix if any of these become true:** a consumer
-reports a Parcel/webpack-only breakage; the runtime dependency surface grows
-beyond `@noble/hashes`; or the package starts relying on Node builtins that
-need browser polyfills. Adopting means mirroring js-qrl-cryptography
-(`scripts/build-browser-tests.sh` + the three bundlers behind exact pins)
-and pairing it with the existing tarball smoke, not replacing it.
-
-**Other rev-4 patterns — noted as not adopted (optional for monorepos):**
-
-- *Reusable `workflow_call` CI* (one job-list consumed by push/PR/release):
-  the house guidance scopes this to single-package repos; qrypto.js keeps
-  separate workflows because it has specialized verification legs
-  (`acvp`/`wycheproof`/`cross-verify`) a single shared battery would not fit
-  cleanly. The preflight job re-runs lint/typecheck/check-shared/test/build
-  so the release path is still gated on the same checks.
-- *Per-module Codecov `components`*: qrypto.js already gets per-package drift
-  visibility from monorepo **flags** (`mldsa87` / `dilithium5`), so the
-  single-package components pattern adds nothing here.
+**Reusable `workflow_call` CI / per-module Codecov components — not adopted:**
+the monorepo's specialized verify legs (acvp/wycheproof/cross-verify) don't
+fit one shared battery (preflight re-runs the checks anyway), and per-package
+Codecov flags already give per-module drift visibility.
 
 ## Coverage policy
 
@@ -268,15 +235,10 @@ symbols in the README "API Reference": `cryptoSignKeypair`, `cryptoSign`,
 byte-size constants, and `zeroize`/`isZero` — is the stable contract.
 Everything else is exported for testing/interop, is marked `@deprecated`
 in the `.d.ts` as internal, and **will move behind a subpath or disappear
-at the next major version**. `zeroizePolyVec` is among the deprecated set:
-it operates on internal `PolyVecK`/`PolyVecL` types that cannot be
-constructed through the documented surface, so it is not part of the stable
-contract. Don't grow the internal surface: new helpers that aren't part of
-the documented API should not be added to the README or relied upon
-downstream. The consumer-compile gate (`npm run typecheck`,
-`test/types/*-consumer.mts`) imports every documented symbol from the
-package `exports`, so this list and the shipped typings cannot silently
-drift apart.
+at the next major version** — including `zeroizePolyVec` (it takes internal
+`PolyVecK`/`PolyVecL` types). Don't grow the internal surface. The
+consumer-compile gate (`npm run typecheck`, `test/types/`) imports every
+documented symbol, so this list and the shipped typings can't silently drift.
 
 ## Release trust model (maintainers)
 
