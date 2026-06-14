@@ -1,0 +1,7 @@
+# Local `go build` output. The cross-verify workflow uses `go run` and never
+# builds a binary; these executables only appear when someone runs
+# `go build ./...` locally to check a module compiles. Never commit them —
+# they are 2.7 MB platform-specific artifacts (a committed binary in a crypto
+# verification repo is a supply-chain smell).
+/mldsa87-go/mldsa87-go
+/dilithium5-go/dilithium5-go
