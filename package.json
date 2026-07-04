@@ -43,7 +43,7 @@
     "playwright": "1.60.0",
     "serialize-javascript": "7.0.5",
     "tar": "7.5.16",
-    "turbo": "2.9.18",
+    "turbo": "2.10.0",
     "typescript": "6.0.3"
   },
   "overrides": {
