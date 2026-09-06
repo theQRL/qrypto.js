@@ -1,3 +1,9 @@
+## @theqrl/mldsa87 [2.1.5](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.1.4...@theqrl/mldsa87@2.1.5) (2026-09-06)
+
+### Bug Fixes
+
+* **deps:** bump @noble/hashes to 2.4.0 in dilithium5 and mldsa87 ([881d740](https://github.com/theQRL/qrypto.js/commit/881d74066d76a75142e163701fea52631f507faf))
+
 ## @theqrl/mldsa87 [2.1.4](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.1.3...@theqrl/mldsa87@2.1.4) (2026-08-23)
 
 ### Bug Fixes
