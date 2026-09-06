@@ -176,6 +176,16 @@ const aobject = (value, label) => {
     if (value === null || typeof value !== 'object' || Array.isArray(value))
         throw new TypeError((label === 'object' ? '' : `"${label}" `) + 'expected object, got type=' + typeof value);
 };
+const aopts = (value, label) => {
+    aobject(value, label);
+    const proto = Object.getPrototypeOf(value);
+    if (proto !== Object.prototype && proto !== null)
+        throw new TypeError(`"${label}" expected plain object`);
+    // Object.assign() treats an own "__proto__" source key as a write to the target's legacy
+    // prototype setter. Reject it before merging so inherited option values cannot be injected.
+    if (Object.hasOwn(value, '__proto__'))
+        throw new TypeError(`"${label}.__proto__" is not allowed`);
+};
 /**
  * Asserts a hash instance has not been destroyed or finished.
  * @param instance - hash instance to validate
@@ -359,7 +369,7 @@ function hexToBytes$1(hex) {
  * @param defaults - base option object
  * @param opts - user overrides
  * @param title - label included in thrown override errors
- * @returns Merged option object. The merge mutates `defaults` in place.
+ * @returns Fresh merged option object with a null prototype.
  * @throws On wrong argument types. {@link TypeError}
  * @example
  * Merge user overrides onto default options.
@@ -368,10 +378,12 @@ function hexToBytes$1(hex) {
  * ```
  */
 function checkOpts(defaults, opts, title = 'opts') {
-    aobject(defaults, 'defaults');
+    aopts(defaults, 'defaults');
     if (opts !== undefined)
-        aobject(opts, title);
-    const merged = Object.assign(defaults, opts);
+        aopts(opts, title);
+    // Callers read optional fields directly, so omitted values must not fall through to ambient
+    // Object.prototype pollution (for example a forged `dkLen` changing SHAKE's default output).
+    const merged = Object.assign(Object.create(null), defaults, opts);
     return merged;
 }
 /**
