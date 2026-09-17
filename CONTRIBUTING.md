@@ -268,8 +268,9 @@ with them:
 symbols in the README "API Reference": `cryptoSignKeypair`, `cryptoSign`,
 `cryptoSignSignature`, `cryptoSignVerify`, `cryptoSignOpen`,
 `cryptoSignOpenWithReason`, the deterministic wrappers
-(`cryptoSignDeterministic`, `cryptoSignSignatureDeterministic`), the
-byte-size constants, and `zeroize`/`isZero` — is the stable contract.
+(`cryptoSignDeterministic`, `cryptoSignSignatureDeterministic`),
+`validatePublicKey` and `validateSecretKey` (ML-DSA-87 only), the byte-size constants, and
+`zeroize`/`isZero` — is the stable contract.
 Everything else is exported for testing/interop, is marked `@deprecated`
 in the `.d.ts` as internal, and **will move behind a subpath or disappear
 at the next major version** — including `zeroizePolyVec` (it takes internal

@@ -65,7 +65,10 @@ export function cryptoSignKeypair(
  * @param randomizedSigning - If true, use random nonce; if false, deterministic
  * @param ctx - Context string (max 255 bytes)
  * @returns 0 on success
- * @throws Error if sk is wrong size or context too long
+ * @throws Error if sk is wrong size, an s1 or s2 coefficient of sk is out of
+ *   range (see `validateSecretKey`), context is too long, or no signature is
+ *   accepted within 1024 attempts (a below-2^-440 event for a key from
+ *   `cryptoSignKeypair`)
  */
 export function cryptoSignSignature(
   sig: Uint8Array,
@@ -82,7 +85,7 @@ export function cryptoSignSignature(
  * @param randomizedSigning - If true, use random nonce; if false, deterministic
  * @param ctx - Context string (max 255 bytes)
  * @returns Signed message (signature || message)
- * @throws Error if signing fails
+ * @throws Error if signing fails; see `cryptoSignSignature`
  */
 export function cryptoSign(
   msg: Uint8Array | string,
@@ -184,6 +187,46 @@ export function cryptoSignOpenWithReason(
 ):
   | { ok: true; message: Uint8Array }
   | { ok: false; reason: CryptoSignOpenReason };
+
+/** Reason `validatePublicKey` gives when it rejects a key. */
+export type ValidatePublicKeyReason =
+  | 'invalid-pk-type'
+  | 'invalid-pk-length'
+  | 'weak-public-key';
+
+/**
+ * Check a packed ML-DSA-87 public key before verifying with it. A weak key
+ * is one under which the verifier accepts a signature anyone can compute;
+ * key generation never produces one, and FIPS 204 requires
+ * `cryptoSignVerify` / `cryptoSignOpen` to accept it, so the check is
+ * separate. The rule and its derivation are in the package README under
+ * "Public Key Validation". Never throws.
+ *
+ * @param pk - Any value. Non-`Uint8Array` input yields `invalid-pk-type`.
+ */
+export function validatePublicKey(
+  pk: unknown
+): { ok: true } | { ok: false; reason: ValidatePublicKeyReason };
+
+/** Reason `validateSecretKey` gives when it rejects a key. */
+export type ValidateSecretKeyReason =
+  | 'invalid-sk-type'
+  | 'invalid-sk-length'
+  | 'invalid-sk-encoding';
+
+/**
+ * Check a packed ML-DSA-87 secret key before signing with it. Every
+ * coefficient of s1 and s2 must lie in [-ETA, ETA]: the 3-bit encodings 5,
+ * 6 and 7 never come from key generation and make every signing function
+ * throw, so this is the same check applied ahead of time. rho, K, tr and
+ * t0 are not examined, as they have no invalid encoding. See the package
+ * README under "Secret Key Validation". Never throws.
+ *
+ * @param sk - Any value. Non-`Uint8Array` input yields `invalid-sk-type`.
+ */
+export function validateSecretKey(
+  sk: unknown
+): { ok: true } | { ok: false; reason: ValidateSecretKeyReason };
 
 // Utility functions
 

@@ -170,6 +170,31 @@ If your threat model requires strong memory protection:
 - Verified against NIST ACVP keyGen + sigGen vectors (`.github/workflows/acvp.yml`)
 - Verified against C2SP/wycheproof verify vectors (`.github/workflows/wycheproof.yml`)
 
+### Public Key Validation (ML-DSA-87)
+
+A weak public key is one under which the verifier accepts a signature
+anyone can compute from the key alone; key generation never produces one.
+`cryptoSignVerify` and `cryptoSignOpen` do not check for weak keys, because
+FIPS 204 Algorithm 8 has no key-validity step and the Wycheproof vectors
+this repository is checked against require signatures under the all-zero
+key (tcId 66 and 174) and the all-1023 key (tcId 240) to be accepted. Check
+keys received from outside with
+`validatePublicKey(pk)`; go-qrllib, rust-qrllib and `@theqrl/wallet.js`
+apply the same rule, described in the
+[package README](./packages/mldsa87/README.md#public-key-validation).
+
+### Secret Key Validation (ML-DSA-87)
+
+The s1 and s2 coefficients of a packed secret key are 3-bit fields; 5, 6
+and 7 are not encodings key generation writes, and a coefficient outside
+`[-2, 2]` breaks the norm bound the signing loop relies on for its
+zero-knowledge property. Every signing function checks s1 and s2 after
+unpacking and throws on such a key; `validateSecretKey(sk)` is the same
+check ahead of time. The rejection loop is bounded to 1024 attempts, a
+below-2^-440 event for a key that passes the check. go-qrllib and
+rust-qrllib apply the same check and bound; see the
+[package README](./packages/mldsa87/README.md#secret-key-validation).
+
 ### Signing Modes (ML-DSA-87 and Dilithium5)
 
 Both `cryptoSignSignature` (detached) and `cryptoSign` (attached) take an explicit `randomizedSigning: boolean` parameter:

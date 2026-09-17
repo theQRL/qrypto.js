@@ -217,6 +217,24 @@ if (result.ok) {
 }
 ```
 
+### Public Key Validation (ML-DSA-87)
+
+A weak public key is one under which the verifier accepts a signature
+anyone can compute. Key generation never produces one, and
+`cryptoSignVerify` does not check for one, as FIPS 204 requires, so check
+keys you receive:
+
+```javascript
+const check = validatePublicKey(pk); // never throws
+if (!check.ok) {
+  // reason: 'invalid-pk-type' | 'invalid-pk-length' | 'weak-public-key'
+  throw new Error(`rejected public key: ${check.reason}`);
+}
+```
+
+The rule and where it comes from are in
+[packages/mldsa87/README.md](./packages/mldsa87/README.md#public-key-validation).
+
 ### Security Utilities
 
 ```javascript
@@ -315,6 +333,8 @@ See [SECURITY.md](./SECURITY.md) for important security information, including:
 - **Side channels:** Signature verification uses constant-time comparison
 - **Randomness:** Uses Web Crypto API (`crypto.getRandomValues()`) exclusively. Throws if unavailable. Includes basic entropy validation to detect broken RNG implementations.
 - **Key handling:** Recommendations for secure key storage and disposal
+- **Public key validation (ML-DSA-87):** the verifier does not reject weak keys, as FIPS 204 requires; check keys you receive with `validatePublicKey`
+- **Secret key validation (ML-DSA-87):** signing throws on a key whose s1 or s2 encoding is out of range; `validateSecretKey` is the same check ahead of time
 
 ## Development
 

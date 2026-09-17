@@ -9,6 +9,8 @@ import {
   cryptoSignVerify,
   cryptoSignOpen,
   cryptoSignOpenWithReason,
+  validatePublicKey,
+  validateSecretKey,
   zeroize,
   CryptoPublicKeyBytes,
   CryptoSecretKeyBytes,
@@ -23,5 +25,9 @@ const opened: Uint8Array | undefined = cryptoSignOpen(sm, pk, ctx);
 const ok: boolean = cryptoSignVerify(sm.subarray(0, 0), new Uint8Array([1]), pk, ctx);
 const wr = cryptoSignOpenWithReason(sm, pk, ctx);
 const msg: Uint8Array | null = wr.ok ? wr.message : null;
+const vpk = validatePublicKey(pk);
+const vreason: 'invalid-pk-type' | 'invalid-pk-length' | 'weak-public-key' | null = vpk.ok ? null : vpk.reason;
+const vsk = validateSecretKey(sk);
+const sreason: 'invalid-sk-type' | 'invalid-sk-length' | 'invalid-sk-encoding' | null = vsk.ok ? null : vsk.reason;
 zeroize(sk);
-void [opened, ok, msg];
+void [opened, ok, msg, vreason, sreason];
