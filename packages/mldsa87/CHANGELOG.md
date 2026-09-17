@@ -1,3 +1,10 @@
+## @theqrl/mldsa87 [2.2.0](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.1.5...@theqrl/mldsa87@2.2.0) (2026-09-17)
+
+### Features
+
+* add validatePublicKey for weak keys ([bc9061b](https://github.com/theQRL/qrypto.js/commit/bc9061b17294e06bf40039063e4af4987f044146))
+* validateSecretKey and a bounded signing loop ([cd17872](https://github.com/theQRL/qrypto.js/commit/cd178726bfe371b780c5e1febe6138f0fd22e206))
+
 ## @theqrl/mldsa87 [2.1.5](https://github.com/theQRL/qrypto.js/compare/@theqrl/mldsa87@2.1.4...@theqrl/mldsa87@2.1.5) (2026-09-06)
 
 ### Bug Fixes
