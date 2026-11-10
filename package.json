@@ -50,7 +50,6 @@
   },
   "overrides": {
     "serialize-javascript": "7.1.4",
-    "minimatch": "11.0.4",
     "tar": "7.5.22"
   }
 }
