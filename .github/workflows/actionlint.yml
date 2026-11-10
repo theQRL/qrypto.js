@@ -60,7 +60,7 @@ jobs:
         # any new finding at any severity fails the build. Configuration
         # exceptions live in .github/zizmor.yml (currently only the SLSA
         # reusable workflow ref-pin).
-        uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        uses: zizmorcore/zizmor-action@53290badfa369cb0bf7ad16342cb62c2fa47ac7b # v0.8.0
         with:
           persona: pedantic
           config: .github/zizmor.yml
