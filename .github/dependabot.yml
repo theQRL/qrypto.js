@@ -1,6 +1,7 @@
 version: 2
 updates:
-  # npm dependencies
+  # npm workspaces share the root lockfile. Directory-specific updates can
+  # change a workspace manifest without updating that lockfile.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -21,32 +22,6 @@ updates:
       # a release-notes-generator built on writer 9.
       - dependency-name: "conventional-changelog-conventionalcommits"
         versions: [">=10"]
-    commit-message:
-      prefix: "deps"
-
-  - package-ecosystem: "npm"
-    directory: "/packages/dilithium5"
-    schedule:
-      interval: "weekly"
-    cooldown:
-      default-days: 7
-    groups:
-      dev-dependencies:
-        patterns:
-          - "*"
-    commit-message:
-      prefix: "deps"
-
-  - package-ecosystem: "npm"
-    directory: "/packages/mldsa87"
-    schedule:
-      interval: "weekly"
-    cooldown:
-      default-days: 7
-    groups:
-      dev-dependencies:
-        patterns:
-          - "*"
     commit-message:
       prefix: "deps"
 
